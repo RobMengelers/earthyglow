@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: earthyglow
+      POSTGRES_PASSWORD: earthyglow
+      POSTGRES_DB: earthyglow
+    ports:
+      - "5433:5432"
+    volumes:
+      - earthyglow-db:/var/lib/postgresql/data
+
+volumes:
+  earthyglow-db:

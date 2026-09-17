@@ -1,0 +1,191 @@
+import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { formatPrice } from '../cart/CartContext'
+import { useCart } from '../cart/useCart'
+import { Reveal } from '../components/Reveal'
+
+type OrderStatus =
+  | 'pending'
+  | 'paid'
+  | 'failed'
+  | 'expired'
+  | 'canceled'
+  | 'refunded'
+
+type OrderStatusResponse = {
+  orderNumber: string
+  status: OrderStatus
+  totalCents: number
+  currency: string
+}
+
+const API_URL = import.meta.env.VITE_API_URL ?? ''
+
+export function CheckoutConfirmation() {
+  const [params] = useSearchParams()
+  const orderNumber = params.get('order')
+  const isMock = params.get('mock') === '1'
+  const { clearCart } = useCart()
+  const [order, setOrder] = useState<OrderStatusResponse | null>(null)
+  const [failed, setFailed] = useState(false)
+  const clearedRef = useRef(false)
+
+  // In mock mode (no Mollie key) settle the order once so pending -> paid works.
+  useEffect(() => {
+    if (!isMock || !orderNumber) return
+    void fetch(`${API_URL}/api/orders/${orderNumber}/mock-pay`, {
+      method: 'POST',
+    }).catch(() => undefined)
+  }, [isMock, orderNumber])
+
+  useEffect(() => {
+    if (!orderNumber) return
+
+    let cancelled = false
+    let timer: number | undefined
+
+    async function poll() {
+      try {
+        const response = await fetch(`${API_URL}/api/orders/${orderNumber}`)
+        if (!response.ok) throw new Error('Order not found')
+        const data = (await response.json()) as OrderStatusResponse
+        if (cancelled) return
+        setOrder(data)
+        if (data.status === 'pending') {
+          timer = window.setTimeout(poll, 2500)
+        } else if (data.status === 'paid' && !clearedRef.current) {
+          clearedRef.current = true
+          clearCart()
+        }
+      } catch {
+        if (!cancelled) setFailed(true)
+      }
+    }
+
+    void poll()
+    return () => {
+      cancelled = true
+      if (timer) window.clearTimeout(timer)
+    }
+  }, [orderNumber, clearCart])
+
+  if (!orderNumber) {
+    return (
+      <ConfirmationShell eyebrow="Order status">
+        <h1>We couldn&rsquo;t find that order</h1>
+        <p className="checkout-done-lede">
+          The link you followed doesn&rsquo;t include an order number.
+        </p>
+        <div className="hero-actions">
+          <Link to="/shop" className="btn btn-primary">
+            Back to the shop
+          </Link>
+        </div>
+      </ConfirmationShell>
+    )
+  }
+
+  if (!order && !failed) {
+    return (
+      <ConfirmationShell eyebrow="Order status">
+        <h1>Checking your payment…</h1>
+        <p className="checkout-done-lede">
+          This only takes a moment. Please don&rsquo;t close this page.
+        </p>
+      </ConfirmationShell>
+    )
+  }
+
+  if (failed || !order) {
+    return (
+      <ConfirmationShell eyebrow="Order status">
+        <h1>We couldn&rsquo;t load your order</h1>
+        <p className="checkout-done-lede">
+          If you were charged, your order is safe. Contact us and we&rsquo;ll
+          sort it out right away.
+        </p>
+        <div className="hero-actions">
+          <Link to="/contact" className="btn btn-primary">
+            Contact us
+          </Link>
+        </div>
+      </ConfirmationShell>
+    )
+  }
+
+  if (order.status === 'paid') {
+    return (
+      <ConfirmationShell eyebrow="Payment received">
+        <span className="order-status-badge is-paid">Paid</span>
+        <h1>Thank you — your glow is on its way</h1>
+        <p className="checkout-done-lede">
+          Your order <strong>{order.orderNumber}</strong> is confirmed for{' '}
+          <strong>{formatPrice(order.totalCents)}</strong>. We&rsquo;ll email a
+          receipt shortly, then hand-pour and ship your candles.
+        </p>
+        <div className="hero-actions">
+          <Link to="/shop" className="btn btn-primary">
+            Keep shopping
+          </Link>
+          <Link to="/" className="btn btn-ghost">
+            Back home
+          </Link>
+        </div>
+      </ConfirmationShell>
+    )
+  }
+
+  if (order.status === 'pending') {
+    return (
+      <ConfirmationShell eyebrow="Order status">
+        <span className="order-status-badge is-pending">Awaiting payment</span>
+        <h1>Almost there</h1>
+        <p className="checkout-done-lede">
+          We&rsquo;re waiting for your payment for order{' '}
+          <strong>{order.orderNumber}</strong>. This page updates automatically
+          once it&rsquo;s confirmed.
+        </p>
+      </ConfirmationShell>
+    )
+  }
+
+  return (
+    <ConfirmationShell eyebrow="Order status">
+      <span className="order-status-badge is-failed">
+        {order.status === 'refunded' ? 'Refunded' : 'Not completed'}
+      </span>
+      <h1>Your payment wasn&rsquo;t completed</h1>
+      <p className="checkout-done-lede">
+        Order <strong>{order.orderNumber}</strong> hasn&rsquo;t been paid, so
+        nothing was charged. Your candles are still waiting in your cart.
+      </p>
+      <div className="hero-actions">
+        <Link to="/checkout" className="btn btn-primary">
+          Try payment again
+        </Link>
+        <Link to="/cart" className="btn btn-ghost">
+          Back to cart
+        </Link>
+      </div>
+    </ConfirmationShell>
+  )
+}
+
+function ConfirmationShell({
+  eyebrow,
+  children,
+}: {
+  eyebrow: string
+  children: ReactNode
+}) {
+  return (
+    <section className="checkout-done">
+      <div className="container">
+        <Reveal>
+          <p className="eyebrow">{eyebrow}</p>
+          {children}
+        </Reveal>
+      </div>
+    </section>
+  )
+}
