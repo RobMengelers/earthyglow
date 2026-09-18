@@ -1,4 +1,5 @@
 import type { CartItem } from './CartContext'
+import { API_URL } from './catalog'
 
 export type CheckoutDetails = {
   firstName: string
@@ -27,7 +28,6 @@ export type OrderResult = {
 }
 
 const ORDERS_KEY = 'earthyglow-orders-v1'
-const API_URL = import.meta.env.VITE_API_URL ?? ''
 
 async function postToApi(payload: OrderPayload): Promise<OrderResult> {
   const { details, items } = payload

@@ -1,6 +1,5 @@
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
-import { getCatalogProduct } from '../catalog.js'
 import { createPayment } from '../mollie.js'
 import { prisma } from '../prisma.js'
 
@@ -50,7 +49,10 @@ export async function checkoutRoutes(app: FastifyInstance) {
 
     const lines = []
     for (const item of items) {
-      const product = getCatalogProduct(item.id)
+      const product = await prisma.product.findUnique({
+        where: { id: item.id },
+        select: { id: true, name: true, priceCents: true, active: true },
+      })
       if (!product || !product.active) {
         return reply
           .code(400)

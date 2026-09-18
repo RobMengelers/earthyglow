@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { formatPrice } from '../cart/CartContext'
+import { API_URL } from '../cart/catalog'
 import { useCart } from '../cart/useCart'
 import { Reveal } from '../components/Reveal'
 
@@ -18,8 +19,6 @@ type OrderStatusResponse = {
   totalCents: number
   currency: string
 }
-
-const API_URL = import.meta.env.VITE_API_URL ?? ''
 
 export function CheckoutConfirmation() {
   const [params] = useSearchParams()

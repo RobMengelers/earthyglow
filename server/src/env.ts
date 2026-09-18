@@ -8,6 +8,8 @@ const schema = z.object({
   PORT: z.coerce.number().default(4000),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   MOLLIE_API_KEY: z.string().default(''),
+  RESEND_API_KEY: z.string().default(''),
+  EMAIL_FROM: z.string().default(''),
   FRONTEND_URL: z.string().default('http://localhost:5173'),
   PUBLIC_API_URL: z.string().default('http://localhost:4000'),
 })

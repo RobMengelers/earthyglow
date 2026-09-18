@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from 'react'
 import type { Product } from '../data/products'
+import { fetchCatalog } from './catalog'
 import {
   CartContext,
   calcTotals,
@@ -52,6 +53,42 @@ export function CartProvider({ children }: { children: ReactNode }) {
       // Storage can be unavailable (private mode); the cart still works in memory.
     }
   }, [items])
+
+  // Reconcile line-item prices against the server catalog. Prices may have
+  // changed since the item was added (or the client was tampered with); the
+  // server is authoritative and its values always win here.
+  useEffect(() => {
+    let cancelled = false
+
+    void fetchCatalog().then((catalog) => {
+      if (cancelled) return
+      const byId = new Map(catalog.map((product) => [product.id, product]))
+      setItems((current) => {
+        let changed = false
+        const next = current.map((item) => {
+          const product = byId.get(item.id)
+          if (
+            product &&
+            (product.priceCents !== item.priceCents ||
+              product.name !== item.name)
+          ) {
+            changed = true
+            return {
+              ...item,
+              name: product.name,
+              priceCents: product.priceCents,
+            }
+          }
+          return item
+        })
+        return changed ? next : current
+      })
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const openDrawer = useCallback(() => setIsDrawerOpen(true), [])
   const closeDrawer = useCallback(() => setIsDrawerOpen(false), [])

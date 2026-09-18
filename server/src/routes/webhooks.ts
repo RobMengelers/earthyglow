@@ -1,5 +1,6 @@
 import type { OrderStatus } from '@prisma/client'
 import type { FastifyInstance } from 'fastify'
+import { sendOrderInvoice } from '../email.js'
 import { getPaymentInfo } from '../mollie.js'
 import { prisma } from '../prisma.js'
 
@@ -62,6 +63,30 @@ export async function webhookRoutes(app: FastifyInstance) {
         { orderNumber: order.orderNumber, from: order.status, to: status },
         'Order status updated from Mollie webhook',
       )
+    }
+
+    // Send the invoice once an order is paid. This also runs when Mollie
+    // re-delivers the webhook and a previous attempt failed: invoiceSentAt is
+    // only set after the email actually went out, so the send is retried.
+    if (status === 'paid' && !order.invoiceSentAt) {
+      try {
+        const sent = await sendOrderInvoice(order.orderNumber)
+        if (sent) {
+          await prisma.order.update({
+            where: { id: order.id },
+            data: { invoiceSentAt: new Date() },
+          })
+          request.log.info(
+            { orderNumber: order.orderNumber },
+            'Invoice email sent',
+          )
+        }
+      } catch (error) {
+        request.log.error(
+          { orderNumber: order.orderNumber, err: error },
+          'Invoice email failed; will retry on next webhook or sweep',
+        )
+      }
     }
 
     return reply.send({ ok: true })
