@@ -49,7 +49,6 @@ export function LiquidGlow() {
     if (reduceMotion.matches) return
 
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
-    const pointer = { x: -1, y: -1, tx: -1, ty: -1 }
     let width = 0
     let height = 0
     let raf = 0
@@ -64,24 +63,10 @@ export function LiquidGlow() {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     }
 
-    function onPointerMove(event: PointerEvent) {
-      const rect = canvas.getBoundingClientRect()
-      pointer.tx = event.clientX - rect.left
-      pointer.ty = event.clientY - rect.top
-    }
-
-    function onPointerLeave() {
-      pointer.tx = -1
-      pointer.ty = -1
-    }
-
     function frame(time: number) {
       if (!running) return
       ctx.clearRect(0, 0, width, height)
       ctx.globalCompositeOperation = 'lighter'
-
-      pointer.x += (pointer.tx - pointer.x) * 0.06
-      pointer.y += (pointer.ty - pointer.y) * 0.06
 
       const size = Math.min(width, height)
 
@@ -100,23 +85,6 @@ export function LiquidGlow() {
         ctx.fill()
       }
 
-      if (pointer.x >= 0 && pointer.y >= 0) {
-        const glow = ctx.createRadialGradient(
-          pointer.x,
-          pointer.y,
-          0,
-          pointer.x,
-          pointer.y,
-          size * 0.42,
-        )
-        glow.addColorStop(0, 'rgba(243,217,167,0.13)')
-        glow.addColorStop(1, 'rgba(243,217,167,0)')
-        ctx.fillStyle = glow
-        ctx.beginPath()
-        ctx.arc(pointer.x, pointer.y, size * 0.42, 0, Math.PI * 2)
-        ctx.fill()
-      }
-
       raf = requestAnimationFrame(frame)
     }
 
@@ -132,16 +100,12 @@ export function LiquidGlow() {
     resize()
     observer.observe(canvas)
     window.addEventListener('resize', resize)
-    window.addEventListener('pointermove', onPointerMove)
-    window.addEventListener('pointerleave', onPointerLeave)
 
     return () => {
       running = false
       cancelAnimationFrame(raf)
       observer.disconnect()
       window.removeEventListener('resize', resize)
-      window.removeEventListener('pointermove', onPointerMove)
-      window.removeEventListener('pointerleave', onPointerLeave)
     }
   }, [])
 

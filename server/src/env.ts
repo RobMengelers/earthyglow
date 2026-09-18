@@ -10,6 +10,7 @@ const schema = z.object({
   MOLLIE_API_KEY: z.string().default(''),
   RESEND_API_KEY: z.string().default(''),
   EMAIL_FROM: z.string().default(''),
+  CONTACT_EMAIL: z.string().default('earthyglowcandles@gmail.com'),
   FRONTEND_URL: z.string().default('http://localhost:5173'),
   PUBLIC_API_URL: z.string().default('http://localhost:4000'),
 })

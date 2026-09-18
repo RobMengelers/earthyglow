@@ -5,6 +5,7 @@ import { ShippingProgress } from '../cart/ShippingProgress'
 import { submitOrder, type OrderResult } from '../cart/checkout'
 import { useCart } from '../cart/useCart'
 import { Reveal } from '../components/Reveal'
+import { LoadingButton } from '../components/LoadingButton'
 
 const countries = [
   'Netherlands',
@@ -226,13 +227,13 @@ export function Checkout() {
                 </p>
               )}
 
-              <button
+              <LoadingButton
                 type="submit"
                 className="btn btn-primary checkout-submit"
-                disabled={submitting}
+                loading={submitting}
               >
-                {submitting ? 'Starting payment…' : 'Continue to payment'}
-              </button>
+                Continue to payment
+              </LoadingButton>
               <p className="checkout-legal">
                 By placing your order you agree to our{' '}
                 <Link to="/policies/terms-of-service">Terms of Service</Link> and{' '}

@@ -42,19 +42,12 @@ export function Footer() {
             <li><Link to="/about">Our story</Link></li>
             <li><Link to="/care">Candle care</Link></li>
             <li><Link to="/contact">Contact</Link></li>
-            <li>
-              <a href="mailto:earthyglowcandles@gmail.com">
-                earthyglowcandles@gmail.com
-              </a>
-            </li>
           </ul>
         </div>
 
         <div className="footer-col">
           <h3>Information</h3>
           <ul>
-            <li>Chamber of Commerce: 42049155</li>
-            <li>VAT: NL005456394B38</li>
             {policies.map((policy) => (
               <li key={policy.label}>
                 <Link to={policy.to}>{policy.label}</Link>

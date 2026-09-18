@@ -286,7 +286,6 @@ export async function generateInvoicePdf(
         height: pageHeight,
         color: CREAM,
       })
-      y = 792
       tableHeader(776)
       rule(770)
       y = 748
@@ -454,6 +453,44 @@ function escapeHtml(value: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
+}
+
+export async function sendContactMessage(input: {
+  name: string
+  email: string
+  message: string
+}): Promise<void> {
+  if (!emailEnabled) {
+    throw new Error('Email is not configured')
+  }
+
+  const text = `Name: ${input.name}\nEmail: ${input.email}\n\nMessage:\n${input.message}`
+  const html = `
+    <p style="color:#6b6157;">New message from the contact form:</p>
+    <table style="border-collapse: collapse; color:#2e2a25; font-size:14px;">
+      <tr><td style="padding:4px 16px 4px 0; color:#6b6157;">Name</td>
+          <td style="padding:4px 0;">${escapeHtml(input.name)}</td></tr>
+      <tr><td style="padding:4px 16px 4px 0; color:#6b6157;">Email</td>
+          <td style="padding:4px 0;">${escapeHtml(input.email)}</td></tr>
+    </table>
+    <blockquote style="margin:16px 0; padding:12px 16px; border-left:3px solid #5f3b25;
+      background:#f4ecdd; color:#2e2a25; white-space:pre-wrap;">
+      ${escapeHtml(input.message)}
+    </blockquote>
+  `
+
+  const { error } = await resend!.emails.send({
+    from: env.EMAIL_FROM,
+    to: [env.CONTACT_EMAIL],
+    replyTo: input.email,
+    subject: `New contact message from ${input.name}`,
+    text,
+    html,
+  })
+
+  if (error) {
+    throw new Error(`Resend rejected contact message: ${error.message}`)
+  }
 }
 
 export type InvoiceRetryStats = {

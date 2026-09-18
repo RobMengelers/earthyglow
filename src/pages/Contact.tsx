@@ -2,19 +2,34 @@ import { type FormEvent, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Reveal } from '../components/Reveal'
 import { SocialLinks } from '../components/SocialLinks'
+import { API_URL } from '../cart/catalog'
+import { LoadingButton } from '../components/LoadingButton'
+
+type SendState = 'idle' | 'sending' | 'sent' | 'error'
 
 export function Contact() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [message, setMessage] = useState('')
+  const [sendState, setSendState] = useState<SendState>('idle')
 
-  function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault()
-    const subject = encodeURIComponent(`Message from ${name || 'a visitor'}`)
-    const body = encodeURIComponent(
-      `Name: ${name}\nEmail: ${email}\n\n${message}`,
-    )
-    window.location.href = `mailto:earthyglowcandles@gmail.com?subject=${subject}&body=${body}`
+    setSendState('sending')
+    try {
+      const response = await fetch(`${API_URL}/api/contact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, message }),
+      })
+      if (!response.ok) throw new Error('Send failed')
+      setName('')
+      setEmail('')
+      setMessage('')
+      setSendState('sent')
+    } catch {
+      setSendState('error')
+    }
   }
 
   return (
@@ -108,13 +123,22 @@ export function Contact() {
                   required
                 />
               </label>
-              <button type="submit" className="btn btn-primary">
+              <LoadingButton
+                type="submit"
+                className="btn btn-primary"
+                loading={sendState === 'sending'}
+              >
                 Send
-              </button>
-              <p className="form-note">
-                This opens your email app with your message ready to send to
-                earthyglowcandles@gmail.com.
-              </p>
+              </LoadingButton>
+              {sendState !== 'idle' && (
+                <p
+                  className={`form-note${sendState === 'error' ? ' is-error' : ''}`}
+                >
+                  {sendState === 'sent'
+                    ? 'Thanks — your message has been sent and we’ll reply within 24 hours.'
+                    : 'Something went wrong sending your message. Please try again or e-mail us directly.'}
+                </p>
+              )}
             </form>
           </Reveal>
         </div>
