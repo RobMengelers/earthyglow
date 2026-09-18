@@ -1,13 +1,25 @@
 import {
-  FREE_SHIPPING_THRESHOLD_CENTS,
+  DEFAULT_ZONE,
   formatPrice,
+  type ShippingZone,
 } from './CartContext'
 import { useCart } from './useCart'
 
-export function ShippingProgress({ className }: { className?: string }) {
-  const { subtotalCents, shippingRemainingCents, hasFreeShipping } = useCart()
+type ShippingProgressProps = {
+  className?: string
+  zone?: ShippingZone
+}
+
+export function ShippingProgress({ className, zone }: ShippingProgressProps) {
+  const { subtotalCents } = useCart()
+  const activeZone = zone ?? DEFAULT_ZONE
+  const hasFreeShipping = subtotalCents >= activeZone.freeThresholdCents
+  const shippingRemainingCents = Math.max(
+    activeZone.freeThresholdCents - subtotalCents,
+    0,
+  )
   const progress = Math.min(
-    (subtotalCents / FREE_SHIPPING_THRESHOLD_CENTS) * 100,
+    (subtotalCents / activeZone.freeThresholdCents) * 100,
     100,
   )
 
@@ -39,7 +51,9 @@ export function ShippingProgress({ className }: { className?: string }) {
         />
       </div>
       <p className="shipping-progress-note">
-        Free shipping on orders over {formatPrice(FREE_SHIPPING_THRESHOLD_CENTS)}
+        {zone
+          ? `Free ${activeZone.label === 'Netherlands' ? '' : 'international'} shipping on orders over ${formatPrice(activeZone.freeThresholdCents)}`
+          : `Free shipping on orders over ${formatPrice(activeZone.freeThresholdCents)}`}
       </p>
     </div>
   )

@@ -4,7 +4,10 @@ import { mollieEnabled } from '../mollie.js'
 import { prisma } from '../prisma.js'
 
 export async function orderRoutes(app: FastifyInstance) {
-  app.get('/api/orders/:orderNumber', async (request, reply) => {
+  app.get(
+    '/api/orders/:orderNumber',
+    { config: { rateLimit: { max: 120, timeWindow: '1 minute' } } },
+    async (request, reply) => {
     const { orderNumber } = request.params as { orderNumber: string }
 
     const order = await prisma.order.findUnique({
@@ -30,7 +33,10 @@ export async function orderRoutes(app: FastifyInstance) {
 
   // Dev-only: settles a mock order (no Mollie key configured) so the full
   // pending -> paid flow can be exercised locally. Never enabled in production.
-  app.post('/api/orders/:orderNumber/mock-pay', async (request, reply) => {
+  app.post(
+    '/api/orders/:orderNumber/mock-pay',
+    { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } },
+    async (request, reply) => {
     if (isProduction || mollieEnabled) {
       return reply.code(404).send({ error: 'Not found' })
     }

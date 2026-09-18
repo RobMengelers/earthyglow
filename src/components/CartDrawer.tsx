@@ -1,7 +1,6 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { formatPrice } from '../cart/CartContext'
-import { ShippingProgress } from '../cart/ShippingProgress'
 import { useCart } from '../cart/useCart'
 
 export function CartDrawer() {
@@ -9,8 +8,6 @@ export function CartDrawer() {
     items,
     itemCount,
     subtotalCents,
-    shippingCents,
-    totalCents,
     isDrawerOpen,
     closeDrawer,
     updateQuantity,
@@ -74,8 +71,6 @@ export function CartDrawer() {
           </div>
         ) : (
           <>
-            <ShippingProgress className="cart-drawer-shipping" />
-
             <ul className="cart-lines">
               {items.map((item) => (
                 <li key={item.id} className="cart-line">
@@ -144,11 +139,11 @@ export function CartDrawer() {
               </div>
               <div className="cart-totals-row">
                 <span>Shipping</span>
-                <span>{shippingCents === 0 ? 'Free' : formatPrice(shippingCents)}</span>
+                <span className="cart-totals-muted">At checkout</span>
               </div>
               <div className="cart-totals-row cart-totals-total">
                 <span>Total</span>
-                <span>{formatPrice(totalCents)}</span>
+                <span className="cart-totals-muted">—</span>
               </div>
               <Link
                 to="/checkout"

@@ -1,4 +1,4 @@
-import { createMollieClient } from '@mollie/api-client'
+import { createMollieClient, PaymentMethod } from '@mollie/api-client'
 import { env } from './env.js'
 
 const client = env.MOLLIE_API_KEY
@@ -17,16 +17,59 @@ export type PaymentInfo = {
   orderId?: string
 }
 
+export type PaymentMethodOption = {
+  id: string
+  name: string
+  icon: string | null
+}
+
+const PREFERRED_METHODS = ['ideal', 'creditcard'] as const
+
+const MOCK_METHODS: PaymentMethodOption[] = [
+  {
+    id: 'ideal',
+    name: 'iDEAL',
+    icon: 'https://www.mollie.com/external/icons/payment-methods/ideal.svg',
+  },
+  {
+    id: 'creditcard',
+    name: 'Credit card',
+    icon: 'https://www.mollie.com/external/icons/payment-methods/creditcard.svg',
+  },
+]
+
 type CreatePaymentInput = {
   orderId: string
   orderNumber: string
   totalCents: number
   description: string
+  method?: string
 }
 
 export function buildRedirectUrl(orderNumber: string, mock: boolean): string {
   const url = `${env.FRONTEND_URL}/checkout/confirmation?order=${encodeURIComponent(orderNumber)}`
   return mock ? `${url}&mock=1` : url
+}
+
+export async function listPaymentMethods(): Promise<PaymentMethodOption[]> {
+  if (!client) return MOCK_METHODS
+
+  try {
+    const methods = await client.methods.list()
+    const supported = new Map<string, (typeof methods)[number]>(
+      methods.map((method) => [method.id, method]),
+    )
+    return PREFERRED_METHODS.filter((id) => supported.has(id)).map((id) => {
+      const method = supported.get(id)!
+      return {
+        id,
+        name: method.description,
+        icon: method.image?.svg ?? null,
+      }
+    })
+  } catch {
+    return MOCK_METHODS
+  }
 }
 
 export async function createPayment(
@@ -47,6 +90,7 @@ export async function createPayment(
       value: (input.totalCents / 100).toFixed(2),
     },
     description: input.description,
+    method: input.method as PaymentMethod | undefined,
     redirectUrl: buildRedirectUrl(input.orderNumber, false),
     webhookUrl: `${env.PUBLIC_API_URL}/api/webhooks/mollie`,
     metadata: {

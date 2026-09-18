@@ -3,31 +3,40 @@ import { z } from 'zod'
 import { createPayment } from '../mollie.js'
 import { prisma } from '../prisma.js'
 
-const FREE_SHIPPING_THRESHOLD_CENTS = 2500
-const SHIPPING_CENTS = 495
+const SHIPPING_ZONES = {
+  netherlands: { code: 'NL', label: 'Netherlands', rateCents: 699, freeThresholdCents: 2500 },
+  international: { code: 'XX', label: 'International', rateCents: 1295, freeThresholdCents: 5000 },
+} as const
 
 const bodySchema = z.object({
   items: z
     .array(
       z.object({
-        id: z.string().min(1),
+        id: z.string().trim().min(1).max(100),
         quantity: z.number().int().min(1).max(99),
       }),
     )
-    .min(1),
+    .min(1)
+    .max(50),
   customer: z.object({
-    firstName: z.string().min(1),
-    lastName: z.string().min(1),
-    email: z.email(),
-    phone: z.string().optional().default(''),
+    firstName: z.string().trim().min(1).max(80),
+    lastName: z.string().trim().min(1).max(80),
+    email: z.email().trim().max(254),
+    phone: z.string().trim().max(30).optional().default(''),
   }),
   shipping: z.object({
-    address: z.string().min(1),
-    postalCode: z.string().min(1),
-    city: z.string().min(1),
-    country: z.string().min(1),
+    address: z.string().trim().min(1).max(200),
+    postalCode: z.string().trim().min(1).max(20),
+    city: z.string().trim().min(1).max(80),
+    country: z.string().trim().min(1).max(100),
+    countryCode: z
+      .string()
+      .trim()
+      .regex(/^[A-Za-z]{2}$/, 'Invalid country code')
+      .transform((value) => value.toUpperCase()),
   }),
-  notes: z.string().optional().default(''),
+  notes: z.string().trim().max(500).optional().default(''),
+  paymentMethod: z.string().trim().min(2).max(40).optional(),
 })
 
 function createOrderNumber(): string {
@@ -37,7 +46,7 @@ function createOrderNumber(): string {
 }
 
 export async function checkoutRoutes(app: FastifyInstance) {
-  app.post('/api/checkout', async (request, reply) => {
+  app.post('/api/checkout', { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } }, async (request, reply) => {
     const parsed = bodySchema.safeParse(request.body)
     if (!parsed.success) {
       return reply
@@ -45,7 +54,7 @@ export async function checkoutRoutes(app: FastifyInstance) {
         .send({ error: parsed.error.issues[0]?.message ?? 'Invalid request' })
     }
 
-    const { items, customer, shipping, notes } = parsed.data
+    const { items, customer, shipping, notes, paymentMethod } = parsed.data
 
     const lines = []
     for (const item of items) {
@@ -70,8 +79,12 @@ export async function checkoutRoutes(app: FastifyInstance) {
       (sum, line) => sum + line.lineTotalCents,
       0,
     )
+    const zone =
+      shipping.countryCode === SHIPPING_ZONES.netherlands.code
+        ? SHIPPING_ZONES.netherlands
+        : SHIPPING_ZONES.international
     const shippingCents =
-      subtotalCents >= FREE_SHIPPING_THRESHOLD_CENTS ? 0 : SHIPPING_CENTS
+      subtotalCents >= zone.freeThresholdCents ? 0 : zone.rateCents
     const totalCents = subtotalCents + shippingCents
     const orderNumber = createOrderNumber()
 
@@ -106,6 +119,7 @@ export async function checkoutRoutes(app: FastifyInstance) {
           city: shipping.city,
           country: shipping.country,
           notes: notes || null,
+          paymentMethod: paymentMethod ?? null,
           items: {
             create: lines.map((line) => ({
               productId: line.product.id,
@@ -123,6 +137,7 @@ export async function checkoutRoutes(app: FastifyInstance) {
         orderNumber,
         totalCents,
         description: `EarthyGlow order ${orderNumber}`,
+        method: paymentMethod,
       })
 
       await db.order.update({

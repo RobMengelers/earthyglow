@@ -1,32 +1,99 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { formatPrice } from '../cart/CartContext'
+import {
+  calcTotals,
+  formatPrice,
+  shippingZoneForCountry,
+} from '../cart/CartContext'
 import { ShippingProgress } from '../cart/ShippingProgress'
-import { submitOrder, type OrderResult } from '../cart/checkout'
+import {
+  submitOrder,
+  fetchPaymentMethods,
+  FALLBACK_PAYMENT_METHODS,
+  type OrderResult,
+  type PaymentMethodOption,
+} from '../cart/checkout'
 import { useCart } from '../cart/useCart'
 import { Reveal } from '../components/Reveal'
 import { LoadingButton } from '../components/LoadingButton'
 
-const countries = [
-  'Netherlands',
-  'Belgium',
-  'Germany',
-  'France',
-  'Rest of Europe',
+const countries: { name: string; code: string }[] = [
+  { name: 'Netherlands', code: 'NL' },
+  { name: 'Albania', code: 'AL' },
+  { name: 'Andorra', code: 'AD' },
+  { name: 'Austria', code: 'AT' },
+  { name: 'Belarus', code: 'BY' },
+  { name: 'Belgium', code: 'BE' },
+  { name: 'Bosnia and Herzegovina', code: 'BA' },
+  { name: 'Bulgaria', code: 'BG' },
+  { name: 'Croatia', code: 'HR' },
+  { name: 'Cyprus', code: 'CY' },
+  { name: 'Czech Republic', code: 'CZ' },
+  { name: 'Denmark', code: 'DK' },
+  { name: 'Estonia', code: 'EE' },
+  { name: 'Finland', code: 'FI' },
+  { name: 'France', code: 'FR' },
+  { name: 'Germany', code: 'DE' },
+  { name: 'Greece', code: 'GR' },
+  { name: 'Hungary', code: 'HU' },
+  { name: 'Iceland', code: 'IS' },
+  { name: 'Ireland', code: 'IE' },
+  { name: 'Italy', code: 'IT' },
+  { name: 'Kosovo', code: 'XK' },
+  { name: 'Latvia', code: 'LV' },
+  { name: 'Liechtenstein', code: 'LI' },
+  { name: 'Lithuania', code: 'LT' },
+  { name: 'Luxembourg', code: 'LU' },
+  { name: 'Malta', code: 'MT' },
+  { name: 'Moldova', code: 'MD' },
+  { name: 'Monaco', code: 'MC' },
+  { name: 'Montenegro', code: 'ME' },
+  { name: 'North Macedonia', code: 'MK' },
+  { name: 'Norway', code: 'NO' },
+  { name: 'Poland', code: 'PL' },
+  { name: 'Portugal', code: 'PT' },
+  { name: 'Romania', code: 'RO' },
+  { name: 'San Marino', code: 'SM' },
+  { name: 'Serbia', code: 'RS' },
+  { name: 'Slovakia', code: 'SK' },
+  { name: 'Slovenia', code: 'SI' },
+  { name: 'Spain', code: 'ES' },
+  { name: 'Sweden', code: 'SE' },
+  { name: 'Switzerland', code: 'CH' },
+  { name: 'Ukraine', code: 'UA' },
+  { name: 'United Kingdom', code: 'GB' },
+  { name: 'Vatican City', code: 'VA' },
 ]
 
 export function Checkout() {
-  const {
-    items,
-    itemCount,
-    subtotalCents,
-    shippingCents,
-    totalCents,
-    clearCart,
-  } = useCart()
+  const { items, itemCount, clearCart } = useCart()
   const [order, setOrder] = useState<OrderResult | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [country, setCountry] = useState('')
+  const [methods, setMethods] = useState<PaymentMethodOption[]>(
+    FALLBACK_PAYMENT_METHODS,
+  )
+  const [paymentMethod, setPaymentMethod] = useState('')
+
+  const zone = shippingZoneForCountry(country)
+  const zoneTotals = calcTotals(items, zone)
+  const hasCountry = country !== ''
+
+  useEffect(() => {
+    let cancelled = false
+    fetchPaymentMethods().then((fetched) => {
+      if (cancelled) return
+      setMethods(fetched)
+      setPaymentMethod((current) => current || fetched[0]?.id || '')
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const selectedMethod =
+    methods.find((method) => method.id === paymentMethod) ?? null
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -36,7 +103,12 @@ export function Checkout() {
     setSubmitting(true)
 
     try {
+      const countryCode = String(data.get('country') ?? '').toUpperCase()
+      const country =
+        countries.find((option) => option.code === countryCode)?.name ??
+        countryCode
       const result = await submitOrder({
+        paymentMethod,
         details: {
           firstName: String(data.get('firstName') ?? ''),
           lastName: String(data.get('lastName') ?? ''),
@@ -45,7 +117,8 @@ export function Checkout() {
           address: String(data.get('address') ?? ''),
           city: String(data.get('city') ?? ''),
           postalCode: String(data.get('postalCode') ?? ''),
-          country: String(data.get('country') ?? ''),
+          country,
+          countryCode,
           notes: String(data.get('notes') ?? ''),
         },
         items,
@@ -191,10 +264,19 @@ export function Checkout() {
                 </div>
                 <label className="field">
                   <span>Country</span>
-                  <select name="country" autoComplete="country-name" required>
-                    {countries.map((country) => (
-                      <option key={country} value={country}>
-                        {country}
+                  <select
+                    name="country"
+                    autoComplete="country-name"
+                    value={country}
+                    onChange={(event) => setCountry(event.target.value)}
+                    required
+                  >
+                    <option value="" disabled>
+                      Pick your country
+                    </option>
+                    {countries.map((option) => (
+                      <option key={option.code} value={option.code}>
+                        {option.name}
                       </option>
                     ))}
                   </select>
@@ -202,15 +284,41 @@ export function Checkout() {
               </fieldset>
 
               <fieldset className="checkout-fieldset">
-                <legend>Payment</legend>
-                <div className="payment-placeholder">
-                  <span className="payment-badge">Mollie</span>
-                  <p>
-                    You&rsquo;ll be redirected to Mollie to pay securely by
-                    iDEAL, card, Bancontact, PayPal and more. Your order is only
-                    confirmed once payment succeeds.
-                  </p>
+                <legend>Payment method</legend>
+                <div className="payment-methods" role="radiogroup">
+                  {methods.map((method) => {
+                    const selected = paymentMethod === method.id
+                    return (
+                      <label
+                        key={method.id}
+                        className={`payment-method${selected ? ' is-selected' : ''}`}
+                      >
+                        <input
+                          type="radio"
+                          name="paymentMethod"
+                          value={method.id}
+                          checked={selected}
+                          onChange={() => setPaymentMethod(method.id)}
+                          required
+                        />
+                        {method.icon && (
+                          <img
+                            className="payment-method-icon"
+                            src={method.icon}
+                            alt=""
+                            loading="lazy"
+                          />
+                        )}
+                        <span className="payment-method-name">{method.name}</span>
+                      </label>
+                    )
+                  })}
                 </div>
+                <p className="payment-note">
+                  You&rsquo;ll be redirected to a secure Mollie page to complete
+                  your {selectedMethod ? selectedMethod.name : 'payment'} — your
+                  order is only confirmed once it succeeds.
+                </p>
               </fieldset>
 
               <fieldset className="checkout-fieldset">
@@ -258,19 +366,37 @@ export function Checkout() {
                 </li>
               ))}
             </ul>
-            <ShippingProgress className="checkout-shipping" />
+            {hasCountry ? (
+              <ShippingProgress className="checkout-shipping" zone={zone} />
+            ) : (
+              <p className="checkout-shipping-placeholder">
+                Pick a country to calculate shipping.
+              </p>
+            )}
             <div className="cart-totals">
               <div className="cart-totals-row">
                 <span>Subtotal ({itemCount})</span>
-                <span>{formatPrice(subtotalCents)}</span>
+                <span>{formatPrice(zoneTotals.subtotalCents)}</span>
               </div>
               <div className="cart-totals-row">
                 <span>Shipping</span>
-                <span>{shippingCents === 0 ? 'Free' : formatPrice(shippingCents)}</span>
+                {hasCountry ? (
+                  <span>
+                    {zoneTotals.shippingCents === 0
+                      ? 'Free'
+                      : formatPrice(zoneTotals.shippingCents)}
+                  </span>
+                ) : (
+                  <span className="cart-totals-muted">—</span>
+                )}
               </div>
               <div className="cart-totals-row cart-totals-total">
                 <span>Total</span>
-                <span>{formatPrice(totalCents)}</span>
+                {hasCountry ? (
+                  <span>{formatPrice(zoneTotals.totalCents)}</span>
+                ) : (
+                  <span className="cart-totals-muted">—</span>
+                )}
               </div>
             </div>
             <Link to="/cart" className="cart-view-link">

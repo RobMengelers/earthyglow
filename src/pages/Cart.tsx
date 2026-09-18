@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom'
 import { formatPrice } from '../cart/CartContext'
-import { ShippingProgress } from '../cart/ShippingProgress'
 import { useCart } from '../cart/useCart'
 import { Reveal } from '../components/Reveal'
 
@@ -9,8 +8,6 @@ export function Cart() {
     items,
     itemCount,
     subtotalCents,
-    shippingCents,
-    totalCents,
     updateQuantity,
     removeItem,
     clearCart,
@@ -119,7 +116,6 @@ export function Cart() {
 
               <Reveal delay={100} className="cart-summary">
                 <h2>Order summary</h2>
-                <ShippingProgress />
                 <div className="cart-totals">
                   <div className="cart-totals-row">
                     <span>Subtotal</span>
@@ -127,20 +123,20 @@ export function Cart() {
                   </div>
                   <div className="cart-totals-row">
                     <span>Shipping</span>
-                    <span>
-                      {shippingCents === 0 ? 'Free' : formatPrice(shippingCents)}
-                    </span>
+                    <span className="cart-totals-muted">At checkout</span>
                   </div>
                   <div className="cart-totals-row cart-totals-total">
                     <span>Total</span>
-                    <span>{formatPrice(totalCents)}</span>
+                    <span className="cart-totals-muted">—</span>
                   </div>
                 </div>
                 <Link to="/checkout" className="btn btn-primary cart-checkout-btn">
                   Go to checkout
                 </Link>
                 <p className="cart-summary-note">
-                  Taxes included. Shipping calculated at checkout.
+                  Shipping is calculated at checkout once you choose your
+                  country. NL orders over €25,00 and international orders over
+                  €50,00 ship free.
                 </p>
               </Reveal>
             </div>

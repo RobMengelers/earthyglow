@@ -6,7 +6,6 @@ export type CartItem = {
   name: string
   priceCents: number
   image: string
-  href: string
   collectionTitle: string
   quantity: number
 }
@@ -31,29 +30,63 @@ export type CartContextValue = CartTotals & {
   clearCart: () => void
 }
 
-export const FREE_SHIPPING_THRESHOLD_CENTS = 2500
-export const SHIPPING_CENTS = 495
+export type ShippingZone = {
+  id: string
+  label: string
+  rateCents: number
+  freeThresholdCents: number
+}
+
+export const SHIPPING_ZONES: Record<'netherlands' | 'international', ShippingZone> =
+  {
+    netherlands: {
+      id: 'netherlands',
+      label: 'Netherlands',
+      rateCents: 699,
+      freeThresholdCents: 2500,
+    },
+    international: {
+      id: 'international',
+      label: 'International',
+      rateCents: 1295,
+      freeThresholdCents: 5000,
+    },
+  }
+
+export const DEFAULT_ZONE: ShippingZone = SHIPPING_ZONES.netherlands
+
+// Backwards-compatible shorthand for the default (Netherlands) zone.
+export const FREE_SHIPPING_THRESHOLD_CENTS = DEFAULT_ZONE.freeThresholdCents
+export const SHIPPING_CENTS = DEFAULT_ZONE.rateCents
 
 export function formatPrice(cents: number): string {
   return `€${(cents / 100).toFixed(2).replace('.', ',')}`
 }
 
-export function calcTotals(items: CartItem[]): CartTotals {
+export function shippingZoneForCountry(countryCode: string): ShippingZone {
+  return countryCode.toUpperCase() === 'NL'
+    ? SHIPPING_ZONES.netherlands
+    : SHIPPING_ZONES.international
+}
+
+export function calcTotals(
+  items: CartItem[],
+  zone: ShippingZone = DEFAULT_ZONE,
+): CartTotals {
   const subtotalCents = items.reduce(
     (sum, item) => sum + item.priceCents * item.quantity,
     0,
   )
-  const hasFreeShipping =
-    subtotalCents >= FREE_SHIPPING_THRESHOLD_CENTS
+  const hasFreeShipping = subtotalCents >= zone.freeThresholdCents
   const shippingCents =
-    subtotalCents === 0 || hasFreeShipping ? 0 : SHIPPING_CENTS
+    subtotalCents === 0 || hasFreeShipping ? 0 : zone.rateCents
 
   return {
     subtotalCents,
     shippingCents,
     totalCents: subtotalCents + shippingCents,
     shippingRemainingCents: Math.max(
-      FREE_SHIPPING_THRESHOLD_CENTS - subtotalCents,
+      zone.freeThresholdCents - subtotalCents,
       0,
     ),
     hasFreeShipping,

@@ -10,12 +10,20 @@ export type CheckoutDetails = {
   city: string
   postalCode: string
   country: string
+  countryCode: string
   notes: string
 }
 
 export type OrderPayload = {
   details: CheckoutDetails
   items: CartItem[]
+  paymentMethod?: string
+}
+
+export type PaymentMethodOption = {
+  id: string
+  name: string
+  icon: string | null
 }
 
 export type OrderResult = {
@@ -48,8 +56,10 @@ async function postToApi(payload: OrderPayload): Promise<OrderResult> {
         postalCode: details.postalCode,
         city: details.city,
         country: details.country,
+        countryCode: details.countryCode,
       },
       notes: details.notes,
+      paymentMethod: payload.paymentMethod,
     }),
   })
 
@@ -90,6 +100,32 @@ async function localMock(payload: OrderPayload): Promise<OrderResult> {
   }
 
   return { orderNumber, status: 'pending' }
+}
+
+export const FALLBACK_PAYMENT_METHODS: PaymentMethodOption[] = [
+  {
+    id: 'ideal',
+    name: 'iDEAL',
+    icon: 'https://www.mollie.com/external/icons/payment-methods/ideal.svg',
+  },
+  {
+    id: 'creditcard',
+    name: 'Credit card',
+    icon: 'https://www.mollie.com/external/icons/payment-methods/creditcard.svg',
+  },
+]
+
+export async function fetchPaymentMethods(): Promise<PaymentMethodOption[]> {
+  try {
+    const response = await fetch(`${API_URL}/api/payment-methods`)
+    if (!response.ok) return FALLBACK_PAYMENT_METHODS
+    const data = (await response.json()) as { methods?: PaymentMethodOption[] }
+    return Array.isArray(data.methods) && data.methods.length > 0
+      ? data.methods
+      : FALLBACK_PAYMENT_METHODS
+  } catch {
+    return FALLBACK_PAYMENT_METHODS
+  }
 }
 
 export async function submitOrder(payload: OrderPayload): Promise<OrderResult> {

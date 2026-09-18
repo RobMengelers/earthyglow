@@ -1,5 +1,6 @@
 import cors from '@fastify/cors'
 import formbody from '@fastify/formbody'
+import rateLimit from '@fastify/rate-limit'
 import Fastify, { type FastifyError } from 'fastify'
 import { env } from './env.js'
 import { retryUnsentInvoices } from './email.js'
@@ -8,17 +9,25 @@ import { checkoutRoutes } from './routes/checkout.js'
 import { contactRoutes } from './routes/contact.js'
 import { healthRoutes } from './routes/health.js'
 import { orderRoutes } from './routes/orders.js'
+import { paymentMethodRoutes } from './routes/payment-methods.js'
 import { webhookRoutes } from './routes/webhooks.js'
 
-const app = Fastify({ logger: true })
+// trustProxy is required so rate limits are keyed on the real client IP that
+// Railway's reverse proxy reports via X-Forwarded-For, rather than proxy IPs.
+const app = Fastify({ logger: true, trustProxy: true })
 
 await app.register(cors, { origin: [env.FRONTEND_URL] })
 await app.register(formbody)
+await app.register(rateLimit, {
+  max: 120,
+  timeWindow: '1 minute',
+})
 
 await app.register(catalogRoutes)
 await app.register(healthRoutes)
 await app.register(checkoutRoutes)
 await app.register(orderRoutes)
+await app.register(paymentMethodRoutes)
 await app.register(webhookRoutes)
 await app.register(contactRoutes)
 

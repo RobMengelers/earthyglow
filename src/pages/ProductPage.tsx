@@ -95,14 +95,6 @@ export function ProductPage() {
                   <Link to="/contact" className="btn btn-ghost">
                     Ask a question
                   </Link>
-                  <a
-                    href={product.href}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="product-detail-shop-link"
-                  >
-                    or buy on the shop ↗
-                  </a>
                 </div>
               )}
 

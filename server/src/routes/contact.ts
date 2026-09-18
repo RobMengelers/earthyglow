@@ -9,7 +9,10 @@ const bodySchema = z.object({
 })
 
 export async function contactRoutes(app: FastifyInstance) {
-  app.post('/api/contact', async (request, reply) => {
+  app.post(
+    '/api/contact',
+    { config: { rateLimit: { max: 3, timeWindow: '1 minute' } } },
+    async (request, reply) => {
     const parsed = bodySchema.safeParse(request.body)
     if (!parsed.success) {
       return reply
@@ -26,5 +29,6 @@ export async function contactRoutes(app: FastifyInstance) {
         .code(503)
         .send({ error: 'Message could not be sent right now, please try again later' })
     }
-  })
+    },
+  )
 }

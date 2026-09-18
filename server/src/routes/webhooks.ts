@@ -14,7 +14,10 @@ const statusMap: Record<string, OrderStatus> = {
 }
 
 export async function webhookRoutes(app: FastifyInstance) {
-  app.post('/api/webhooks/mollie', async (request, reply) => {
+  app.post(
+    '/api/webhooks/mollie',
+    { config: { rateLimit: { max: 60, timeWindow: '1 minute' } } },
+    async (request, reply) => {
     // Mollie posts application/x-www-form-urlencoded with only the payment id.
     const body = request.body as { id?: string } | undefined
     const paymentId = body?.id

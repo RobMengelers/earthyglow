@@ -5,10 +5,8 @@ export function PrivacyPolicy() {
     <PolicyLayout title="Privacy Policy" updated="15 September 2026">
       <p>
         EarthyGlow manages this store and website, including all related
-        information, content, features, tools, products and Services, to provide
-        you, the customer, with a personalized shopping experience (the
-        &lsquo;Services&rsquo;). EarthyGlow is Powered by Shopify, enabling us to
-        provide the Services to you. This Privacy Policy describes how we
+        information, content, features, tools, products and Services, to provide you, the customer, with a personalized shopping experience (the
+        &lsquo;Services&rsquo;). This Privacy Policy describes how we
         collect, use and disclose your personal information when you visit or
         use the Services, make a purchase or other transaction, or otherwise
         communicate with us. If there is a conflict between our Terms of Service
@@ -158,29 +156,14 @@ export function PrivacyPolicy() {
       </p>
       <ul>
         <li>
-          With Shopify, vendors and other third parties that perform Services on
-          our behalf (e.g. IT management, payment processing, data analytics,
+          With vendors and other third parties that perform services on our
+          behalf (e.g. IT management, payment processing, data analytics,
           customer support, cloud storage, fulfillment and shipping);
         </li>
         <li>
-          With business and marketing partners to provide marketing Services and
-          to advertise to you; for example, we use Shopify to support
-          personalized advertising with third-party Services based on your
-          online activity across different merchants and websites. Our business
-          and marketing partners will use your information in accordance with
-          their own privacy statements. Depending on where you live, you may
-          have the right to ask us not to share information about you in order
-          to show you targeted advertisements and marketing based on your online
-          activity across different merchants and websites. You can exercise
-          your rights to opt out of this use via this{' '}
-          <a
-            href="https://earthyglow.nl/pages/data-sharing-opt-out"
-            target="_blank"
-            rel="noreferrer"
-          >
-            opt-out page
-          </a>
-          ;
+          With business and marketing partners to provide marketing services and
+          to advertise to you. Our business and marketing partners will use
+          your information in accordance with their own privacy statements;
         </li>
         <li>
           When you instruct us, request it of us or otherwise give us permission
@@ -197,40 +180,6 @@ export function PrivacyPolicy() {
           defend the Services, our rights and the rights of our users or others.
         </li>
       </ul>
-
-      <h2>Relationship with Shopify</h2>
-      <p>
-        The Services are hosted by Shopify, which collects and processes
-        personal information about your access to and use of the Services in
-        order to provide and improve the Services to you. Information you submit
-        to the Services will be sent to and shared with Shopify, as well as
-        third parties who may be located in countries other than where you live,
-        in order to provide and improve the Services to you. In addition, to
-        help protect, grow and improve our business, we use certain Shopify
-        enhanced features that contain data and information obtained from your
-        interactions with our store, together with other merchants and with
-        Shopify. To provide these enhanced features, Shopify may use personal
-        information collected about your interactions with our store, together
-        with other merchants and with Shopify. In these circumstances, Shopify
-        is responsible for processing your personal information, including for
-        responding to your requests to exercise your rights regarding the use of
-        your personal information for these purposes. To learn more about how
-        Shopify uses your personal information and any rights you may have, go
-        to the{' '}
-        <a
-          href="https://www.shopify.com/legal/privacy/app-users"
-          target="_blank"
-          rel="noreferrer"
-        >
-          Shopify Customer Privacy Policy
-        </a>
-        . Depending on where you live, you can exercise certain rights here with
-        respect to your personal information via the{' '}
-        <a href="https://privacy.shopify.com/en" target="_blank" rel="noreferrer">
-          Shopify privacy portal
-        </a>
-        .
-      </p>
 
       <h2>Third-Party Websites and Links</h2>
       <p>
@@ -309,28 +258,14 @@ export function PrivacyPolicy() {
           &lsquo;sale&rsquo; or &lsquo;sharing&rsquo; of your personal
           information or to opt out of the processing of your personal
           information for purposes considered &lsquo;targeted advertising&rsquo;,
-          as defined in applicable privacy law. You can exercise your rights to
-          opt out of this use via the{' '}
-          <a
-            href="https://earthyglow.nl/pages/data-sharing-opt-out"
-            target="_blank"
-            rel="noreferrer"
-          >
-            opt-out page
-          </a>
-          . Please note that if you visit our website with the Global Privacy
-          Control opt-out preference signal enabled, we will, depending on where
-          you are, treat this automatically as a request to opt out using the
-          device and browser you use to visit the website. If we can link the
-          device sending the signal to a Shopify account, we will also apply the
-          opt-out request to the account. For more information about Global
-          Privacy Control, go to{' '}
-          <a href="https://globalprivacycontrol.org/" target="_blank" rel="noreferrer">
-            globalprivacycontrol.org
-          </a>
-          . Other than Global Privacy Control, we do not recognize other
-          &lsquo;Do Not Track&rsquo; signals that may be sent by your web
-          browser or device.
+          as defined in applicable privacy law. You can exercise your rights by
+          contacting us using the contact details below. Please note that if you
+          visit our website with the Global Privacy Control opt-out preference
+          signal enabled, we will, depending on where you are, treat this
+          automatically as a request to opt out using the device and browser you
+          use to visit the website. Other than Global Privacy Control, we do not
+          recognize other &lsquo;Do Not Track&rsquo; signals that may be sent by
+          your web browser or device.
         </li>
         <li>
           <strong>Managing communication preferences.</strong> We may send you
@@ -363,14 +298,8 @@ export function PrivacyPolicy() {
         </li>
       </ul>
       <p>
-        You can exercise any of these rights where indicated in the Services or
-        by contacting us using the contact details below. For more information
-        about how Shopify uses your personal information and any rights you may
-        have, including rights relating to data processed by Shopify, go to{' '}
-        <a href="https://privacy.shopify.com/en" target="_blank" rel="noreferrer">
-          privacy.shopify.com
-        </a>
-        .
+You can exercise any of these rights where indicated in the Services or by
+        contacting us using the contact details below.
       </p>
       <p>
         We will not discriminate against you for exercising any of these rights.

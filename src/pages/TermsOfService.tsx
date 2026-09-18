@@ -29,7 +29,10 @@ export function TermsOfService() {
       <h2>4. Shipping Costs</h2>
       <ul>
         <li>
-          Shipping costs (NL) are €4.95 if you spend less than €25,-
+          Shipping costs (NL) are €6.99, free for orders of €25 or more
+        </li>
+        <li>
+          International shipping is €12.95, free for orders of €50 or more
         </li>
         <li>
           Estimated delivery time: 3-7 business days after payment but can vary

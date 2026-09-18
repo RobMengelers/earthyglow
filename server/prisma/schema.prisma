@@ -47,6 +47,7 @@ model Order {
   shippingCents   Int
   totalCents      Int
   currency        String      @default("EUR")
+  paymentMethod   String?
   molliePaymentId String?     @unique
   address         String
   postalCode      String
