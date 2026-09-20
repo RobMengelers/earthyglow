@@ -20,7 +20,7 @@ export function OrderSummary({ country }: { country: string }) {
               <img src={item.image} alt="" loading="lazy" />
               <span className="checkout-summary-qty">{item.quantity}</span>
             </span>
-            <span className="checkout-summary-name">{item.name}</span>
+                  <span className="checkout-summary-name">{item.name}{item.variantLabel && <small className="checkout-summary-variant">{item.variantLabel}</small>}</span>
             <span className="checkout-summary-price">
               {formatPrice(item.priceCents * item.quantity)}
             </span>

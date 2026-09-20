@@ -44,7 +44,12 @@ async function postToApi(payload: OrderPayload): Promise<OrderResult> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       // Only ids and quantities are sent; the API recomputes all prices.
-      items: items.map((item) => ({ id: item.id, quantity: item.quantity })),
+      items: items.map((item) => ({
+        id: item.productId,
+        quantity: item.quantity,
+        variantId: item.variantId,
+        variantLabel: item.variantLabel,
+      })),
       customer: {
         firstName: details.firstName,
         lastName: details.lastName,

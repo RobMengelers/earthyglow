@@ -57,6 +57,29 @@
   margin-bottom: 1.8rem;
 }
 
+.product-options {
+  border: 0;
+  padding: 0;
+  margin: 0 0 1.8rem;
+}
+
+.product-options legend {
+  font-family: var(--font-display);
+  color: var(--ink);
+  font-size: 1.05rem;
+  margin-bottom: 0.75rem;
+}
+
+.product-option-list { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.product-option { cursor: pointer; }
+.product-option input { position: absolute; opacity: 0; pointer-events: none; }
+.product-option span { display: block; padding: 0.65rem 1rem; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink); font-size: 0.9rem; transition: border-color .2s ease, background .2s ease, color .2s ease; }
+.product-option:hover span, .product-option.is-selected span { border-color: var(--clay); }
+.product-option.is-selected span { background: var(--clay); color: var(--surface); }
+.product-option-swatch { width: 2.45rem; height: 2.45rem; padding: 0 !important; border-radius: 50% !important; border: 2px solid transparent !important; box-shadow: 0 0 0 1px var(--line); }
+.product-option-swatch:hover { transform: scale(1.08); }
+.product-option.is-selected .product-option-swatch { border-color: var(--surface) !important; box-shadow: 0 0 0 2px var(--clay), 0 0 0 4px var(--surface); }
+
 .product-detail-perks {
   display: flex;
   flex-direction: column;

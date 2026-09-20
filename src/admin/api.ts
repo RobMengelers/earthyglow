@@ -48,6 +48,8 @@ export type AdminCustomer = {
 
 export type AdminOrderItem = {
   name: string
+  variantId?: string | null
+  variantLabel?: string | null
   quantity: number
   unitPriceCents: number
   lineTotalCents: number

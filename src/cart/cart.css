@@ -53,6 +53,7 @@
   line-height: 1.2;
   color: var(--ink);
 }
+.cart-line-variant, .checkout-summary-variant { display: block; margin-top: 0.18rem; font-family: var(--font-body); font-size: 0.78rem; font-weight: 400; color: var(--clay); }
 
 .cart-line-name:hover {
   color: var(--clay);

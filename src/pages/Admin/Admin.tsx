@@ -304,7 +304,7 @@ function OrderRow({
                   <tbody>
                     {order.items.map((item, index) => (
                       <tr key={index}>
-                        <td>{item.name}</td>
+                        <td>{item.name}{item.variantLabel && <small className="admin-order-variant">{item.variantLabel}</small>}</td>
                         <td>× {item.quantity}</td>
                         <td>{formatEuros(item.lineTotalCents)}</td>
                       </tr>

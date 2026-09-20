@@ -337,8 +337,10 @@ export async function generateInvoicePdf(
 
   // ---- Items table ----
   const amountRight = contentRight
-  const unitRight = contentRight - 178
-  const qtyRight = contentRight - 278
+  // Four balanced columns: description, quantity, unit price, amount.
+  const columnWidth = (contentRight - contentLeft) / 4
+  const qtyRight = contentLeft + columnWidth * 2
+  const unitRight = contentLeft + columnWidth * 3
 
   const tableHeader = (yy: number) => {
     eyebrow('DESCRIPTION', contentLeft, yy, CLAY, 1.8)
@@ -373,8 +375,8 @@ export async function generateInvoicePdf(
       INK,
       fonts.bodySemibold,
     )
-    rule(y - 12, 0.5)
-    y -= 24
+    // Keep products as a compact list, matching the admin order view.
+    y -= 22
   }
 
   // ---- Totals ----
@@ -470,7 +472,7 @@ export async function sendOrderInvoice(
     shippingCents: order.shippingCents,
     totalCents: order.totalCents,
     lines: order.items.map((item) => ({
-      name: item.name,
+      name: item.variantLabel ? `${item.name} — ${item.variantLabel}` : item.name,
       quantity: item.quantity,
       unitPriceCents: item.unitPriceCents,
       lineTotalCents: item.lineTotalCents,
@@ -480,21 +482,30 @@ export async function sendOrderInvoice(
   const html = `
     <!doctype html>
     <html>
-      <body style="font-family: Arial, Helvetica, sans-serif; color: #222; padding: 24px;">
-        <h2 style="margin-bottom: 4px;">Thank you — your glow is on its way</h2>
-        <p style="color: #555;">Hi ${escapeHtml(order.customer.firstName)},</p>
-        <p style="color: #555;">Your order <strong>${order.orderNumber}</strong> has been
-        paid and your invoice is attached as a PDF. We'll hand-pour and ship your
-        candles shortly.</p>
-        <table style="border-collapse: collapse; margin-top: 16px;">
-          <tr><td style="padding: 4px 24px 4px 0; color:#555;">Order</td>
-              <td style="padding: 4px 0;"><strong>${order.orderNumber}</strong></td></tr>
-          <tr><td style="padding: 4px 24px 4px 0; color:#555;">Invoice date</td>
-              <td style="padding: 4px 0;">${formatDate(paidAt)}</td></tr>
-          <tr><td style="padding: 4px 24px 4px 0; color:#555;">Total paid</td>
-              <td style="padding: 4px 0;">${formatEuro(order.totalCents)}</td></tr>
-        </table>
-        <p style="color: #555; margin-top: 16px;">Your invoice PDF is attached to this email.</p>
+      <body style="margin:0; background:#fbf7f0; font-family:Arial,Helvetica,sans-serif; color:#2e2a25;">
+        <div style="max-width:620px; margin:0 auto; padding:32px 22px;">
+          <div style="padding:18px 0 22px; border-bottom:1px solid #e3d8c8;">
+            <img src="https://chimerical-cocada-3d3d76.netlify.app/logo-mark.png" width="46" height="46" alt="EarthyGlow" style="vertical-align:middle; border-radius:10px; margin-right:10px;" />
+            <span style="font-family:Georgia,serif; font-size:25px; vertical-align:middle; color:#2e2a25;">Earthy<span style="color:#5f3b25; font-style:italic;">Glow</span></span>
+          </div>
+          <div style="padding:34px 0 12px;">
+            <p style="margin:0 0 10px; color:#5f3b25; font-size:12px; font-weight:bold; letter-spacing:2px; text-transform:uppercase;">A little note from EarthyGlow</p>
+            <h2 style="margin:0 0 18px; font-family:Georgia,serif; font-size:30px; font-weight:normal; color:#2e2a25;">Thank you, ${escapeHtml(order.customer.firstName)}.</h2>
+            <p style="color:#6b6157; line-height:1.7;">Your order <strong>${order.orderNumber}</strong> is safely paid and your invoice is attached. We’ll now hand-pour, lovingly pack, and send your candles your way.</p>
+            <p style="color:#6b6157; line-height:1.7;">We hope they bring a little more warmth and calm to your home.</p>
+          </div>
+          <table style="border-collapse:collapse; width:100%; margin:16px 0 24px; background:#fffdf8; border:1px solid #e3d8c8; border-radius:12px;">
+            <tr><td style="padding:12px 16px; color:#6b6157;">Order</td><td style="padding:12px 16px; text-align:right;"><strong>${order.orderNumber}</strong></td></tr>
+            <tr><td style="padding:12px 16px; color:#6b6157;">Invoice date</td><td style="padding:12px 16px; text-align:right;">${formatDate(paidAt)}</td></tr>
+            <tr><td style="padding:12px 16px; color:#6b6157;">Total paid</td><td style="padding:12px 16px; text-align:right; color:#5f3b25;"><strong>${formatEuro(order.totalCents)}</strong></td></tr>
+          </table>
+          <p style="color:#6b6157; line-height:1.6;">Your invoice PDF is attached for your records. If you have any questions, simply reply to this email — we’re happy to help.</p>
+          <div style="margin-top:30px; padding-top:22px; border-top:1px solid #e3d8c8; color:#6b6157; line-height:1.6;">
+            With warmth,<br />
+            <strong style="font-family:Georgia,serif; font-size:18px; color:#5f3b25;">Naomi</strong><br />
+            <span style="font-size:13px;">Founder of EarthyGlow</span>
+          </div>
+        </div>
       </body>
     </html>
   `

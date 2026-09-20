@@ -7,6 +7,14 @@ export type Product = {
   soldOut?: boolean
   description: string
   collectionId: string
+  variants?: ProductVariant[]
+}
+
+export type ProductVariant = {
+  id: string
+  label: string
+  priceCents?: number
+  swatch?: string
 }
 
 export type Collection = {
@@ -36,6 +44,11 @@ export const collections: Collection[] = [
         collectionId: 'little-glow',
         description:
           'A curated box of flower-bloomed tealights, gift-ready and made to bring soft ambient light to any corner. Poured in 100% soy wax and finished with clean, plant-based fragrance.',
+        variants: [
+          { id: 'pink', label: 'Pink', swatch: '#e8a1b5', priceCents: 1495 },
+          { id: 'baby-blue', label: 'Baby blue', swatch: '#9fc9e8', priceCents: 1495 },
+          { id: 'purple', label: 'Purple', swatch: '#9b72c4', priceCents: 1495 },
+        ],
       },
       {
         id: 'floral-basket',
@@ -46,6 +59,10 @@ export const collections: Collection[] = [
         collectionId: 'little-glow',
         description:
           'A woven basket filled with floral tealights — a charming, ready-to-give gift that lights up cosy evenings with a soft, natural glow.',
+        variants: [
+          { id: 'pink', label: 'Pink', priceCents: 1295, swatch: '#e8a1b5' },
+          { id: 'red', label: 'Red', priceCents: 1295, swatch: '#c94c55' },
+        ],
       },
     ],
   },
@@ -65,6 +82,12 @@ export const collections: Collection[] = [
         collectionId: 'scented-glow',
         description:
           'A warm, sun-drenched fragrance poured into clean-burning soy wax. Soft coconut notes bring a holiday feeling to every room.',
+        variants: [
+          { id: 'oyster', label: 'Oyster', priceCents: 1495 },
+          { id: 'coconut', label: 'Coconut', priceCents: 1795 },
+          { id: 'shell', label: 'Shell', priceCents: 1795 },
+          { id: 'sea-star', label: 'Sea star', priceCents: 1795 },
+        ],
       },
       {
         id: 'autumn-ember',

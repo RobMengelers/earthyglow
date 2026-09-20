@@ -1,4 +1,5 @@
 import { Link, useParams } from 'react-router-dom'
+import { useState } from 'react'
 import { getCollection, getProduct, getRelated } from '../../data/products'
 import { ProductCard } from '../../components/catalog/ProductCard'
 import { Reveal } from '../../components/ui/Reveal'
@@ -16,6 +17,7 @@ export function ProductPage() {
   const { productId } = useParams()
   const { addItem } = useCart()
   const product = getProduct(productId)
+  const [variantId, setVariantId] = useState('')
 
   if (!product) {
     return <NotFound />
@@ -25,6 +27,7 @@ export function ProductPage() {
   const related = getRelated(product)
 
   const collectionTitle = collection?.title ?? 'EarthyGlow'
+  const selectedVariant = product.variants?.find((variant) => variant.id === variantId)
 
   return (
     <>
@@ -64,8 +67,29 @@ export function ProductPage() {
                 </Link>
               )}
               <h1>{product.name}</h1>
-              <p className="product-detail-price">{product.price}</p>
+              <p className="product-detail-price">{selectedVariant?.priceCents ? `€${(selectedVariant.priceCents / 100).toFixed(2).replace('.', ',')}` : product.price}</p>
               <p className="product-detail-desc">{product.description}</p>
+
+              {product.variants && (
+                <fieldset className="product-options">
+                  <legend>Choose your {product.id === 'floral-box' ? 'colour' : 'shape'}</legend>
+                  <div className="product-option-list">
+                    {product.variants.map((variant) => (
+                      <label key={variant.id} className={`product-option${variantId === variant.id ? ' is-selected' : ''}`}>
+                        <input type="radio" name="product-variant" value={variant.id} checked={variantId === variant.id} onChange={() => setVariantId(variant.id)} />
+                        <span
+                          className={variant.swatch ? 'product-option-swatch' : undefined}
+                          style={variant.swatch ? { backgroundColor: variant.swatch } : undefined}
+                          title={variant.swatch ? variant.label : undefined}
+                        >
+                          {variant.swatch && <span className="visually-hidden">{variant.label}</span>}
+                          {!variant.swatch && variant.label}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+              )}
 
               <ul className="product-detail-perks">
                 {perks.map((perk) => (
@@ -88,13 +112,11 @@ export function ProductPage() {
                   <button
                     type="button"
                     className="btn btn-primary"
-                    onClick={() => addItem(product, collectionTitle)}
+                    onClick={() => addItem(product, collectionTitle, 1, selectedVariant)}
+                    disabled={Boolean(product.variants && !selectedVariant)}
                   >
-                    Add to cart
+                    {product.variants && !selectedVariant ? 'Choose an option' : 'Add to cart'}
                   </button>
-                  <Link to="/contact" className="btn btn-ghost">
-                    Ask a question
-                  </Link>
                 </div>
               )}
 

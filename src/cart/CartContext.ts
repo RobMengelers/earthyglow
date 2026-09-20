@@ -3,11 +3,14 @@ import type { Product } from '../data/products'
 
 export type CartItem = {
   id: string
+  productId: string
   name: string
   priceCents: number
   image: string
   collectionTitle: string
   quantity: number
+  variantId?: string
+  variantLabel?: string
 }
 
 export type CartTotals = {
@@ -24,7 +27,7 @@ export type CartContextValue = CartTotals & {
   isDrawerOpen: boolean
   openDrawer: () => void
   closeDrawer: () => void
-  addItem: (product: Product, collectionTitle: string, quantity?: number) => void
+  addItem: (product: Product, collectionTitle: string, quantity?: number, variant?: { id: string; label: string; priceCents?: number }) => void
   removeItem: (id: string) => void
   updateQuantity: (id: string, quantity: number) => void
   clearCart: () => void

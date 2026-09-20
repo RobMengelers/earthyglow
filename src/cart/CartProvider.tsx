@@ -5,7 +5,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { Product } from '../data/products'
+import type { Product, ProductVariant } from '../data/products'
 import { fetchCatalog } from './catalog'
 import {
   CartContext,
@@ -21,6 +21,7 @@ function isCartItem(value: unknown): value is CartItem {
   const item = value as Partial<CartItem>
   return (
     typeof item.id === 'string' &&
+    typeof item.productId === 'string' &&
     typeof item.name === 'string' &&
     typeof item.priceCents === 'number' &&
     typeof item.image === 'string' &&
@@ -66,7 +67,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setItems((current) => {
         let changed = false
         const next = current.map((item) => {
-          const product = byId.get(item.id)
+            const product = byId.get(item.productId)
           if (
             product &&
             (product.priceCents !== item.priceCents ||
@@ -94,12 +95,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const closeDrawer = useCallback(() => setIsDrawerOpen(false), [])
 
   const addItem = useCallback(
-    (product: Product, collectionTitle: string, quantity = 1) => {
+    (product: Product, collectionTitle: string, quantity = 1, variant?: ProductVariant) => {
+      const lineId = `${product.id}:${variant?.id ?? 'default'}`
       setItems((current) => {
-        const existing = current.find((item) => item.id === product.id)
+        const existing = current.find((item) => item.id === lineId)
         if (existing) {
           return current.map((item) =>
-            item.id === product.id
+              item.id === lineId
               ? { ...item, quantity: item.quantity + quantity }
               : item,
           )
@@ -107,12 +109,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
         return [
           ...current,
           {
-            id: product.id,
+            id: lineId,
+            productId: product.id,
             name: product.name,
-            priceCents: product.priceCents,
+            priceCents: variant?.priceCents ?? product.priceCents,
             image: product.image,
             collectionTitle,
             quantity,
+            variantId: variant?.id,
+            variantLabel: variant?.label,
           },
         ]
       })

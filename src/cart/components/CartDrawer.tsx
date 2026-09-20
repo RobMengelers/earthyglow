@@ -91,6 +91,7 @@ export function CartDrawer() {
                         onClick={closeDrawer}
                       >
                         {item.name}
+                        {item.variantLabel && <small className="cart-line-variant">{item.variantLabel}</small>}
                       </Link>
                       <button
                         type="button"

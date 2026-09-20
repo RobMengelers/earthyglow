@@ -14,6 +14,8 @@ const bodySchema = z.object({
       z.object({
         id: z.string().trim().min(1).max(100),
         quantity: z.number().int().min(1).max(99),
+        variantId: z.string().trim().min(1).max(80).optional(),
+        variantLabel: z.string().trim().min(1).max(120).optional(),
       }),
     )
     .min(1)
@@ -67,10 +69,25 @@ export async function checkoutRoutes(app: FastifyInstance) {
           .code(400)
           .send({ error: `Product "${item.id}" is not available` })
       }
+      const variant = item.variantId
+        ? await prisma.productVariant.findFirst({
+            where: { id: item.variantId, productId: product.id, active: true },
+          })
+        : null
+      if (item.variantId && !variant) {
+        return reply.code(400).send({ error: `Variant for "${product.name}" is not available` })
+      }
+      if (item.variantId && item.variantLabel && variant?.label !== item.variantLabel) {
+        return reply.code(400).send({ error: 'Invalid product variant' })
+      }
+      const unitPriceCents = variant?.priceCents ?? product.priceCents
       lines.push({
         product,
         quantity: item.quantity,
-        lineTotalCents: product.priceCents * item.quantity,
+        variantId: item.variantId,
+        variantLabel: variant?.label,
+        unitPriceCents,
+        lineTotalCents: unitPriceCents * item.quantity,
       })
     }
 
@@ -124,7 +141,9 @@ export async function checkoutRoutes(app: FastifyInstance) {
             create: lines.map((line) => ({
               productId: line.product.id,
               name: line.product.name,
-              unitPriceCents: line.product.priceCents,
+              variantId: line.variantId,
+              variantLabel: line.variantLabel,
+              unitPriceCents: line.unitPriceCents,
               quantity: line.quantity,
               lineTotalCents: line.lineTotalCents,
             })),

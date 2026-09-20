@@ -292,6 +292,8 @@
   margin: 0 0 0.6rem;
 }
 
+.admin-order-variant { display: block; color: var(--clay); font-size: 0.8rem; }
+
 .admin-order-detail p {
   margin: 0;
   line-height: 1.6;
