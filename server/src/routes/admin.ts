@@ -126,9 +126,13 @@ export async function adminRoutes(app: FastifyInstance) {
       include: { customer: true, items: true },
     })
     if (status === 'processed' && !order.fulfillmentEmailSentAt) {
-      const emailSent = await sendFulfillmentEmail(updated)
-      if (emailSent) {
-        await prisma.order.update({ where: { id: order.id }, data: { fulfillmentEmailSentAt: new Date() } })
+      try {
+        const emailSent = await sendFulfillmentEmail(updated)
+        if (emailSent) {
+          await prisma.order.update({ where: { id: order.id }, data: { fulfillmentEmailSentAt: new Date() } })
+        }
+      } catch (error) {
+        request.log.error({ error, orderId: order.id }, 'Fulfillment email failed after order was processed')
       }
     }
     return updated

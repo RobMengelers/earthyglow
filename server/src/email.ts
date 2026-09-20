@@ -597,7 +597,7 @@ export async function sendFulfillmentEmail(order: {
   trackingCode: string | null
   customer: { firstName: string; email: string }
 }): Promise<boolean> {
-  if (!resend) return false
+  if (!resend || !emailEnabled) return false
   const { error } = await resend.emails.send({
     from: env.EMAIL_FROM,
     to: [order.customer.email],
