@@ -1,0 +1,29 @@
+.newsletter {
+  padding: 96px 0;
+  background:
+    radial-gradient(620px 380px at 18% 0%, rgba(251, 247, 240, 0.12), transparent 60%),
+    radial-gradient(620px 420px at 88% 100%, rgba(95, 59, 37, 0.55), transparent 62%),
+    var(--clay);
+}
+
+.newsletter-inner {
+  max-width: 620px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.newsletter .eyebrow {
+  color: var(--amber-soft);
+}
+
+.newsletter h2 {
+  color: var(--surface);
+  font-size: clamp(2.1rem, 4vw, 3rem);
+  margin: 0.8rem 0 1.1rem;
+}
+
+.newsletter p {
+  color: rgba(251, 247, 240, 0.92);
+  font-size: 1.05rem;
+  margin-bottom: 2rem;
+}

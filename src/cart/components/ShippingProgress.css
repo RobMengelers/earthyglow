@@ -1,0 +1,34 @@
+.shipping-progress {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.shipping-progress-text {
+  font-size: 0.9rem;
+  color: var(--body);
+}
+
+.shipping-progress-text strong {
+  color: var(--clay-deep);
+}
+
+.shipping-progress-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--sand);
+  overflow: hidden;
+}
+
+.shipping-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--clay), var(--amber));
+  transition: width 0.45s ease;
+}
+
+.shipping-progress-note {
+  font-size: 0.78rem;
+  color: var(--body);
+  opacity: 0.85;
+}

@@ -1,0 +1,22 @@
+.not-found {
+  min-height: 62vh;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 96px 0;
+}
+
+.not-found h1 {
+  font-size: clamp(2.2rem, 4.5vw, 3.4rem);
+  margin: 0.9rem 0 1.1rem;
+}
+
+.not-found .container > p:not(.eyebrow) {
+  max-width: 48ch;
+  margin: 0 auto 2rem;
+}
+
+.not-found .hero-actions {
+  justify-content: center;
+  margin: 0;
+}

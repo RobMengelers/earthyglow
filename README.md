@@ -1,75 +1,65 @@
-# React + TypeScript + Vite
+# EarthyGlow
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React, TypeScript, and Vite storefront with a separate backend in `server/`.
 
-Currently, two official plugins are available:
+## Development
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- `npm install` — install frontend dependencies.
+- `npm run dev` — start the frontend development server.
+- `npm run build` — type-check and create the production bundle.
+- `npm run lint` — run ESLint.
 
-## React Compiler
+See `server/package.json` for backend commands and `.env.example` for configuration.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Frontend structure
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```text
+src/
+  pages/
+    Home/                 # Home page and its sections in components/
+    Checkout/             # Checkout orchestration, countries, and form sections
+    CheckoutConfirmation/ # Payment confirmation
+    About/, Care/, ...    # Other route components and their CSS
+    policies/             # Policy content sharing PolicyLayout
+  components/
+    layout/               # Site shell, navigation, footer, policy layout
+    catalog/              # Reusable product and collection cards
+    ui/                   # Reveal, buttons, divider, social links
+  cart/
+    components/           # Cart drawer and shipping progress
+    cart.css              # Shared cart lines, quantities, totals, summary panels
+    ...                   # Cart context, provider, hooks, API helpers
+  admin/                  # Admin API client
+  data/                   # Product and collection data
+  styles/                 # Theme and shared styling primitives
+  index.css               # Explicit stylesheet import list
+  App.tsx                 # Route definitions
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+## Editing styles
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Use ordinary CSS files beside the page or component they describe. For example,
+edit `pages/Checkout/Checkout.css` for checkout layout and
+`components/layout/Footer.css` for the footer. Keep media queries beside their
+base rules.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Shared styles live in `styles/`: `theme.css` owns colors, fonts, spacing tokens,
+and shadows; `base.css` owns resets; `buttons.css`, `forms.css`, and `layout.css`
+own reusable primitives. The about and care section styles are shared between
+home-page teasers and their full pages. Checkout result styles are shared by
+checkout and payment confirmation.
 
-```
+`index.css` imports every stylesheet once in an explicit order. Register new
+stylesheets there; avoid also importing them from TSX. This keeps the cascade
+independent of the component import graph. Files are colocated for ownership,
+but class names remain global: use page/component prefixes for new classes and
+keep shared rules in shared stylesheets. Existing `hero-actions` is a shared
+action-row utility in `styles/layout.css`.
+
+Use inline styles only for runtime values, such as reveal delays and shipping
+progress widths. Static styles, hover states, and responsive rules belong in CSS.
+
+Keep route components focused on composition and page state. Extract substantial
+sections into that page’s `components/` folder; move components to the shared
+folders when multiple pages need them. Checkout keeps order submission in the
+page, with separate contact, shipping, payment, and summary components.

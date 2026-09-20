@@ -1,0 +1,82 @@
+.about-story {
+  padding-bottom: 88px;
+}
+
+.philosophy {
+  padding: 24px 0 96px;
+}
+
+.philosophy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.6rem;
+}
+
+.philosophy-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 2rem 1.8rem;
+  box-shadow: var(--shadow-sm);
+  transition:
+    transform 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.philosophy-card:hover {
+  transform: translateY(-5px);
+  border-color: rgba(95, 59, 37, 0.35);
+  box-shadow: var(--shadow-md);
+}
+
+.philosophy-card h3 {
+  font-size: 1.3rem;
+  margin-bottom: 0.5rem;
+}
+
+.philosophy-card p {
+  font-size: 0.96rem;
+}
+
+.quote {
+  padding: 96px 0;
+  background:
+    radial-gradient(620px 380px at 18% 0%, rgba(251, 247, 240, 0.12), transparent 60%),
+    radial-gradient(620px 420px at 88% 100%, rgba(95, 59, 37, 0.55), transparent 62%),
+    var(--clay);
+}
+
+.quote-inner {
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.quote .eyebrow {
+  color: var(--amber-soft);
+}
+
+.quote blockquote {
+  margin: 1.6rem 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: clamp(1.4rem, 2.6vw, 1.9rem);
+  line-height: 1.4;
+  color: var(--surface);
+  quotes: '\201C' '\201D';
+}
+
+.quote blockquote::before {
+  content: open-quote;
+}
+
+.quote blockquote::after {
+  content: close-quote;
+}
+
+.quote-thanks {
+  color: rgba(251, 247, 240, 0.9);
+  margin-bottom: 2rem;
+  font-size: 1.02rem;
+}

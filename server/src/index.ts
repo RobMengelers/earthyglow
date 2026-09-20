@@ -7,6 +7,7 @@ import { retryUnsentInvoices } from './email.js'
 import { catalogRoutes } from './routes/catalog.js'
 import { checkoutRoutes } from './routes/checkout.js'
 import { contactRoutes } from './routes/contact.js'
+import { adminRoutes } from './routes/admin.js'
 import { healthRoutes } from './routes/health.js'
 import { orderRoutes } from './routes/orders.js'
 import { paymentMethodRoutes } from './routes/payment-methods.js'
@@ -30,6 +31,7 @@ await app.register(orderRoutes)
 await app.register(paymentMethodRoutes)
 await app.register(webhookRoutes)
 await app.register(contactRoutes)
+await app.register(adminRoutes)
 
 app.setErrorHandler((error: FastifyError, request, reply) => {
   request.log.error(error)

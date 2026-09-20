@@ -1,0 +1,47 @@
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.brand-logo {
+  height: 46px;
+  width: auto;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(42, 33, 25, 0.14);
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.brand:hover .brand-logo {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(42, 33, 25, 0.2);
+}
+
+.brand-wordmark {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.38rem;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.brand-wordmark span {
+  font-style: italic;
+  color: var(--clay);
+}
+
+.brand-light .brand-logo {
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.4);
+}
+
+.brand-light .brand-wordmark {
+  color: var(--surface);
+}
+
+.brand-light .brand-wordmark span {
+  /* color: rgb(255, 211, 237) */
+  color: var(--beige);
+}

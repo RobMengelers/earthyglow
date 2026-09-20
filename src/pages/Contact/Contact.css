@@ -1,0 +1,144 @@
+.contact-body {
+  padding: 72px 0 96px;
+}
+
+.contact-grid {
+  display: grid;
+  grid-template-columns: 0.8fr 1.2fr;
+  gap: 48px;
+  align-items: start;
+}
+
+.contact-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.contact-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.6rem 1.6rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.contact-card h2 {
+  font-size: 1.2rem;
+  margin-bottom: 0.7rem;
+}
+
+.contact-card > a {
+  font-weight: 600;
+  color: var(--clay-deep);
+  word-break: break-all;
+}
+
+.contact-card > p {
+  font-size: 0.9rem;
+  margin-top: 0.4rem;
+}
+
+.contact-socials,
+.contact-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.contact-socials a {
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.contact-socials a svg {
+  width: 17px;
+  height: 17px;
+  display: block;
+}
+
+.contact-socials a:hover {
+  color: var(--clay-deep);
+}
+
+.contact-details li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.95rem;
+}
+
+.contact-details span {
+  color: var(--body);
+}
+
+.contact-form {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 2.4rem 2.2rem;
+  box-shadow: var(--shadow-md);
+}
+
+.contact-form h2 {
+  font-size: 1.5rem;
+  margin-bottom: 1.6rem;
+}
+
+.contact-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 1.1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.contact-form input,
+.contact-form textarea {
+  font-family: var(--font-body);
+  font-size: 0.98rem;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  resize: vertical;
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.contact-form input:focus,
+.contact-form textarea:focus {
+  outline: none;
+  border-color: var(--clay);
+  box-shadow: 0 0 0 3px rgba(95, 59, 37, 0.18);
+}
+
+.form-note {
+  font-size: 0.85rem;
+  margin-top: 1rem;
+}
+
+.form-note.is-error {
+  color: #b0392e;
+  font-weight: 500;
+}
+
+@media (max-width: 960px) {
+
+  .contact-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+
+  .contact-form {
+    padding: 1.8rem 1.4rem;
+  }
+}

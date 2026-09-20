@@ -1,0 +1,49 @@
+.shop-body {
+  padding: 56px 0 96px;
+}
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 1.6rem;
+}
+
+.filter-chip {
+  padding: 0.55rem 1.15rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition:
+    background 0.25s ease,
+    color 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.filter-chip:hover {
+  border-color: var(--clay);
+  color: var(--clay-deep);
+}
+
+.filter-chip.active {
+  background: var(--olive);
+  border-color: var(--olive);
+  color: var(--surface);
+}
+
+.shop-count {
+  font-size: 0.88rem;
+  color: var(--body);
+  margin-bottom: 1.4rem;
+}
+
+@media (max-width: 640px) {
+
+  .filter-chip {
+    font-size: 0.82rem;
+    padding: 0.5rem 0.9rem;
+  }
+}

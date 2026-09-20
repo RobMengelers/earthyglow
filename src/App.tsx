@@ -1,23 +1,25 @@
 import { Route, Routes } from 'react-router-dom'
-import { Layout } from './components/Layout'
-import { Home } from './pages/Home'
-import { Shop } from './pages/Shop'
-import { ProductPage } from './pages/ProductPage'
-import { About } from './pages/About'
-import { Care } from './pages/Care'
-import { Contact } from './pages/Contact'
-import { PrivacyPolicy } from './pages/PrivacyPolicy'
-import { RefundPolicy } from './pages/RefundPolicy'
-import { TermsOfService } from './pages/TermsOfService'
-import { ContactInformation } from './pages/ContactInformation'
-import { Cart } from './pages/Cart'
-import { Checkout } from './pages/Checkout'
-import { CheckoutConfirmation } from './pages/CheckoutConfirmation'
-import { NotFound } from './pages/NotFound'
+import { Layout } from './components/layout/Layout'
+import { Home } from './pages/Home/Home'
+import { Shop } from './pages/Shop/Shop'
+import { ProductPage } from './pages/ProductPage/ProductPage'
+import { About } from './pages/About/About'
+import { Care } from './pages/Care/Care'
+import { Contact } from './pages/Contact/Contact'
+import { PrivacyPolicy } from './pages/policies/PrivacyPolicy'
+import { RefundPolicy } from './pages/policies/RefundPolicy'
+import { TermsOfService } from './pages/policies/TermsOfService'
+import { ContactInformation } from './pages/policies/ContactInformation'
+import { Cart } from './pages/Cart/Cart'
+import { Checkout } from './pages/Checkout/Checkout'
+import { CheckoutConfirmation } from './pages/CheckoutConfirmation/CheckoutConfirmation'
+import { Admin } from './pages/Admin/Admin'
+import { NotFound } from './pages/NotFound/NotFound'
 
 function App() {
   return (
     <Routes>
+      <Route path="/admin" element={<Admin />} />
       <Route element={<Layout />}>
         <Route index element={<Home />} />
         <Route path="/shop" element={<Shop />} />

@@ -1,0 +1,45 @@
+.care-page {
+  padding: 96px 0;
+}
+
+.safety {
+  padding: 96px 0;
+  background:
+    radial-gradient(700px 420px at 90% 10%, rgba(217, 154, 63, 0.14), transparent 60%),
+    var(--bg-2);
+}
+
+.safety-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 0.9rem;
+  max-width: 820px;
+  margin: 0 auto;
+}
+
+.safety-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 1rem 1.2rem;
+  font-size: 0.95rem;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.safety-list li::before {
+  content: '!';
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(95, 59, 37, 0.16);
+  color: var(--clay-deep);
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  flex: none;
+}

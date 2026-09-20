@@ -1,0 +1,46 @@
+.order-status-badge {
+  display: inline-block;
+  margin-bottom: 0.8rem;
+  padding: 0.3rem 0.85rem;
+  border-radius: 999px;
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.order-status-badge.is-paid {
+  background: #dbe6cf;
+  color: #3f5a34;
+}
+
+.order-status-badge.is-pending {
+  background: var(--amber-soft);
+  color: var(--clay-deep);
+}
+
+.order-status-badge.is-failed {
+  background: #f0d9d3;
+  color: #7a3b2e;
+}
+
+.checkout-done {
+  padding: 96px 0 120px;
+  text-align: center;
+}
+
+.checkout-done h1 {
+  margin: 0.6rem 0 1rem;
+  font-size: clamp(2rem, 4vw, 3rem);
+}
+
+.checkout-done-lede {
+  max-width: 52ch;
+  margin: 0 auto 1.8rem;
+}
+
+.checkout-done .hero-actions {
+  justify-content: center;
+  margin: 0;
+}

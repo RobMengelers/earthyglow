@@ -26,8 +26,83 @@ const CLAY_SOFT: RGB = rgb(0.71, 0.52, 0.4) // clay lightened for ornament
 
 // ---- Embedded fonts (shipped as static TTFs in server/fonts) ----
 const fontDir = fileURLToPath(new URL('../fonts/', import.meta.url))
-const readFont = (name: string) =>
-  readFileSync(`${fontDir}${name}`) as unknown as ArrayBuffer
+
+// Drop OpenType layout tables (GPOS/GSUB/kerning) before embedding.
+// pdf-lib forwards them wholesale into the subset fonts, and macOS's PDF
+// renderer applies the kerning while drawing, which produces phantom
+// spaces between glyph pairs (e.g. "Earth yglow", "Men gelers").
+const LAYOUT_TABLES = new Set(['GPOS', 'GSUB', 'GDEF', 'kern', 'morx', 'kerx'])
+const fontChecksum = (data: Uint8Array) => {
+  let sum = 0
+  const padded = Buffer.alloc((data.byteLength + 3) & ~3)
+  Buffer.from(data.buffer, data.byteOffset, data.byteLength).copy(padded)
+  for (let i = 0; i < padded.length; i += 4) {
+    sum = (sum + padded.readUInt32BE(i)) >>> 0
+  }
+  return sum
+}
+
+function stripLayoutTables(font: ArrayBuffer): ArrayBuffer {
+  const b = Buffer.from(font)
+  const sfntVersion = b.subarray(0, 4).toString('latin1')
+  const numTables = b.readUInt16BE(4)
+  const records: { tag: string; offset: number; length: number }[] = []
+  for (let i = 0; i < numTables; i++) {
+    const o = 12 + i * 16
+    records.push({
+      tag: b.toString('latin1', o, o + 4),
+      offset: b.readUInt32BE(o + 8),
+      length: b.readUInt32BE(o + 12),
+    })
+  }
+  const kept = records.filter((r) => !LAYOUT_TABLES.has(r.tag))
+  const numKept = kept.length
+  const maxPow2 = 2 ** Math.floor(Math.log2(numKept))
+  const searchRange = maxPow2 * 16
+  const entrySelector = Math.log2(maxPow2)
+  const rangeShift = numKept * 16 - searchRange
+
+  const headerSize = 12 + numKept * 16
+  const sizes = kept.map((r) => (r.length + 3) & ~3)
+  const out = Buffer.alloc(headerSize + sizes.reduce((a, c) => a + c, 0))
+
+  out.write(sfntVersion, 0, 'latin1')
+  out.writeUInt16BE(numKept, 4)
+  out.writeUInt16BE(searchRange, 6)
+  out.writeUInt16BE(entrySelector, 8)
+  out.writeUInt16BE(rangeShift, 10)
+
+  let cursor = headerSize
+  const dataOffsets = new Map<string, number>()
+  for (let i = 0; i < numKept; i++) {
+    const rec = kept[i]!
+    const dirOff = 12 + i * 16
+    out.write(rec.tag, dirOff, 'latin1')
+    out.writeUInt32BE(fontChecksum(b.subarray(rec.offset, rec.offset + rec.length)), dirOff + 4)
+    out.writeUInt32BE(cursor, dirOff + 8)
+    out.writeUInt32BE(rec.length, dirOff + 12)
+    dataOffsets.set(rec.tag, cursor)
+    b.copy(out, cursor, rec.offset, rec.offset + rec.length)
+    cursor += sizes[i]!
+  }
+
+  const headDataOffset = dataOffsets.get('head')
+  if (headDataOffset !== undefined) {
+    out.writeUInt32BE(0, headDataOffset + 8)
+    let sum = 0
+    for (let i = 0; i < out.length; i += 4) {
+      sum = (sum + out.readUInt32BE(i)) >>> 0
+    }
+    out.writeUInt32BE((0xb1b0afba - sum) >>> 0, headDataOffset + 8)
+  }
+
+  return out.buffer.slice(out.byteOffset, out.byteOffset + out.byteLength) as ArrayBuffer
+}
+
+const readFont = (name: string) => {
+  const raw = readFileSync(`${fontDir}${name}`) as unknown as ArrayBuffer
+  return stripLayoutTables(raw)
+}
 
 type InvoiceFonts = {
   display: PDFFont // Fraunces Medium
@@ -206,13 +281,10 @@ export async function generateInvoicePdf(
   }
 
   // ---- Header: wordmark + eyebrow + amber tick + rule ----
+  const wordmarkText = 'EarthyGlow'
   const wordmarkSize = 26
-  const earthyW = fonts.display.widthOfTextAtSize('Earthy', wordmarkSize)
-  const glowW = fonts.displayItalic.widthOfTextAtSize('Glow', wordmarkSize)
-  let wordX = center - (earthyW + glowW) / 2
-  draw('Earthy', wordX, 790, wordmarkSize, INK, fonts.display)
-  wordX += earthyW
-  draw('Glow', wordX, 790 + 1.5, wordmarkSize, CLAY, fonts.displayItalic)
+  const wordmarkW = fonts.display.widthOfTextAtSize(wordmarkText, wordmarkSize)
+  draw(wordmarkText, center - wordmarkW / 2, 790, wordmarkSize, INK, fonts.display)
 
   eyebrowCentered('HAND-POURED CANDLES · INVOICE', 760, CLAY)
   page.drawRectangle({
@@ -275,7 +347,7 @@ export async function generateInvoicePdf(
     eyebrowRight('AMOUNT', amountRight, yy, CLAY, 1.8)
   }
 
-  let y = 592
+  let y = 596
   for (const line of data.lines) {
     if (y - 26 < 150) {
       page = doc.addPage([pageWidth, pageHeight])
@@ -288,7 +360,7 @@ export async function generateInvoicePdf(
       })
       tableHeader(776)
       rule(770)
-      y = 748
+      y = 758
     }
     draw(line.name, contentLeft, y, 10, INK, fonts.body)
     drawRight(String(line.quantity), qtyRight, y, 10, INK, fonts.body)
@@ -301,7 +373,7 @@ export async function generateInvoicePdf(
       INK,
       fonts.bodySemibold,
     )
-    rule(y - 6, 0.5)
+    rule(y - 12, 0.5)
     y -= 24
   }
 
@@ -314,7 +386,7 @@ export async function generateInvoicePdf(
   drawRight('Shipping', labelRight, y, 10, BODY, fonts.body)
   drawRight(formatEuro(data.shippingCents), amountRight, y, 10, INK, fonts.body)
   y -= 30
-  rule(y + 10, 0.8)
+  rule(y + 18, 0.8)
   drawRight('Total', labelRight, y, 14, INK, fonts.displaySemibold)
   drawRight(formatEuro(data.totalCents), amountRight, y, 14, CLAY, fonts.displaySemibold)
 
@@ -386,7 +458,9 @@ export async function sendOrderInvoice(
   const pdf = await generateInvoicePdf({
     orderNumber: order.orderNumber,
     paidAt,
-    customerName: `${order.customer.firstName} ${order.customer.lastName}`,
+    customerName: `${order.customer.firstName} ${order.customer.lastName}`
+      .replace(/\s+/g, ' ')
+      .trim(),
     customerEmail: order.customer.email,
     customerAddress: order.address,
     customerPostalCode: order.postalCode,

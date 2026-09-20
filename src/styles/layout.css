@@ -1,0 +1,143 @@
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  margin: 2.1rem 0 2.4rem;
+}
+
+.section-head {
+  max-width: 640px;
+  margin: 0 auto 3.4rem;
+  text-align: center;
+}
+
+.section-head h2 {
+  font-size: clamp(2.1rem, 4vw, 3rem);
+  margin: 0.8rem 0 1rem;
+}
+
+.section-lede {
+  font-size: 1.05rem;
+}
+
+.collection-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5rem;
+}
+
+.collection-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.6rem;
+  margin-bottom: 2rem;
+}
+
+.collection-index {
+  font-family: var(--font-display);
+  font-size: 3.4rem;
+  line-height: 1;
+  color: transparent;
+  -webkit-text-stroke: 1.5px rgba(95, 59, 37, 0.55);
+  flex: none;
+}
+
+.collection-head .eyebrow {
+  margin-bottom: 0.35rem;
+}
+
+.collection-head h3 {
+  font-size: 1.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.collection-head p:last-child {
+  max-width: 58ch;
+  font-size: 1rem;
+}
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(248px, 1fr));
+  gap: 1.6rem;
+}
+
+@media (max-width: 960px) {
+
+  .hero-actions {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 640px) {
+
+  .collection-head {
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+
+  .product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 0.9rem;
+  }
+}
+
+.page-hero {
+  padding: 64px 0 56px;
+  background:
+    radial-gradient(860px 420px at 82% 0%, rgba(217, 154, 63, 0.16), transparent 60%),
+    radial-gradient(700px 380px at 8% 100%, rgba(95, 59, 37, 0.1), transparent 62%),
+    linear-gradient(180deg, rgba(244, 236, 221, 0.6), var(--bg) 78%);
+  border-bottom: 1px solid var(--line);
+}
+
+.page-hero h1 {
+  font-size: clamp(2.3rem, 4.6vw, 3.6rem);
+  margin: 0.9rem 0 1.1rem;
+  letter-spacing: -0.02em;
+}
+
+.page-hero .section-lede {
+  max-width: 60ch;
+  font-size: 1.08rem;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.83rem;
+  color: var(--body);
+  margin-bottom: 1.6rem;
+}
+
+.breadcrumb a {
+  transition: color 0.2s ease;
+}
+
+.breadcrumb a:hover {
+  color: var(--clay);
+}
+
+.breadcrumb span[aria-current='page'] {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.featured {
+  padding: 8px 0 72px;
+}
+
+.featured-cta,
+.care-cta {
+  display: flex;
+  justify-content: center;
+  margin-top: 2.6rem;
+}
+
+@media (max-width: 640px) {
+  .page-hero {
+    padding: 44px 0 40px;
+  }
+}

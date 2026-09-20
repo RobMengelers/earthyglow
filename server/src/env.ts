@@ -13,6 +13,8 @@ const schema = z.object({
   CONTACT_EMAIL: z.string().default('earthyglowcandles@gmail.com'),
   FRONTEND_URL: z.string().default('http://localhost:5173'),
   PUBLIC_API_URL: z.string().default('http://localhost:4000'),
+  ADMIN_USERNAME: z.string().default('admin'),
+  ADMIN_PASSWORD: z.string().default(''),
 })
 
 export const env = schema.parse(process.env)

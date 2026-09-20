@@ -1,0 +1,17 @@
+.collections {
+  padding: 72px 0;
+}
+
+.collection-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.6rem;
+}
+
+@media (max-width: 960px) {
+  .collection-card-grid {
+    grid-template-columns: 1fr;
+    max-width: 520px;
+    margin: 0 auto;
+  }
+}

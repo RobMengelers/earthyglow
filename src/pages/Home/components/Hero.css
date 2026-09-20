@@ -1,0 +1,162 @@
+.hero {
+  position: relative;
+  padding: 72px 0 88px;
+}
+
+.hero-bg {
+  position: absolute;
+  inset: -80px -200px -220px;
+  z-index: -1;
+  background:
+    radial-gradient(720px 540px at 16% 40%, rgba(95, 59, 37, 0.16), transparent 72%),
+    radial-gradient(680px 500px at 86% 20%, rgba(217, 154, 63, 0.2), transparent 72%),
+    linear-gradient(180deg, rgba(244, 236, 221, 0.75), rgba(244, 236, 221, 0) 66%);
+  animation: bgDrift 18s ease-in-out infinite alternate;
+}
+
+@keyframes bgDrift {
+  from {
+    transform: translate3d(-26px, 0, 0);
+  }
+  to {
+    transform: translate3d(26px, 0, 0);
+  }
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 60px;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+
+.hero-copy {
+  max-width: 560px;
+}
+
+.hero-line {
+  display: block;
+}
+
+.hero-copy > * {
+  opacity: 0;
+  animation: riseUp 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.hero-copy .eyebrow {
+  animation-delay: 0.08s;
+}
+
+.hero-copy .hero-line-1 {
+  animation-delay: 0.16s;
+}
+
+.hero-copy .hero-line-2 {
+  animation-delay: 0.26s;
+}
+
+.hero-copy .hero-line-3 {
+  animation-delay: 0.36s;
+}
+
+.hero-copy .lede {
+  animation-delay: 0.5s;
+}
+
+.hero-copy .hero-actions {
+  animation-delay: 0.62s;
+}
+
+@keyframes riseUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero h1 {
+  font-size: clamp(2.6rem, 5.4vw, 4.3rem);
+  font-weight: 500;
+  margin: 1.1rem 0 1.4rem;
+  letter-spacing: -0.02em;
+}
+
+.hero .lede {
+  font-size: 1.12rem;
+  max-width: 46ch;
+}
+
+.hero-visual {
+  position: relative;
+  justify-self: center;
+  animation: visualIn 1.15s 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes visualIn {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.hero-liquid {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+.hero-frame {
+  position: relative;
+  width: min(430px, 100%);
+  aspect-ratio: 4 / 5;
+  border: 2px solid var(--edge);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.hero-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+@media (max-width: 960px) {
+  .hero-grid {
+    grid-template-columns: 1fr;
+    gap: 48px;
+  }
+
+  .hero-copy {
+    max-width: none;
+    text-align: center;
+  }
+
+  .hero .lede {
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 640px) {
+
+  .hero {
+    padding-top: 48px;
+  }
+
+  .hero-frame {
+    width: min(340px, 100%);
+  }
+}
