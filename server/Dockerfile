@@ -24,4 +24,4 @@ COPY --from=build /app/dist ./dist
 COPY fonts ./fonts
 COPY prisma ./prisma
 EXPOSE 4000
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
+CMD ["sh", "-c", "npx prisma migrate resolve --rolled-back 20260920193000_add_product_variants >/dev/null 2>&1 || true; npx prisma migrate deploy && node dist/index.js"]
