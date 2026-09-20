@@ -11,6 +11,8 @@ import {
   getAdminToken,
   setAdminToken,
   type AdminOrdersResponse,
+  updateFulfillment,
+  refundAdminOrder,
 } from '../../admin/api'
 import { LoadingButton } from '../../components/ui/LoadingButton'
 
@@ -29,6 +31,13 @@ export function Admin() {
   const [filter, setFilter] = useState('all')
   const [data, setData] = useState<AdminOrdersResponse | null>(null)
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [selected, setSelected] = useState<string[]>([])
+  const [actionState, setActionState] = useState<'idle' | 'processing'>('idle')
+  const [actionMessage, setActionMessage] = useState('')
+  const [showFulfillmentModal, setShowFulfillmentModal] = useState(false)
+  const [modalCarrier, setModalCarrier] = useState('')
+  const [modalTrackingCode, setModalTrackingCode] = useState('')
+  const [showProcessingConfirmation, setShowProcessingConfirmation] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -93,6 +102,23 @@ export function Admin() {
     setData(null)
     setUsername('')
     setPassword('')
+  }
+
+  async function processSelected() {
+    if (!token || selected.length === 0) return
+    setActionState('processing'); setActionMessage('')
+    try {
+      const updates = await Promise.all(selected.map((id) => updateFulfillment(token, id, { status: 'processed', carrier: modalCarrier, trackingCode: modalTrackingCode })))
+      setData((current) => current ? { ...current, orders: current.orders.map((order) => updates.find((item) => item.id === order.id) ?? order) } : current)
+      setSelected([])
+      setShowFulfillmentModal(false)
+      setShowProcessingConfirmation(false)
+      setActionMessage(`${updates.length} order${updates.length === 1 ? '' : 's'} marked processed.`)
+    } catch (error) { setActionMessage(error instanceof Error ? error.message : 'Could not process selected orders.') } finally { setActionState('idle') }
+  }
+
+  function toggleSelected(id: string) {
+    setSelected((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
   }
 
   if (!token) {
@@ -211,10 +237,22 @@ export function Admin() {
         )}
 
         {loadState === 'ready' && data && data.orders.length > 0 && (
+          <>
+          {selected.length > 0 && <div className="admin-action-bar">
+            <span>{selected.length} selected</span>
+            <button type="button" className="admin-action-button" onClick={() => setShowFulfillmentModal(true)}>Process</button>
+            <select className="admin-action-menu" aria-label="More order actions" defaultValue="" onChange={async (event) => { const action = event.target.value; event.target.value = ''; if (action === 'Refund customer' && token) { try { const updates = await Promise.all(selected.map((id) => refundAdminOrder(token, id))); setData((current) => current ? { ...current, orders: current.orders.map((order) => updates.find((item) => item.id === order.id) ?? order) } : current); setSelected([]); setActionMessage('Refund completed and customer notified.') } catch (error) { setActionMessage(error instanceof Error ? error.message : 'Could not refund order.') } } else if (action) setActionMessage(`${action} is not available yet.`) }}>
+              <option value="" disabled>More actions…</option>
+              <option value="Refund customer">Refund customer</option>
+              <option value="Undo order">Undo order</option>
+            </select>
+            {actionMessage && <small>{actionMessage}</small>}
+          </div>}
           <div className="admin-table-wrap">
             <table className="admin-table">
               <thead>
                 <tr>
+                  <th aria-label="Select" />
                   <th>Order</th>
                   <th>Date</th>
                   <th>Customer</th>
@@ -222,6 +260,7 @@ export function Admin() {
                   <th>Payment</th>
                   <th>Total</th>
                   <th>Invoice</th>
+                  <th>Fulfillment</th>
                 </tr>
               </thead>
               <tbody>
@@ -233,12 +272,25 @@ export function Admin() {
                       order={order}
                       open={isOpen}
                       onToggle={() => setExpanded(isOpen ? null : order.id)}
+                      selected={selected.includes(order.id)}
+                      onSelect={() => toggleSelected(order.id)}
                     />
                   )
                 })}
               </tbody>
             </table>
           </div>
+          {showFulfillmentModal && <div className="admin-modal-backdrop" role="presentation" onMouseDown={() => setShowFulfillmentModal(false)}>
+            <form className="admin-modal" onSubmit={(event) => { event.preventDefault(); if (showProcessingConfirmation) void processSelected(); else setShowProcessingConfirmation(true) }} onMouseDown={(event) => event.stopPropagation()}>
+              <h2>Shipping details</h2>
+              <p>{showProcessingConfirmation ? 'Please confirm that these details are correct. The selected customers will receive a shipping email.' : 'These details will be sent to the customer when the selected order is processed.'}</p>
+              <label>Transporter<input value={modalCarrier} onChange={(event) => setModalCarrier(event.target.value)} placeholder="e.g. PostNL" required /></label>
+              <label>Track &amp; trace code<input value={modalTrackingCode} onChange={(event) => setModalTrackingCode(event.target.value)} placeholder="Tracking code" required /></label>
+              {showProcessingConfirmation && <div className="admin-confirmation"><strong>{selected.length} order{selected.length === 1 ? '' : 's'} will be marked processed.</strong><span>{modalCarrier} · {modalTrackingCode}</span></div>}
+              <div className="admin-modal-actions"><button type="button" className="btn btn-ghost" onClick={() => { setShowFulfillmentModal(false); setShowProcessingConfirmation(false) }}>{showProcessingConfirmation ? 'Cancel' : 'Close'}</button><button type="submit" className="btn btn-primary" disabled={actionState === 'processing'}>{actionState === 'processing' ? 'Processing…' : showProcessingConfirmation ? 'Confirm and process' : 'Continue'}</button></div>
+            </form>
+          </div>}
+          </>
         )}
       </main>
     </div>
@@ -249,19 +301,24 @@ function OrderRow({
   order,
   open,
   onToggle,
+  selected,
+  onSelect,
 }: {
   order: AdminOrdersResponse['orders'][number]
   open: boolean
   onToggle: () => void
+  selected: boolean
+  onSelect: () => void
 }) {
   const customer = order.customer
   return (
     <>
       <tr
-        className={`admin-order${open ? ' is-open' : ''}`}
+        className={`admin-order${open ? ' is-open' : ''}${order.fulfillmentStatus === 'processed' ? ' is-processed' : ''}`}
         onClick={onToggle}
         aria-expanded={open}
       >
+        <td className="admin-select-cell" onClick={(event) => event.stopPropagation()}><input type="checkbox" checked={selected} onChange={onSelect} aria-label={`Select ${order.orderNumber}`} /></td>
         <td>
           <button type="button" className="admin-order-number">
             <span className="admin-caret" aria-hidden="true">
@@ -293,10 +350,11 @@ function OrderRow({
                 : '—'}
           </span>
         </td>
+        <td><span className={`admin-badge admin-fulfillment-badge is-${order.fulfillmentStatus}`}>{order.fulfillmentStatus === 'open' ? 'Open' : 'Processed'}</span></td>
       </tr>
       {open && (
         <tr className="admin-order-detail-row">
-          <td colSpan={7}>
+          <td colSpan={9}>
             <div className="admin-order-detail">
               <div className="admin-detail-col">
                 <h3>Items</h3>
@@ -360,6 +418,19 @@ function OrderRow({
                   Paid: {formatDateTime(order.paidAt)}
                   <br />
                   Invoice sent: {formatDateTime(order.invoiceSentAt)}
+                  {order.fulfillmentStatus === 'processed' && (
+                    <>
+                      <br />
+                      <br />
+                      <strong>Shipping</strong>
+                      <br />
+                      Transporter: {order.carrier ?? '—'}
+                      <br />
+                      Track &amp; trace: {order.trackingCode ?? '—'}
+                      <br />
+                      Processed: {formatDateTime(order.fulfilledAt)}
+                    </>
+                  )}
                 </p>
               </div>
             </div>

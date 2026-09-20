@@ -71,6 +71,10 @@ export type AdminOrder = {
   notes: string | null
   paidAt: string | null
   invoiceSentAt: string | null
+  fulfillmentStatus: 'open' | 'processed'
+  carrier: string | null
+  trackingCode: string | null
+  fulfilledAt: string | null
   createdAt: string
   customer: AdminCustomer
   items: AdminOrderItem[]
@@ -108,6 +112,18 @@ export async function fetchAdminOrders(
     throw new Error(`Failed to load orders (${response.status})`)
   }
   return (await response.json()) as AdminOrdersResponse
+}
+
+export async function updateFulfillment(token: string, orderId: string, input: { status: 'open' | 'processed'; carrier?: string; trackingCode?: string }): Promise<AdminOrder> {
+  const response = await fetch(`${API_URL}/api/admin/orders/${orderId}/fulfillment`, { method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(input) })
+  if (!response.ok) throw new Error((await response.json().catch(() => null) as { error?: string } | null)?.error ?? 'Could not update fulfillment')
+  return (await response.json()) as AdminOrder
+}
+
+export async function refundAdminOrder(token: string, orderId: string): Promise<AdminOrder> {
+  const response = await fetch(`${API_URL}/api/admin/orders/${orderId}/refund`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
+  if (!response.ok) throw new Error((await response.json().catch(() => null) as { error?: string } | null)?.error ?? 'Could not refund order')
+  return (await response.json()) as AdminOrder
 }
 
 export function getAdminToken(): string | null {

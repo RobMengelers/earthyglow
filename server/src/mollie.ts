@@ -123,3 +123,12 @@ export async function getPaymentInfo(
     return null
   }
 }
+
+export async function refundPayment(paymentId: string, totalCents: number): Promise<void> {
+  if (!client) return
+  await client.paymentRefunds.create({
+    paymentId,
+    amount: { currency: 'EUR', value: (totalCents / 100).toFixed(2) },
+    description: 'EarthyGlow order refund',
+  })
+}

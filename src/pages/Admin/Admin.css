@@ -194,6 +194,13 @@
   background: var(--bg-2);
 }
 
+.admin-order.is-processed { opacity: 0.58; }
+.admin-order.is-processed:hover,
+.admin-order.is-processed.is-open { opacity: 1; }
+.admin-fulfillment-badge { min-width: 5.7rem; text-align: center; }
+.admin-fulfillment-badge.is-open { background: rgb(217 154 63 / 18%); color: #8a5f16; }
+.admin-fulfillment-badge.is-processed { background: rgb(82 140 84 / 14%); color: #3a6b3c; }
+
 .admin-order-number {
   background: none;
   border: 0;
@@ -293,6 +300,26 @@
 }
 
 .admin-order-variant { display: block; color: var(--clay); font-size: 0.8rem; }
+.admin-fulfillment { display: grid; gap: 0.55rem; align-content: start; }
+.admin-fulfillment label { display: grid; gap: 0.25rem; font-size: 0.8rem; color: var(--body); }
+.admin-fulfillment input { width: 100%; padding: 0.55rem 0.65rem; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); font: inherit; color: var(--ink); }
+.admin-fulfillment-actions { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 0.25rem; }
+.admin-fulfillment-actions .btn { padding: 0.55rem 0.8rem; font-size: 0.8rem; }
+.admin-action-bar { display:flex; align-items:center; gap:0.8rem; flex-wrap:wrap; margin:0 0 1rem; color:var(--body); font-size:0.88rem; }
+.admin-select-cell { width:2.5rem; text-align:center; }
+.admin-select-cell input { width:16px; height:16px; accent-color:var(--clay); cursor:pointer; }
+.admin-action-bar small { color:var(--clay); }
+.admin-action-button { border:1px solid var(--clay); border-radius:7px; padding:.42rem .8rem; background:var(--clay); color:var(--surface); font:inherit; font-size:.82rem; font-weight:600; cursor:pointer; }
+.admin-action-menu { border:1px solid var(--line); border-radius:7px; padding:.42rem .65rem; background:var(--surface); color:var(--ink); font:inherit; font-size:.82rem; }
+.admin-modal-backdrop { position:fixed; inset:0; z-index:100; display:grid; place-items:center; padding:1.5rem; background:rgb(20 17 13 / 50%); }
+.admin-modal { width:min(440px,100%); display:grid; gap:1rem; padding:1.8rem; border:1px solid var(--line); border-radius:var(--radius); background:var(--surface); box-shadow:var(--shadow-lg); }
+.admin-modal h2 { font-size:1.45rem; }
+.admin-modal p { color:var(--body); font-size:.9rem; }
+.admin-modal label { display:grid; gap:.3rem; color:var(--body); font-size:.82rem; font-weight:600; }
+.admin-modal input { padding:.7rem .8rem; border:1px solid var(--line); border-radius:8px; background:var(--bg); font:inherit; color:var(--ink); }
+.admin-modal-actions { display:flex; justify-content:flex-end; gap:.55rem; margin-top:.4rem; }
+.admin-confirmation { display:grid; gap:.25rem; padding:.8rem; border-radius:8px; background:var(--bg-2); color:var(--ink); font-size:.85rem; }
+.admin-confirmation span { color:var(--body); }
 
 .admin-order-detail p {
   margin: 0;

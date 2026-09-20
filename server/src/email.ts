@@ -119,6 +119,10 @@ function formatEuro(cents: number): string {
   })}`
 }
 
+function includedVatCents(totalCents: number): number {
+  return Math.round((totalCents * 21) / 121)
+}
+
 function formatDate(date: Date): string {
   return date.toLocaleDateString('nl-NL', {
     day: '2-digit',
@@ -391,6 +395,15 @@ export async function generateInvoicePdf(
   rule(y + 18, 0.8)
   drawRight('Total', labelRight, y, 14, INK, fonts.displaySemibold)
   drawRight(formatEuro(data.totalCents), amountRight, y, 14, CLAY, fonts.displaySemibold)
+  y -= 17
+  drawRight(
+    `(incl. 21% VAT: ${formatEuro(includedVatCents(data.totalCents))})`,
+    amountRight,
+    y,
+    8.5,
+    BODY,
+    fonts.body,
+  )
 
   // ---- Footer: ornament + thank-you, centred ----
   const ornamentY = 84
@@ -497,7 +510,7 @@ export async function sendOrderInvoice(
           <table style="border-collapse:collapse; width:100%; margin:16px 0 24px; background:#fffdf8; border:1px solid #e3d8c8; border-radius:12px;">
             <tr><td style="padding:12px 16px; color:#6b6157;">Order</td><td style="padding:12px 16px; text-align:right;"><strong>${order.orderNumber}</strong></td></tr>
             <tr><td style="padding:12px 16px; color:#6b6157;">Invoice date</td><td style="padding:12px 16px; text-align:right;">${formatDate(paidAt)}</td></tr>
-            <tr><td style="padding:12px 16px; color:#6b6157;">Total paid</td><td style="padding:12px 16px; text-align:right; color:#5f3b25;"><strong>${formatEuro(order.totalCents)}</strong></td></tr>
+            <tr><td style="padding:12px 16px; color:#6b6157;">Total paid</td><td style="padding:12px 16px; text-align:right; color:#5f3b25;"><strong>${formatEuro(order.totalCents)}</strong><br /><small style="color:#6b6157;">incl. 21% VAT (${formatEuro(includedVatCents(order.totalCents))})</small></td></tr>
           </table>
           <p style="color:#6b6157; line-height:1.6;">Your invoice PDF is attached for your records. If you have any questions, simply reply to this email — we’re happy to help.</p>
           <div style="margin-top:30px; padding-top:22px; border-top:1px solid #e3d8c8; color:#6b6157; line-height:1.6;">
@@ -576,6 +589,30 @@ export async function sendContactMessage(input: {
   if (error) {
     throw new Error(`Resend rejected contact message: ${error.message}`)
   }
+}
+
+export async function sendFulfillmentEmail(order: {
+  orderNumber: string
+  carrier: string | null
+  trackingCode: string | null
+  customer: { firstName: string; email: string }
+}): Promise<boolean> {
+  if (!resend) return false
+  const { error } = await resend.emails.send({
+    from: env.EMAIL_FROM,
+    to: [order.customer.email],
+    subject: `Your EarthyGlow order ${order.orderNumber} is on its way`,
+    html: `<div style="font-family:Arial,sans-serif;color:#2e2a25;max-width:620px;padding:28px"><h2 style="font-family:Georgia,serif;color:#5f3b25">Your glow is on its way ✨</h2><p>Hi ${escapeHtml(order.customer.firstName)},</p><p>Your EarthyGlow order <strong>${escapeHtml(order.orderNumber)}</strong> has been processed and handed to the carrier.</p><p><strong>Transporter:</strong> ${escapeHtml(order.carrier ?? '—')}<br /><strong>Track &amp; trace:</strong> ${escapeHtml(order.trackingCode ?? '—')}</p><p>Thank you for supporting our small business.</p><p style="font-family:Georgia,serif;color:#5f3b25">With warmth,<br />Naomi<br /><small>Founder of EarthyGlow</small></p></div>`,
+  })
+  if (error) throw new Error(`Resend rejected fulfillment email: ${error.message}`)
+  return true
+}
+
+export async function sendRefundEmail(order: { orderNumber: string; totalCents: number; customer: { firstName: string; email: string } }): Promise<boolean> {
+  if (!resend) return false
+  const { error } = await resend.emails.send({ from: env.EMAIL_FROM, to: [order.customer.email], subject: `Your EarthyGlow refund for order ${order.orderNumber}`, html: `<div style="font-family:Arial,sans-serif;color:#2e2a25;max-width:620px;padding:28px"><h2 style="font-family:Georgia,serif;color:#5f3b25">Your refund has been arranged</h2><p>Hi ${escapeHtml(order.customer.firstName)},</p><p>We’ve sent a full refund of <strong>${formatEuro(order.totalCents)}</strong> for order <strong>${escapeHtml(order.orderNumber)}</strong> to Mollie. The time it takes to appear depends on your bank or payment provider.</p><p>With warmth,<br /><strong>Naomi</strong><br /><small>Founder of EarthyGlow</small></p></div>` })
+  if (error) throw new Error(`Resend rejected refund email: ${error.message}`)
+  return true
 }
 
 export type InvoiceRetryStats = {

@@ -60,9 +60,9 @@ export function Shop() {
             ))}
           </Reveal>
 
-          <div className="shop-count">
+          <Reveal className="shop-count">
             {shown.length} {shown.length === 1 ? 'product' : 'products'}
-          </div>
+          </Reveal>
 
           <div className="product-grid">
             {shown.map((product, i) => (

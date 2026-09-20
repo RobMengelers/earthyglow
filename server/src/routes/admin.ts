@@ -8,6 +8,8 @@ import {
 } from '../admin-auth.js'
 import { env } from '../env.js'
 import { prisma } from '../prisma.js'
+import { sendFulfillmentEmail, sendRefundEmail } from '../email.js'
+import { refundPayment } from '../mollie.js'
 
 const ORDER_STATUSES: OrderStatus[] = [
   'pending',
@@ -107,4 +109,40 @@ export async function adminRoutes(app: FastifyInstance) {
       return { stats, orders }
     },
   )
+
+  app.patch('/api/admin/orders/:id/fulfillment', { preHandler: requireAdmin }, async (request, reply) => {
+    const body = request.body as { status?: unknown; carrier?: unknown; trackingCode?: unknown }
+    const status = body.status === 'processed' ? 'processed' : body.status === 'open' ? 'open' : null
+    if (!status) return reply.code(400).send({ error: 'Invalid fulfillment status' })
+    if (status === 'processed' && (typeof body.carrier !== 'string' || !body.carrier.trim() || typeof body.trackingCode !== 'string' || !body.trackingCode.trim())) {
+      return reply.code(400).send({ error: 'Carrier and tracking code are required' })
+    }
+    const params = request.params as { id: string }
+    const order = await prisma.order.findUnique({ where: { id: params.id }, include: { customer: true } })
+    if (!order) return reply.code(404).send({ error: 'Order not found' })
+    const updated = await prisma.order.update({
+      where: { id: order.id },
+      data: { fulfillmentStatus: status, carrier: typeof body.carrier === 'string' && body.carrier.trim() ? body.carrier.trim() : order.carrier, trackingCode: typeof body.trackingCode === 'string' && body.trackingCode.trim() ? body.trackingCode.trim() : order.trackingCode, fulfilledAt: status === 'processed' ? new Date() : null, fulfillmentEmailSentAt: status === 'open' ? null : order.fulfillmentEmailSentAt },
+      include: { customer: true, items: true },
+    })
+    if (status === 'processed' && !order.fulfillmentEmailSentAt) {
+      const emailSent = await sendFulfillmentEmail(updated)
+      if (emailSent) {
+        await prisma.order.update({ where: { id: order.id }, data: { fulfillmentEmailSentAt: new Date() } })
+      }
+    }
+    return updated
+  })
+
+  app.post('/api/admin/orders/:id/refund', { preHandler: requireAdmin }, async (request, reply) => {
+    const params = request.params as { id: string }
+    const order = await prisma.order.findUnique({ where: { id: params.id }, include: { customer: true } })
+    if (!order) return reply.code(404).send({ error: 'Order not found' })
+    if (order.status === 'refunded') return reply.code(409).send({ error: 'Order is already refunded' })
+    if (order.status !== 'paid') return reply.code(400).send({ error: 'Only paid orders can be refunded' })
+    await refundPayment(order.molliePaymentId ?? '', order.totalCents)
+    const updated = await prisma.order.update({ where: { id: order.id }, data: { status: 'refunded' }, include: { customer: true, items: true } })
+    await sendRefundEmail(updated)
+    return updated
+  })
 }

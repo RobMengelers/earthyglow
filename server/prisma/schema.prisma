@@ -16,6 +16,11 @@ enum OrderStatus {
   refunded
 }
 
+enum FulfillmentStatus {
+  open
+  processed
+}
+
 model Product {
   id         String   @id
   name       String
@@ -72,6 +77,11 @@ model Order {
   invoiceSentAt   DateTime?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
+  fulfillmentStatus FulfillmentStatus @default(open)
+  carrier         String?
+  trackingCode    String?
+  fulfilledAt     DateTime?
+  fulfillmentEmailSentAt DateTime?
 
   items OrderItem[]
 
