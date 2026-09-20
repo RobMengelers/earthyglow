@@ -19,5 +19,6 @@ INSERT INTO "ProductVariant" ("id", "productId", "label", "priceCents", "updated
   ('shell', 'coconut-beach', 'Shell', 1795, CURRENT_TIMESTAMP),
   ('sea-star', 'coconut-beach', 'Sea star', 1795, CURRENT_TIMESTAMP);
 INSERT INTO "ProductVariant" ("id", "productId", "label", "priceCents", "updatedAt") VALUES
-  ('pink', 'floral-basket', 'Pink', 1295, CURRENT_TIMESTAMP),
-  ('red', 'floral-basket', 'Red', 1295, CURRENT_TIMESTAMP);
+  ('floral-basket-pink', 'floral-basket', 'Pink', 1295, CURRENT_TIMESTAMP),
+  ('floral-basket-red', 'floral-basket', 'Red', 1295, CURRENT_TIMESTAMP)
+ON CONFLICT ("id") DO UPDATE SET "productId" = EXCLUDED."productId", "label" = EXCLUDED."label", "priceCents" = EXCLUDED."priceCents", "updatedAt" = EXCLUDED."updatedAt";

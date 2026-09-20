@@ -60,8 +60,8 @@ export const collections: Collection[] = [
         description:
           'A woven basket filled with floral tealights — a charming, ready-to-give gift that lights up cosy evenings with a soft, natural glow.',
         variants: [
-          { id: 'pink', label: 'Pink', priceCents: 1295, swatch: '#e8a1b5' },
-          { id: 'red', label: 'Red', priceCents: 1295, swatch: '#c94c55' },
+          { id: 'floral-basket-pink', label: 'Pink', priceCents: 1295, swatch: '#e8a1b5' },
+          { id: 'floral-basket-red', label: 'Red', priceCents: 1295, swatch: '#c94c55' },
         ],
       },
     ],
