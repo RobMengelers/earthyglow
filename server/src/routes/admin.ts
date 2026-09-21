@@ -144,9 +144,16 @@ export async function adminRoutes(app: FastifyInstance) {
     if (!order) return reply.code(404).send({ error: 'Order not found' })
     if (order.status === 'refunded') return reply.code(409).send({ error: 'Order is already refunded' })
     if (order.status !== 'paid') return reply.code(400).send({ error: 'Only paid orders can be refunded' })
-    await refundPayment(order.molliePaymentId ?? '', order.totalCents)
+    if (!order.molliePaymentId) {
+      return reply.code(409).send({ error: 'This order has no Mollie payment to refund' })
+    }
+    await refundPayment(order.molliePaymentId, order.totalCents)
     const updated = await prisma.order.update({ where: { id: order.id }, data: { status: 'refunded' }, include: { customer: true, items: true } })
-    await sendRefundEmail(updated)
+    try {
+      await sendRefundEmail(updated)
+    } catch (error) {
+      request.log.error({ error, orderId: order.id }, 'Refund succeeded but refund email failed')
+    }
     return updated
   })
 }

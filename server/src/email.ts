@@ -532,7 +532,7 @@ export async function sendOrderInvoice(
   const { error } = await resend!.emails.send({
     from: env.EMAIL_FROM,
     to: [order.customer.email],
-    subject: `Your EarthyGlow invoice ${order.orderNumber}`,
+    subject: 'Your EarthyGlow invoice',
     html,
     attachments: [
       {
@@ -548,6 +548,24 @@ export async function sendOrderInvoice(
     )
   }
 
+  return true
+}
+
+export async function sendNewOrderNotification(orderNumber: string): Promise<boolean> {
+  if (!emailEnabled) return false
+  const order = await prisma.order.findUnique({
+    where: { orderNumber },
+    include: { customer: true, items: { orderBy: { id: 'asc' } } },
+  })
+  if (!order) return false
+  const lines = order.items.map((item) => `<li>${escapeHtml(item.name)}${item.variantLabel ? ` (${escapeHtml(item.variantLabel)})` : ''} × ${item.quantity}</li>`).join('')
+  const { error } = await resend!.emails.send({
+    from: env.EMAIL_FROM,
+    to: ['robmengelers@gmail.com'],
+    subject: 'New EarthyGlow order',
+    html: `<div style="font-family:Arial,sans-serif;color:#2e2a25;max-width:620px;padding:28px"><h2 style="font-family:Georgia,serif;color:#5f3b25">A new order has arrived</h2><p>Order <strong>${escapeHtml(order.orderNumber)}</strong> has been paid.</p><p><strong>${escapeHtml(order.customer.firstName)} ${escapeHtml(order.customer.lastName)}</strong><br />${escapeHtml(order.customer.email)}</p><ul>${lines}</ul><p><strong>Total: ${formatEuro(order.totalCents)}</strong></p></div>`,
+  })
+  if (error) throw new Error(`Resend rejected new-order notification: ${error.message}`)
   return true
 }
 
@@ -607,7 +625,7 @@ export async function sendFulfillmentEmail(order: {
   const { error } = await resend.emails.send({
     from: env.EMAIL_FROM,
     to: [order.customer.email],
-    subject: `Your EarthyGlow order ${order.orderNumber} is on its way`,
+    subject: 'Your EarthyGlow order is on its way',
     html: renderCustomerEmail(`
           <div style="padding:34px 0 12px;">
             <p style="margin:0 0 10px; color:#5f3b25; font-size:12px; font-weight:bold; letter-spacing:2px; text-transform:uppercase;">A little note from EarthyGlow</p>
@@ -630,7 +648,7 @@ export async function sendFulfillmentEmail(order: {
 
 export async function sendRefundEmail(order: { orderNumber: string; totalCents: number; customer: { firstName: string; email: string } }): Promise<boolean> {
   if (!resend) return false
-  const { error } = await resend.emails.send({ from: env.EMAIL_FROM, to: [order.customer.email], subject: `Your EarthyGlow refund for order ${order.orderNumber}`, html: `<div style="font-family:Arial,sans-serif;color:#2e2a25;max-width:620px;padding:28px"><h2 style="font-family:Georgia,serif;color:#5f3b25">Your refund has been arranged</h2><p>Hi ${escapeHtml(order.customer.firstName)},</p><p>We’ve sent a full refund of <strong>${formatEuro(order.totalCents)}</strong> for order <strong>${escapeHtml(order.orderNumber)}</strong> to Mollie. The time it takes to appear depends on your bank or payment provider.</p><p>With warmth,<br /><strong>Naomi</strong><br /><small>Founder of EarthyGlow</small></p></div>` })
+  const { error } = await resend.emails.send({ from: env.EMAIL_FROM, to: [order.customer.email], subject: 'Your EarthyGlow refund', html: `<div style="font-family:Arial,sans-serif;color:#2e2a25;max-width:620px;padding:28px"><h2 style="font-family:Georgia,serif;color:#5f3b25">Your refund has been arranged</h2><p>Hi ${escapeHtml(order.customer.firstName)},</p><p>We’ve sent a full refund of <strong>${formatEuro(order.totalCents)}</strong> for order <strong>${escapeHtml(order.orderNumber)}</strong> to Mollie. The time it takes to appear depends on your bank or payment provider.</p><p>With warmth,<br /><strong>Naomi</strong><br /><small>Founder of EarthyGlow</small></p></div>` })
   if (error) throw new Error(`Resend rejected refund email: ${error.message}`)
   return true
 }

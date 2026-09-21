@@ -244,7 +244,6 @@ export function Admin() {
             <select className="admin-action-menu" aria-label="More order actions" defaultValue="" onChange={async (event) => { const action = event.target.value; event.target.value = ''; if (action === 'Refund customer' && token) { try { const updates = await Promise.all(selected.map((id) => refundAdminOrder(token, id))); setData((current) => current ? { ...current, orders: current.orders.map((order) => updates.find((item) => item.id === order.id) ?? order) } : current); setSelected([]); setActionMessage('Refund completed and customer notified.') } catch (error) { setActionMessage(error instanceof Error ? error.message : 'Could not refund order.') } } else if (action) setActionMessage(`${action} is not available yet.`) }}>
               <option value="" disabled>More actions…</option>
               <option value="Refund customer">Refund customer</option>
-              <option value="Undo order">Undo order</option>
             </select>
             {actionMessage && <small>{actionMessage}</small>}
           </div>}

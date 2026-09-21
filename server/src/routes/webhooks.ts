@@ -1,6 +1,6 @@
 import type { OrderStatus } from '@prisma/client'
 import type { FastifyInstance } from 'fastify'
-import { sendOrderInvoice } from '../email.js'
+import { sendNewOrderNotification, sendOrderInvoice } from '../email.js'
 import { getPaymentInfo } from '../mollie.js'
 import { prisma } from '../prisma.js'
 
@@ -66,6 +66,17 @@ export async function webhookRoutes(app: FastifyInstance) {
         { orderNumber: order.orderNumber, from: order.status, to: status },
         'Order status updated from Mollie webhook',
       )
+    }
+
+    if (status === 'paid' && !order.newOrderEmailSentAt) {
+      try {
+        const sent = await sendNewOrderNotification(order.orderNumber)
+        if (sent) {
+          await prisma.order.update({ where: { id: order.id }, data: { newOrderEmailSentAt: new Date() } })
+        }
+      } catch (error) {
+        request.log.error({ orderNumber: order.orderNumber, err: error }, 'New-order notification failed; will retry on next webhook')
+      }
     }
 
     // Send the invoice once an order is paid. This also runs when Mollie
