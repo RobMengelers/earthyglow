@@ -5,23 +5,23 @@ import { Reveal } from '../../components/ui/Reveal'
 const philosophy = [
   {
     title: 'Pure ingredients',
-    text: '100% soy wax, no paraffin, no phthalates, no toxins.',
+    text: 'I use 100% soy wax for my candles.',
   },
   {
     title: 'Honest craftsmanship',
-    text: 'Each candle is hand-poured in small batches, where quality always comes before quantity.',
+    text: 'I pour in small batches and finish each candle by hand.',
   },
   {
     title: 'Nature based designs',
-    text: 'An aesthetic designed to blend effortlessly into any home.',
+    text: 'Flowers, shells and earthy colours inspire my collections.',
   },
   {
     title: 'Soft, warm ambiance',
-    text: 'Candles that add peace, not noise.',
+    text: 'A little candlelight for the moments you take for yourself.',
   },
   {
-    title: 'Sustainable choices',
-    text: 'Eco-friendly materials, wooden wicks, reusable jars, and mindful production.',
+    title: 'Enjoy it again',
+    text: 'If your candle comes in a jar, clean it once finished and give it a new use.',
   },
 ] as const
 
@@ -39,8 +39,8 @@ export function About() {
             <p className="eyebrow">About EarthyGlow</p>
             <h1>Warmth, made by hand</h1>
             <p className="section-lede">
-              A candle brand born from a love of slow moments, honest materials
-              and the calm that a soft flame brings to a home.
+              I’m Naomi, the founder and maker behind EarthyGlow. Thank you for
+              stopping by my little candle shop.
             </p>
           </Reveal>
         </div>
@@ -52,21 +52,17 @@ export function About() {
             <img src={aboutImage} alt="EarthyGlow candles and natural materials" loading="lazy" />
           </Reveal>
           <Reveal delay={100} className="about-copy">
-            <p className="eyebrow">The philosophy</p>
-            <h2>Nature in, noise out</h2>
+            <p className="eyebrow">My story</p>
+            <h2>A little comfort, made by hand</h2>
             <p>
-              For years, founder Naomi searched for candles that truly aligned
-              with how she wanted her home to feel. Many looked beautiful, but
-              often lacked the natural, calming atmosphere she was looking for.
-              Working in social care taught her how important it is to slow down,
-              create moments of peace, and surround yourself with things that
-              bring comfort and joy.
+              Working in social care has taught me to appreciate the small things
+              that help us feel at ease. I wanted to make candles that brought
+              that same comfort into a home.
             </p>
             <p>
-              EarthyGlow grew from that same mindset — a love for creating
-              warmth, beauty, and meaningful moments at home. Nature is her
-              greatest source of inspiration: soft floral bouquets, delicate
-              botanicals, earthy colours and natural textures.
+              That’s where EarthyGlow began. I make each candle by hand in the
+              Netherlands, taking inspiration from flowers, natural textures
+              and the changing seasons.
             </p>
           </Reveal>
         </div>
@@ -75,8 +71,8 @@ export function About() {
       <section className="philosophy">
         <div className="container">
           <Reveal className="section-head">
-            <p className="eyebrow">What we stand for</p>
-            <h2>Our philosophy</h2>
+            <p className="eyebrow">What matters to me</p>
+            <h2>How I make my candles</h2>
           </Reveal>
           <div className="philosophy-grid">
             {philosophy.map((item, i) => (
@@ -94,14 +90,12 @@ export function About() {
           <Reveal className="quote-inner">
             <p className="eyebrow">A note from Naomi</p>
             <blockquote>
-              My goal is to create candles that are more than just something to
-              burn. They are designed to be beautiful decorative pieces that
-              elevate your space, while filling your home with carefully chosen
-              fragrances that create a cosy and welcoming atmosphere.
+              I hope you enjoy having these candles in your home as much as I
+              enjoy making them. Whether you choose one for yourself or as a
+              gift, it means a lot to have your support.
             </blockquote>
             <p className="quote-thanks">
-              Thank you for supporting a small business and letting EarthyGlow
-              become part of your home.
+              With warmth, Naomi
             </p>
             <Link to="/shop" className="btn btn-primary">
               Shop the collection

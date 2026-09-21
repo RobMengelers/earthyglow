@@ -7,6 +7,8 @@ export type Product = {
   soldOut?: boolean
   description: string
   collectionId: string
+  care?: string
+  variantLabel?: string
   variants?: ProductVariant[]
 }
 
@@ -25,25 +27,23 @@ export type Collection = {
   products: Product[]
 }
 
-const img = (file: string) => `/images/${file.replace(/\.png$/, '.webp')}`
-
 export const collections: Collection[] = [
   {
     id: 'little-glow',
     eyebrow: 'The Little Glow',
-    title: 'Tealight gift boxes',
+    title: 'Flower candle gifts',
     blurb:
-      'Soft, flower-bloomed tealights in gift-ready boxes. Made for cosy corners and thoughtful gifts.',
+      'Hand-poured flower candles, arranged in boxes and baskets. A bouquet with a little something different.',
     products: [
       {
         id: 'floral-box',
         name: 'The Floral Box',
         price: '€14,95',
         priceCents: 1495,
-        image: img('d99f763e-0f02-4797-9cff-2fdf82d96529.png'),
+        image: '/images/d99f763e-0f02-4797-9cff-2fdf82d96529.webp',
         collectionId: 'little-glow',
         description:
-          'A curated box of flower-bloomed tealights, gift-ready and made to bring soft ambient light to any corner. Poured in 100% soy wax and finished with clean, plant-based fragrance.',
+          'Nine individually poured flower candles, arranged in a gift box and scented with Bluebell. I make these with approximately 220g of soy wax. Choose pink, baby blue or purple for someone you love, or for yourself.',
         variants: [
           { id: 'pink', label: 'Pink', swatch: '#e8a1b5', priceCents: 1495 },
           { id: 'baby-blue', label: 'Baby blue', swatch: '#9fc9e8', priceCents: 1495 },
@@ -55,10 +55,10 @@ export const collections: Collection[] = [
         name: 'The Floral Basket',
         price: '€12,95',
         priceCents: 1295,
-        image: img('670b77ea-aeb3-4566-8863-e9fa02b40b8e.png'),
+        image: '/images/670b77ea-aeb3-4566-8863-e9fa02b40b8e.webp',
         collectionId: 'little-glow',
         description:
-          'A woven basket filled with floral tealights — a charming, ready-to-give gift that lights up cosy evenings with a soft, natural glow.',
+          'A basket of individually poured flower candles with an English Rose scent. Made with approximately 150g of soy wax and available in pink or red. A little bouquet you can enjoy at home or give as a gift.',
         variants: [
           { id: 'floral-basket-pink', label: 'Pink', priceCents: 1295, swatch: '#e8a1b5' },
           { id: 'floral-basket-red', label: 'Red', priceCents: 1295, swatch: '#c94c55' },
@@ -71,17 +71,17 @@ export const collections: Collection[] = [
     eyebrow: 'The Scented Glow',
     title: 'Scented soy candles',
     blurb:
-      'Warm, seasonal fragrances in clean-burning soy wax. Vegan, cruelty-free and phthalate-free.',
+      'From Coconut Island to Pumpkin Spice, find a fragrance for your favourite time of year.',
     products: [
       {
         id: 'coconut-beach',
         name: 'Coconut Beach',
         price: 'From €14,95',
         priceCents: 1495,
-        image: img('31eca091-4aa2-40ea-9a50-d76cdea8f7bc.png'),
+        image: '/images/31eca091-4aa2-40ea-9a50-d76cdea8f7bc.webp',
         collectionId: 'scented-glow',
         description:
-          'A warm, sun-drenched fragrance poured into clean-burning soy wax. Soft coconut notes bring a holiday feeling to every room.',
+          'A little beach scene, poured by hand with soy wax and scented with Coconut Island. Pineapple and orange meet creamy coconut, almond and peach. Choose your favourite of the four seaside shapes.',
         variants: [
           { id: 'oyster', label: 'Oyster', priceCents: 1495 },
           { id: 'coconut', label: 'Coconut', priceCents: 1795 },
@@ -94,31 +94,91 @@ export const collections: Collection[] = [
         name: 'Autumn Ember',
         price: '€14,95',
         priceCents: 1495,
-        image: img('50adf898-6887-4195-a3c6-286f4926778d.png'),
+        image: '/images/50adf898-6887-4195-a3c6-286f4926778d.webp',
         collectionId: 'scented-glow',
         description:
-          'Smoky, warm and soothing — the scent of crackling autumn evenings, captured by hand in a 100% soy wax candle.',
+          'I decorate this soy wax candle with autumn-inspired wax details. Its Vanilla & Cinders fragrance brings together smoky vanilla, clove, cedarwood, amber and musk for an evening at home.',
       },
       {
         id: 'pumpkin-spice',
         name: 'Pumpkin Spice',
         price: '€14,95',
         priceCents: 1495,
-        image: img('5869d3a7-0b47-42bc-a78a-f8a3b78eab39.png'),
+        image: '/images/5869d3a7-0b47-42bc-a78a-f8a3b78eab39.webp',
         collectionId: 'scented-glow',
         soldOut: true,
         description:
-          'The cosiest seasonal classic. Warm pumpkin and spice fill the room with that unmistakable autumn feeling.',
+          'A soy wax candle in a pumpkin-shaped jar, finished with autumn details and a warm Pumpkin Spice fragrance. A little seasonal colour for your home.',
       },
       {
         id: 'pumpkin-spice-latte',
         name: 'Pumpkin Spice Latte',
         price: '€9,95',
         priceCents: 995,
-        image: img('Pumpkin_Spice_Latte.png'),
+        image: '/images/Pumpkin_Spice_Latte.webp',
         collectionId: 'scented-glow',
         description:
-          'A smaller glow with all the cosy comfort of your favourite autumn drink — pumpkin, spice and everything nice.',
+          'A candle inspired by a favourite autumn drink, with whipped wax and handmade seasonal details. Poured with soy wax and scented with Pumpkin Spice. For your shelf, not your coffee cup.',
+      },
+    ],
+  },
+  {
+    id: 'halloween',
+    eyebrow: 'The Halloween Glow',
+    title: 'Halloween candles',
+    blurb: 'Little ghosts, pumpkin shapes and autumn scents. A few playful things I’ve made for the season.',
+    products: [
+      {
+        id: 'ghostlight-dinner-candle',
+        name: 'Ghostlight Dinner Candle',
+        price: '€2,95',
+        priceCents: 295,
+        image: '/images/ghostlight-dinner-candle.webp',
+        collectionId: 'halloween',
+        description:
+          'A twisted dinner candle with a little ghost face, poured by hand with 100% soy wax. A playful addition to your Halloween table or a small gift for someone who loves the season.',
+        care: 'Use a suitable candle holder on a stable, heat-resistant surface. Never leave a burning candle unattended.',
+      },
+      {
+        id: 'pumpkin-boo',
+        name: 'Pumpkin Boo',
+        price: '€8,95',
+        priceCents: 895,
+        image: '/images/pumpkin-boo.webp',
+        collectionId: 'halloween',
+        description:
+          'A little ghost and pumpkin, finished by hand in soy wax. Pumpkin Boo has a warm Pumpkin Spice fragrance for autumn evenings at home.',
+      },
+      {
+        id: 'boo-boo',
+        name: 'Boo Boo',
+        price: '€8,95',
+        priceCents: 895,
+        image: '/images/boo-boo.webp',
+        collectionId: 'halloween',
+        description:
+          'A handmade ghost detail sits on this soy wax candle. Scented with Vanilla & Cinders, with smoky vanilla, clove, cedarwood, amber and musk.',
+      },
+      {
+        id: 'scary-boo',
+        name: 'Scary Boo',
+        price: '€8,95',
+        priceCents: 895,
+        image: '/images/scary-boo.webp',
+        collectionId: 'halloween',
+        description:
+          'A spooky little addition to your autumn shelf, decorated by hand with a ghost-inspired wax detail. Made with soy wax and scented with Vanilla & Cinders.',
+      },
+      {
+        id: 'pumpkin-spice-wax-melts',
+        name: 'Pumpkin Spice Wax Melts',
+        price: '€4,95',
+        priceCents: 495,
+        image: '/images/pumpkin-spice-wax-melts.webp',
+        collectionId: 'halloween',
+        description:
+          'Little pumpkin-shaped wax melts with a warm Pumpkin Spice fragrance. I pour them by hand with soy wax and pack approximately 70g in each bag. Use them in a suitable wax warmer.',
+        care: 'Place one or two melts in a suitable wax warmer. Never add water or light the melts directly. Follow your warmer’s instructions and never leave it unattended.',
       },
     ],
   },
@@ -127,67 +187,107 @@ export const collections: Collection[] = [
     eyebrow: 'The Natural Glow',
     title: 'Sculptural natural candles',
     blurb:
-      'Nature-inspired shapes that double as decor. Hand-poured, one of a kind, and made to be kept.',
+      'Fragrance-free soy wax candles in simple, sculptural shapes. Choose one for your favourite spot at home.',
     products: [
       {
         id: 'column',
         name: 'Column candle',
         price: 'From €9,95',
         priceCents: 995,
-        image: img('Schermafbeelding2026-05-03152509.png'),
+        image: '/images/Schermafbeelding2026-05-03152509.webp',
         collectionId: 'natural-glow',
         description:
-          'A clean, architectural column candle — a sculptural statement that looks at home on any shelf or mantel.',
+          'Straight, ribbed lines and a simple column shape, poured by hand with 100% soy wax. Fragrance-free, so you can enjoy the candlelight without an added scent.',
+        variantLabel: 'size or bundle',
+        variants: [
+          { id: 'column-small', label: 'Small', priceCents: 995 },
+          { id: 'column-large', label: 'Large', priceCents: 1295 },
+          { id: 'column-bundle', label: 'Bundle', priceCents: 1995 },
+        ],
       },
       {
         id: 'pillar',
         name: 'Pillar candle',
         price: 'From €6,95',
         priceCents: 695,
-        image: img('1b8dcdc0-1ca6-4d8b-bd8d-78d13c22efaf.png'),
+        image: '/images/1b8dcdc0-1ca6-4d8b-bd8d-78d13c22efaf.webp',
         collectionId: 'natural-glow',
         description:
-          'Classic and stately, this hand-poured pillar candle brings a soft, steady warmth to the table.',
+          'A ribbed pillar candle for a table or a favourite corner of your home. I pour it by hand with 100% soy wax and leave it fragrance-free.',
+        variantLabel: 'size or bundle',
+        variants: [
+          { id: 'pillar-small', label: 'Small', priceCents: 695 },
+          { id: 'pillar-medium', label: 'Medium', priceCents: 995 },
+          { id: 'pillar-large', label: 'Large', priceCents: 1295 },
+          { id: 'pillar-bundle', label: 'Bundle', priceCents: 2495 },
+        ],
       },
       {
         id: 'spiral',
         name: 'Spiral candle',
         price: 'From €6,95',
         priceCents: 695,
-        image: img('e3d2f8c0-1f58-4c8b-a2e7-a7aafead6d4d.png'),
+        image: '/images/e3d2f8c0-1f58-4c8b-a2e7-a7aafead6d4d.webp',
         collectionId: 'natural-glow',
         description:
-          'A flowing, sculpted candle with natural texture and movement — a piece of decor you will want to keep long after it burns.',
+          'Soft twists and rounded lines give this candle its shape. Poured by hand with 100% soy wax, with no added fragrance.',
+        variantLabel: 'size or bundle',
+        variants: [
+          { id: 'spiral-small', label: 'Small', priceCents: 695 },
+          { id: 'spiral-medium', label: 'Medium', priceCents: 995 },
+          { id: 'spiral-large', label: 'Large', priceCents: 1295 },
+          { id: 'spiral-bundle', label: 'Bundle', priceCents: 2495 },
+        ],
       },
       {
         id: 'shell',
         name: 'Shell candle',
         price: 'From €4,95',
         priceCents: 495,
-        image: img('Schermafbeelding_2026-05-03_153832.png'),
+        image: '/images/Schermafbeelding_2026-05-03_153832.webp',
         collectionId: 'natural-glow',
         description:
-          'A delicate, sea-inspired shell candle — a little piece of nature, hand-poured and one of a kind.',
+          'A small reminder of the seaside, with curved lines inspired by a shell. Poured by hand with 100% soy wax and no added fragrance.',
+        variantLabel: 'size or bundle',
+        variants: [
+          { id: 'shell-small', label: 'Small', priceCents: 495 },
+          { id: 'shell-large', label: 'Large', priceCents: 895 },
+          { id: 'shell-bundle', label: 'Bundle', priceCents: 1195 },
+        ],
       },
       {
         id: 'arch',
         name: 'Arch candle',
         price: 'From €4,95',
         priceCents: 495,
-        image: img('7aa7691d-26fe-4ea2-8188-64529e4bda46.png'),
+        image: '/images/7aa7691d-26fe-4ea2-8188-64529e4bda46.webp',
         collectionId: 'natural-glow',
         description:
-          'An elegant arch candle that draws the eye — soft curves and natural beauty in hand-poured wax.',
+          'A simple arch shape that looks lovely on its own or beside your favourite objects. Made by hand with 100% soy wax and no added fragrance.',
+        variantLabel: 'size or bundle',
+        variants: [
+          { id: 'arch-small', label: 'Small', priceCents: 495 },
+          { id: 'arch-medium', label: 'Medium', priceCents: 695 },
+          { id: 'arch-large', label: 'Large', priceCents: 895 },
+          { id: 'arch-bundle', label: 'Bundle', priceCents: 1595 },
+        ],
       },
       {
         id: 'bubble',
         name: 'Bubble candle',
         price: 'From €4,95',
         priceCents: 495,
-        image: img('6efade16-e5a8-4eb0-99e9-ad0a90b19f9a.png'),
+        image: '/images/6efade16-e5a8-4eb0-99e9-ad0a90b19f9a.webp',
         collectionId: 'natural-glow',
         description:
-          'Playful bubble forms in natural wax — a fun, tactile decor piece with a warm, gentle glow.',
+          'Rounded, playful bubbles in a candle you can tuck into a favourite corner. I pour it by hand with 100% soy wax and leave it fragrance-free.',
+        variantLabel: 'size or bundle',
+        variants: [
+          { id: 'bubble-small', label: 'Small', priceCents: 495 },
+          { id: 'bubble-medium', label: 'Medium', priceCents: 695 },
+          { id: 'bubble-large', label: 'Large', priceCents: 895 },
+          { id: 'bubble-bundle', label: 'Bundle', priceCents: 1595 },
+        ],
       },
     ],
   },
@@ -213,5 +313,5 @@ export function getRelated(product: Product, count = 3): Product[] {
     .slice(0, count) ?? products.filter((p) => p.id !== product.id).slice(0, count)
 }
 
-export const heroImage = img('17ba3741-6495-4fc7-84fe-a4653dbdda61.png')
-export const aboutImage = img('Schermafbeelding_2026-05-30_164759.png')
+export const heroImage = '/images/17ba3741-6495-4fc7-84fe-a4653dbdda61.webp'
+export const aboutImage = '/images/Schermafbeelding_2026-05-30_164759.webp'

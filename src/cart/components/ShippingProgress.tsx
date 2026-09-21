@@ -52,8 +52,8 @@ export function ShippingProgress({ className, zone }: ShippingProgressProps) {
       </div>
       <p className="shipping-progress-note">
         {zone
-          ? `Free ${activeZone.label === 'Netherlands' ? '' : 'international'} shipping on orders over ${formatPrice(activeZone.freeThresholdCents)}`
-          : `Free shipping on orders over ${formatPrice(activeZone.freeThresholdCents)}`}
+          ? `Free ${activeZone.label === 'Netherlands' ? '' : 'international'} shipping on orders of ${formatPrice(activeZone.freeThresholdCents)} or more`
+          : `Free shipping on orders of ${formatPrice(activeZone.freeThresholdCents)} or more`}
       </p>
     </div>
   )

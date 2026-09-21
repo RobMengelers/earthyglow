@@ -4,13 +4,14 @@ import { getCollection, getProduct, getRelated } from '../../data/products'
 import { ProductCard } from '../../components/catalog/ProductCard'
 import { Reveal } from '../../components/ui/Reveal'
 import { useCart } from '../../cart/useCart'
+import { formatPrice } from '../../cart/CartContext'
 import { NotFound } from '../NotFound/NotFound'
+import { seasonForProduct } from '../../data/seasons'
 
 const perks = [
   '100% soy wax',
   'Vegan & cruelty-free',
   'Hand-poured in small batches',
-  'Paraben- & phthalate-free fragrance',
 ]
 
 export function ProductPage() {
@@ -18,6 +19,7 @@ export function ProductPage() {
   const { addItem } = useCart()
   const product = getProduct(productId)
   const [variantId, setVariantId] = useState('')
+  const [quantity, setQuantity] = useState(1)
 
   if (!product) {
     return <NotFound />
@@ -27,6 +29,7 @@ export function ProductPage() {
   const related = getRelated(product)
 
   const collectionTitle = collection?.title ?? 'EarthyGlow'
+  const season = seasonForProduct(product.id)
   const selectedVariant = product.variants?.find((variant) => variant.id === variantId)
 
   return (
@@ -40,7 +43,7 @@ export function ProductPage() {
             {collection && (
               <>
                 <span aria-hidden="true">/</span>
-                <Link to={`/shop/${collection.id}`}>{collection.eyebrow}</Link>
+                <Link to={season ? `/shop?season=${season.id}` : '/shop'}>{season?.label ?? collection.eyebrow}</Link>
               </>
             )}
             <span aria-hidden="true">/</span>
@@ -60,19 +63,19 @@ export function ProductPage() {
             <Reveal delay={100} className="product-detail-info">
               {collection && (
                 <Link
-                  to={`/shop/${collection.id}`}
+                  to={season ? `/shop?season=${season.id}` : '/shop'}
                   className="eyebrow product-detail-collection"
                 >
-                  {collection.eyebrow}
+                  {season?.label ?? collection.eyebrow}
                 </Link>
               )}
               <h1>{product.name}</h1>
-              <p className="product-detail-price">{selectedVariant?.priceCents ? `€${(selectedVariant.priceCents / 100).toFixed(2).replace('.', ',')}` : product.price}</p>
+              <p className="product-detail-price">{selectedVariant?.priceCents ? formatPrice(selectedVariant.priceCents) : product.price}</p>
               <p className="product-detail-desc">{product.description}</p>
 
               {product.variants && (
                 <fieldset className="product-options">
-                  <legend>Choose your {product.id === 'floral-box' ? 'colour' : 'shape'}</legend>
+                  <legend>Choose your {product.variantLabel ?? (product.variants.some((variant) => variant.swatch) ? 'colour' : 'shape')}</legend>
                   <div className="product-option-list">
                     {product.variants.map((variant) => (
                       <label key={variant.id} className={`product-option${variantId === variant.id ? ' is-selected' : ''}`}>
@@ -100,19 +103,38 @@ export function ProductPage() {
               {product.soldOut ? (
                 <div className="product-detail-actions">
                   <button type="button" className="btn btn-primary" disabled>
-                    Temporarily sold out
+                    Currently sold out
                   </button>
                   <p className="product-detail-note">
-                    This collection will return once everything is hand-poured
-                    again — sign up via the shop to be the first to know.
+                    This candle is currently unavailable. <Link to="/contact">Send me a note</Link>{' '}
+                    if you’d like to ask about it.
                   </p>
                 </div>
               ) : (
                 <div className="product-detail-actions">
+                  <div className="product-quantity-control">
+                    <div className="qty-stepper product-quantity" aria-label="Quantity">
+                      <button
+                        type="button"
+                        aria-label="Decrease quantity"
+                        onClick={() => setQuantity((current) => Math.max(1, current - 1))}
+                      >
+                        &minus;
+                      </button>
+                      <span aria-live="polite">{quantity}</span>
+                      <button
+                        type="button"
+                        aria-label="Increase quantity"
+                        onClick={() => setQuantity((current) => current + 1)}
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
                   <button
                     type="button"
                     className="btn btn-primary"
-                    onClick={() => addItem(product, collectionTitle, 1, selectedVariant)}
+                    onClick={() => addItem(product, collectionTitle, quantity, selectedVariant)}
                     disabled={Boolean(product.variants && !selectedVariant)}
                   >
                     {product.variants && !selectedVariant ? 'Choose an option' : 'Add to cart'}
@@ -128,7 +150,7 @@ export function ProductPage() {
                   <strong>Made:</strong> hand-poured in small batches
                 </p>
                 <p>
-                  <strong>Sustainable:</strong> wooden wick, reusable glass
+                  <strong>Made by hand:</strong> small differences in colour and finish are part of each candle.
                 </p>
               </div>
             </Reveal>

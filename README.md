@@ -10,6 +10,10 @@ React, TypeScript, and Vite storefront with a separate backend in `server/`.
 - `npm run lint` — run ESLint.
 
 See `server/package.json` for backend commands and `.env.example` for configuration.
+Run `npm --prefix server test` for catalog, variant-pricing and checkout regression checks.
+These tests mock database access and payments; they do not create real orders.
+Apply catalog migrations with `npm --prefix server run prisma:deploy` before releasing
+storefront changes that add products or options.
 
 ## Frontend structure
 

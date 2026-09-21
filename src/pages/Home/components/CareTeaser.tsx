@@ -4,18 +4,18 @@ import { Reveal } from '../../../components/ui/Reveal'
 const tips = [
   {
     step: '01',
-    title: 'First burn',
-    text: 'Let your candle burn until the wax pool reaches the edge — usually 2–3 hours — to prevent tunnelling.',
+    title: 'Before you light it',
+    text: 'Flower candles need to come out of their packaging first. Use a heat-resistant dish for flowers and sculptural candles.',
   },
   {
     step: '02',
     title: 'Trim the wick',
-    text: 'Keep the wick at about 5 mm. Trim before each burn for a steady flame and a clean, even pool.',
+    text: 'For wooden wicks, trim to 3 to 5 mm before lighting. Check the care guide for your candle type.',
   },
   {
     step: '03',
     title: 'Keep it safe',
-    text: 'Never leave a burning candle unattended, and keep it away from drafts, children and pets.',
+    text: 'Never leave a burning candle unattended, and keep it away from draughts, children and pets.',
   },
 ] as const
 
@@ -27,8 +27,8 @@ export function CareTeaser() {
           <p className="eyebrow">Candle care</p>
           <h2>Make every glow last</h2>
           <p className="section-lede">
-            A few simple habits make every EarthyGlow candle burn longer,
-            cleaner and more beautifully.
+            From flower candles to jars, each candle needs a little care.
+            Here are a few things to check before you light yours.
           </p>
         </Reveal>
         <div className="care-grid">

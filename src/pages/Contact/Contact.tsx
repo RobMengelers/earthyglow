@@ -45,8 +45,8 @@ export function Contact() {
             <p className="eyebrow">Contact</p>
             <h1>Let’s get in touch</h1>
             <p className="section-lede">
-              Questions about an order, a custom piece, or just want to say hi?
-              We’d love to hear from you.
+              Need help choosing a candle, have a question about your order,
+              or just want to say hello? I’d love to hear from you.
             </p>
           </Reveal>
         </div>
@@ -60,11 +60,11 @@ export function Contact() {
               <a href="mailto:earthyglowcandles@gmail.com">
                 earthyglowcandles@gmail.com
               </a>
-              <p>We do our best to reply within 24 hours.</p>
+              <p>Send me a note and I’ll get back to you as soon as I can.</p>
             </div>
 
             <div className="contact-card">
-              <h2>Follow us</h2>
+              <h2>Follow along</h2>
               <SocialLinks className="contact-socials" />
             </div>
 
@@ -118,7 +118,7 @@ export function Contact() {
                   name="message"
                   value={message}
                   onChange={(event) => setMessage(event.target.value)}
-                  placeholder="How can we help?"
+                  placeholder="How can I help?"
                   rows={5}
                   required
                 />
@@ -130,12 +130,12 @@ export function Contact() {
               >
                 Send
               </LoadingButton>
-              {sendState !== 'idle' && (
+              {(sendState === 'sent' || sendState === 'error') && (
                 <p
                   className={`form-note${sendState === 'error' ? ' is-error' : ''}`}
                 >
                   {sendState === 'sent'
-                    ? 'Thanks — your message has been sent and we’ll reply within 24 hours.'
+                    ? 'Thank you for your message. I’ll get back to you as soon as I can.'
                     : 'Something went wrong sending your message. Please try again or e-mail us directly.'}
                 </p>
               )}

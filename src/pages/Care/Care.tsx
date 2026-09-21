@@ -4,33 +4,33 @@ import { Reveal } from '../../components/ui/Reveal'
 const careTips = [
   {
     step: '01',
-    title: 'First burn is the most important',
-    text: 'Let your candle burn until the entire top layer of wax has melted — usually 2 to 3 hours. This prevents tunnelling and gives every candle a clean, full first memory.',
+    title: 'Flower candles',
+    text: 'Remove each flower from its stick and packaging. Place it on a heat-resistant dish before lighting. Never burn the arrangement in its box or basket.',
   },
   {
     step: '02',
-    title: 'Trim the wick before each burn',
-    text: 'Keep the wick at about 5 mm and always trim it before lighting. It keeps the flame steady, reduces soot, and makes the pool burn evenly.',
+    title: 'Sculptural candles',
+    text: 'Stand shaped candles on a heat-resistant dish or tray to catch the wax as it melts.',
   },
   {
     step: '03',
-    title: 'Don’t burn longer than 4 hours',
-    text: 'Give your candle a break after about 4 hours, and let it cool completely before lighting again. Better burns, longer life.',
+    title: 'Wooden wicks',
+    text: 'Trim wooden wicks to 3 to 5 mm before lighting. If the flame gets too high, put it out and let the candle cool before trimming and relighting.',
   },
   {
     step: '04',
-    title: 'Keep the wax pool clean',
-    text: 'Remove matches, wick trimmings and debris from the wax pool before lighting. A clean pool means a cleaner, brighter burn.',
+    title: 'Candles in jars',
+    text: 'Let the wax melt to the edges to help prevent tunnelling. Keep burns to 2 to 4 hours, and never exceed 4 hours.',
   },
   {
     step: '05',
-    title: 'Stop burning at the last 1 cm',
-    text: 'Leaving about a centimetre of wax at the bottom protects the vessel from the heat and keeps the candle safe and scenting beautifully.',
+    title: 'Know when to stop',
+    text: 'For candles in jars, stop using the candle when 10 mm of wax remains. Let it cool completely before handling.',
   },
   {
     step: '06',
-    title: 'Store them well',
-    text: 'Keep your candles out of direct sunlight and away from heat sources, ideally upright. Lovely scents last far longer in a cool, dry spot.',
+    title: 'Give your jar another use',
+    text: 'Once your candle is finished and cool, clean the jar with warm water and use it around your home.',
   },
 ]
 
@@ -40,7 +40,7 @@ const safety = [
   'Place on a stable, heat-resistant surface.',
   'Keep out of reach of children and pets.',
   'Never move a candle while it is burning or while the wax is liquid.',
-  'Always extinguish with a snuffer — not with water.',
+  'Use a snuffer or blow gently to extinguish. Never use water.',
 ]
 
 export function Care() {
@@ -57,9 +57,8 @@ export function Care() {
             <p className="eyebrow">Candle care</p>
             <h1>Make every glow last</h1>
             <p className="section-lede">
-              A few small habits make all the difference. Follow these tips and
-              your EarthyGlow candle will burn longer, cleaner and more
-              beautifully.
+              A little care helps you enjoy your candle safely. Start with the
+              guidance for your candle type, and always follow its safety label.
             </p>
           </Reveal>
         </div>

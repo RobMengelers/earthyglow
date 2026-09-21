@@ -146,7 +146,7 @@ export function formatEuros(cents: number): string {
 }
 
 export function formatDateTime(value: string | null): string {
-  if (!value) return '—'
+  if (!value) return 'Not available'
   return new Intl.DateTimeFormat('nl-NL', {
     dateStyle: 'medium',
     timeStyle: 'short',

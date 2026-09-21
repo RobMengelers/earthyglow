@@ -1,49 +1,110 @@
 .shop-body {
-  padding: 56px 0 96px;
+  padding: 28px 0 96px;
 }
 
-.filter-bar {
+.shop-filters {
+  margin-bottom: 36px;
+}
+
+.shop-filter-caption {
+  margin-bottom: 16px;
+  color: var(--clay);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.season-nav {
+  position: relative;
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-  margin-bottom: 1.6rem;
+  gap: clamp(24px, 4vw, 56px);
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+  scrollbar-width: thin;
 }
 
-.filter-chip {
-  padding: 0.55rem 1.15rem;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  background: var(--surface);
-  color: var(--ink);
-  font-size: 0.9rem;
-  font-weight: 500;
-  transition:
-    background 0.25s ease,
-    color 0.25s ease,
-    border-color 0.25s ease;
-}
-
-.filter-chip:hover {
-  border-color: var(--clay);
-  color: var(--clay-deep);
-}
-
-.filter-chip.active {
-  background: var(--olive);
-  border-color: var(--olive);
-  color: var(--surface);
-}
-
-.shop-count {
-  font-size: 0.88rem;
+.season-link {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 8px 2px 20px;
   color: var(--body);
-  margin-bottom: 1.4rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.2rem, 2.2vw, 1.65rem);
+  line-height: 1.3;
+  white-space: nowrap;
+  transition: color 180ms ease;
+}
+
+.season-link::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: var(--clay);
+  content: '';
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 180ms ease;
+}
+
+.season-link:hover,
+.season-link.is-active {
+  color: var(--clay);
+}
+
+.season-link.is-active::after {
+  transform: scaleX(1);
+}
+
+.season-count {
+  padding-top: 2px;
+  font-family: var(--font-body);
+  font-size: 0.64rem;
+  font-weight: 500;
+}
+
+.season-link:focus-visible {
+  outline: 2px solid var(--clay);
+  outline-offset: -3px;
+}
+
+.shop-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 48px 24px;
+  background: var(--bg-2);
+  text-align: center;
+}
+
+.shop-empty h2 {
+  font-size: clamp(1.5rem, 3vw, 2rem);
 }
 
 @media (max-width: 640px) {
+  .shop-body {
+    padding-top: 12px;
+  }
 
-  .filter-chip {
-    font-size: 0.82rem;
-    padding: 0.5rem 0.9rem;
+  .season-nav {
+    gap: 26px;
+  }
+
+  .season-link {
+    padding-bottom: 16px;
+  }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .season-link,
+  .season-link::after {
+    transition: none;
   }
 }

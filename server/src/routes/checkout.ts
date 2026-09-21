@@ -62,12 +62,17 @@ export async function checkoutRoutes(app: FastifyInstance) {
     for (const item of items) {
       const product = await prisma.product.findUnique({
         where: { id: item.id },
-        select: { id: true, name: true, priceCents: true, active: true },
+        select: { id: true, name: true, priceCents: true, active: true, _count: { select: { variants: true } } },
       })
       if (!product || !product.active) {
         return reply
           .code(400)
           .send({ error: `Product "${item.id}" is not available` })
+      }
+      if (product._count.variants > 0 && !item.variantId) {
+        return reply.code(400).send({
+          error: `Please choose an option for "${product.name}" on its product page and add it to your cart again.`,
+        })
       }
       const variant = item.variantId
         ? await prisma.productVariant.findFirst({

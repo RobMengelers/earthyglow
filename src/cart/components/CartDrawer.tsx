@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { formatPrice } from '../CartContext'
 import { useCart } from '../useCart'
+import { CartLine } from './CartLine'
 
 export function CartDrawer() {
   const {
@@ -10,8 +11,6 @@ export function CartDrawer() {
     subtotalCents,
     isDrawerOpen,
     closeDrawer,
-    updateQuantity,
-    removeItem,
   } = useCart()
 
   useEffect(() => {
@@ -73,63 +72,13 @@ export function CartDrawer() {
           <>
             <ul className="cart-lines">
               {items.map((item) => (
-                <li key={item.id} className="cart-line">
-                  <Link
-                    to={`/product/${item.id}`}
-                    className="cart-line-media"
-                    tabIndex={isDrawerOpen ? 0 : -1}
-                    onClick={closeDrawer}
-                  >
-                    <img src={item.image} alt={item.name} loading="lazy" />
-                  </Link>
-                  <div className="cart-line-body">
-                    <div className="cart-line-top">
-                      <Link
-                        to={`/product/${item.id}`}
-                        className="cart-line-name"
-                        tabIndex={isDrawerOpen ? 0 : -1}
-                        onClick={closeDrawer}
-                      >
-                        {item.name}
-                        {item.variantLabel && <small className="cart-line-variant">{item.variantLabel}</small>}
-                      </Link>
-                      <button
-                        type="button"
-                        className="cart-line-remove"
-                        aria-label={`Remove ${item.name}`}
-                        tabIndex={isDrawerOpen ? 0 : -1}
-                        onClick={() => removeItem(item.id)}
-                      >
-                        &times;
-                      </button>
-                    </div>
-                    <p className="cart-line-collection">{item.collectionTitle}</p>
-                    <div className="cart-line-bottom">
-                      <div className="qty-stepper">
-                        <button
-                          type="button"
-                          aria-label={`Decrease quantity of ${item.name}`}
-                          tabIndex={isDrawerOpen ? 0 : -1}
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                        >
-                          &minus;
-                        </button>
-                        <span aria-live="polite">{item.quantity}</span>
-                        <button
-                          type="button"
-                          aria-label={`Increase quantity of ${item.name}`}
-                          tabIndex={isDrawerOpen ? 0 : -1}
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                        >
-                          +
-                        </button>
-                      </div>
-                      <span className="cart-line-price">
-                        {formatPrice(item.priceCents * item.quantity)}
-                      </span>
-                    </div>
-                  </div>
-                </li>
+                <CartLine
+                  key={item.id}
+                  item={item}
+                  compact
+                  tabIndex={isDrawerOpen ? 0 : -1}
+                  onNavigate={closeDrawer}
+                />
               ))}
             </ul>
 
@@ -144,7 +93,7 @@ export function CartDrawer() {
               </div>
               <div className="cart-totals-row cart-totals-total">
                 <span>Total</span>
-                <span className="cart-totals-muted">—</span>
+                <span className="cart-totals-muted">At checkout</span>
               </div>
               <Link
                 to="/checkout"

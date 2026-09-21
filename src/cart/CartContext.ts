@@ -58,10 +58,6 @@ export const SHIPPING_ZONES: Record<'netherlands' | 'international', ShippingZon
 
 export const DEFAULT_ZONE: ShippingZone = SHIPPING_ZONES.netherlands
 
-// Backwards-compatible shorthand for the default (Netherlands) zone.
-export const FREE_SHIPPING_THRESHOLD_CENTS = DEFAULT_ZONE.freeThresholdCents
-export const SHIPPING_CENTS = DEFAULT_ZONE.rateCents
-
 export function formatPrice(cents: number): string {
   return `€${(cents / 100).toFixed(2).replace('.', ',')}`
 }

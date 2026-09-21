@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { SocialLinks } from '../ui/SocialLinks'
+import { seasons } from '../../data/seasons'
 
 const policies = [
   { label: 'Privacy Policy', to: '/policies/privacy-policy' },
@@ -20,8 +21,8 @@ export function Footer() {
             </span>
           </Link>
           <p>
-            Hand-poured 100% soy wax candles, made in small batches in the
-            Netherlands. Natural, vegan and cruelty-free.
+            Candles made by Naomi in the Netherlands, poured by hand with
+            100% soy wax. Thank you for supporting my small business.
           </p>
           <SocialLinks className="footer-socials" />
         </div>
@@ -30,9 +31,11 @@ export function Footer() {
           <h3>Shop</h3>
           <ul>
             <li><Link to="/shop">All products</Link></li>
-            <li><Link to="/shop/little-glow">The Little Glow</Link></li>
-            <li><Link to="/shop/scented-glow">The Scented Glow</Link></li>
-            <li><Link to="/shop/natural-glow">The Natural Glow</Link></li>
+            {seasons.map((season) => (
+              <li key={season.id}>
+                <Link to={`/shop?season=${season.id}`}>{season.label}</Link>
+              </li>
+            ))}
           </ul>
         </div>
 

@@ -5,8 +5,8 @@ export function TermsOfService() {
     <PolicyLayout title="Terms of Service">
       <h2>1. Company Information</h2>
       <p>
-        EarthyGlow is a small business specializing in handmade candles crafted
-        with natural ingredients.
+        I’m Naomi, the maker behind EarthyGlow. I make candles by hand in
+        the Netherlands using 100% soy wax.
       </p>
       <p>
         Contact:{' '}
@@ -15,9 +15,8 @@ export function TermsOfService() {
 
       <h2>2. Products</h2>
       <p>
-        All candles are carefully handmade. Due to the artisanal nature of the
-        products, colors, shapes, or small details may vary slightly from item to
-        item.
+        I make each candle by hand, so colours, shapes and small details
+        may vary a little. That’s part of what makes each one personal.
       </p>
 
       <h2>3. Prices &amp; Payment</h2>
@@ -35,7 +34,7 @@ export function TermsOfService() {
           International shipping is €12.95, free for orders of €50 or more
         </li>
         <li>
-          Estimated delivery time: 3-7 business days after payment but can vary
+          Estimated delivery: 3 to 7 business days after payment. Delivery times can vary.
         </li>
         <li>EarthyGlow is not responsible for delays caused by the carrier.</li>
       </ul>
@@ -44,7 +43,7 @@ export function TermsOfService() {
       <p>Did your candle arrive damaged?</p>
       <p>
         Please contact us within 48 hours, preferably with a photo of the damage.
-        We will work with you to find a suitable solution.
+        I’ll look into it with you and help find a solution.
       </p>
     </PolicyLayout>
   )

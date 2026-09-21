@@ -6,16 +6,16 @@ export function RefundPolicy() {
       <h2>1. Handmade &amp; Personalized Items</h2>
       <p>
         Because our candles are handmade and made to order, returns are not
-        automatically accepted. However, we will always do our best to help if
-        something went wrong.
+        automatically accepted. If something went wrong,
+        please get in touch so I can help.
       </p>
 
       <h2>2. Not satisfied?</h2>
       <p>
         Please contact us within 7 days via email at{' '}
         <a href="mailto:earthyglowcandles@gmail.com">earthyglowcandles@gmail.com</a>
-        . We will look for a suitable solution together, such as a replacement or
-        partial refund.
+        . I’ll look into it with you and discuss a suitable solution, such as a
+        replacement or partial refund.
       </p>
 
       <h2>3. Return Costs</h2>

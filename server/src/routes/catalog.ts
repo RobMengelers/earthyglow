@@ -6,7 +6,15 @@ export async function catalogRoutes(app: FastifyInstance) {
     const products = await prisma.product.findMany({
       where: { active: true },
       orderBy: { createdAt: 'asc' },
-      select: { id: true, name: true, priceCents: true },
+      select: {
+        id: true,
+        name: true,
+        priceCents: true,
+        variants: {
+          where: { active: true },
+          select: { id: true, label: true, priceCents: true },
+        },
+      },
     })
 
     return { products }

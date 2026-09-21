@@ -15,9 +15,8 @@ export function Hero() {
             <span className="hero-line hero-line-3">poured by hand</span>
           </h1>
           <p className="lede">
-            EarthyGlow blends 100% soy wax, natural botanicals and carefully
-            chosen fragrance into candles that feel as beautiful as they burn —
-            made to bring peace, not noise, into your home.
+            I’m Naomi, the maker behind EarthyGlow. I pour each candle by hand
+            with 100% soy wax, bringing a little of the outdoors into your home.
           </p>
           <div className="hero-actions">
             <Link to="/shop" className="btn btn-primary">
@@ -31,7 +30,7 @@ export function Hero() {
 
         <div className="hero-visual">
           <div className="hero-frame">
-            <img src={heroImage} alt="EarthyGlow candles in a warm, cozy setting" />
+            <img src={heroImage} alt="EarthyGlow candles in a warm, cosy setting" />
             <LiquidGlow />
           </div>
         </div>

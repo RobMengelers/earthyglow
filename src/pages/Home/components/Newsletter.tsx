@@ -6,11 +6,11 @@ export function Newsletter() {
       <div className="container">
         <Reveal className="newsletter-inner">
           <p className="eyebrow">Stay in the loop</p>
-          <h2>New collections, first</h2>
+          <h2>Come behind the scenes</h2>
           <p>
-            Join the EarthyGlow list for early access to limited collections —
-            like the Halloween drop on September 20th — plus care tips and cozy
-            updates. No spam, ever.
+            Follow me on Instagram for new candles, seasonal collections and
+            little glimpses of what I’m making. I’d love to see how you style
+            your EarthyGlow candles, too.
           </p>
           <a
             href="https://www.instagram.com/earthyglowcandles"

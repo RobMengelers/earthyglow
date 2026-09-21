@@ -48,7 +48,7 @@ export function OrderSummary({ country }: { country: string }) {
                 : formatPrice(zoneTotals.shippingCents)}
             </span>
           ) : (
-            <span className="cart-totals-muted">—</span>
+            <span className="cart-totals-muted">Choose a country</span>
           )}
         </div>
         <div className="cart-totals-row cart-totals-total">
@@ -56,7 +56,7 @@ export function OrderSummary({ country }: { country: string }) {
           {hasCountry ? (
             <span>{formatPrice(zoneTotals.totalCents)}</span>
           ) : (
-            <span className="cart-totals-muted">—</span>
+            <span className="cart-totals-muted">Choose a country</span>
           )}
         </div>
       </div>

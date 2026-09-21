@@ -93,13 +93,11 @@ export function Checkout() {
       <section className="checkout-done">
         <div className="container">
           <Reveal>
-            <p className="eyebrow">Order received</p>
-            <h1>Thank you, your order is in</h1>
+            <p className="eyebrow">Demo order</p>
+            <h1>Your demo order is saved</h1>
             <p className="checkout-done-lede">
-              Your order <strong>{order.orderNumber}</strong> has been placed.
-              We&rsquo;ll send a secure payment link to your email shortly, and
-              your candles will be hand-poured and shipped as soon as it&rsquo;s
-              paid.
+              Demo order <strong>{order.orderNumber}</strong> is saved in this
+              browser. No payment was taken and no email will be sent.
             </p>
             <div className="hero-actions">
               <Link to="/shop" className="btn btn-primary">
@@ -169,7 +167,7 @@ export function Checkout() {
               <fieldset className="checkout-fieldset">
                 <legend>Notes</legend>
                 <label className="field">
-                  <span>Anything we should know? (optional)</span>
+                  <span>Anything I should know? (optional)</span>
                   <textarea name="notes" rows={4} />
                 </label>
               </fieldset>

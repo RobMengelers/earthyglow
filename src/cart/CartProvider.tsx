@@ -6,7 +6,7 @@ import {
   type ReactNode,
 } from 'react'
 import type { Product, ProductVariant } from '../data/products'
-import { fetchCatalog } from './catalog'
+import { fetchCatalog, reconcileCatalogItems } from './catalog'
 import {
   CartContext,
   calcTotals,
@@ -63,27 +63,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     void fetchCatalog().then((catalog) => {
       if (cancelled) return
-      const byId = new Map(catalog.map((product) => [product.id, product]))
-      setItems((current) => {
-        let changed = false
-        const next = current.map((item) => {
-            const product = byId.get(item.productId)
-          if (
-            product &&
-            (product.priceCents !== item.priceCents ||
-              product.name !== item.name)
-          ) {
-            changed = true
-            return {
-              ...item,
-              name: product.name,
-              priceCents: product.priceCents,
-            }
-          }
-          return item
-        })
-        return changed ? next : current
-      })
+      setItems((current) => reconcileCatalogItems(current, catalog))
     })
 
     return () => {
@@ -121,9 +101,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
           },
         ]
       })
-      setIsDrawerOpen(true)
+      if (items.length === 0) setIsDrawerOpen(true)
     },
-    [],
+    [items.length],
   )
 
   const removeItem = useCallback((id: string) => {

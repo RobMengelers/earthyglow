@@ -41,7 +41,7 @@ export function PaymentMethods({ methods, paymentMethod, onChange }: PaymentMeth
       </div>
       <p className="payment-note">
         You&rsquo;ll be redirected to a secure page to complete
-        your order — it is only confirmed once it succeeds.
+        your order. Your order is confirmed once payment succeeds.
       </p>
     </fieldset>
   )

@@ -13,21 +13,19 @@ export function AboutTeaser() {
           <p className="eyebrow">Our story</p>
           <h2>Made by hand, made for home</h2>
           <p>
-            EarthyGlow was born from a love of slow moments and warm spaces.
-            Founder Naomi crafts each candle by hand in the Netherlands — using
-            eco-friendly materials, wooden wicks and reusable jars, and an
-            aesthetic designed to blend effortlessly into any home.
+            I’m Naomi, and I make EarthyGlow candles here in the Netherlands.
+            My work in social care reminds me how much small moments of comfort
+            matter. Making candles is another way I bring that feeling home.
           </p>
           <p>
-            Nature is the greatest source of inspiration: soft florals, delicate
-            botanicals, earthy colours and natural textures. Every candle is more
-            than something to burn — it is a decorative piece that brings a little
-            piece of nature indoors.
+            Flowers, shells and earthy colours inspire what I make. I hope you
+            find something here that feels at home with you, or makes a thoughtful
+            gift for someone close to you.
           </p>
           <ul className="about-list">
-            <li>Wooden wicks &amp; reusable jars</li>
-            <li>Eco-friendly, mindful production</li>
-            <li>Designed to add peace, not noise</li>
+            <li>100% soy wax</li>
+            <li>Poured by hand in small batches</li>
+            <li>Shapes and colours inspired by nature</li>
           </ul>
           <Link to="/about" className="btn btn-primary">
             Read the full story

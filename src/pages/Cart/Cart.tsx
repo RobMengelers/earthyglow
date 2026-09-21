@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { formatPrice } from '../../cart/CartContext'
 import { useCart } from '../../cart/useCart'
+import { CartLine } from '../../cart/components/CartLine'
 import { Reveal } from '../../components/ui/Reveal'
 
 export function Cart() {
@@ -8,8 +9,6 @@ export function Cart() {
     items,
     itemCount,
     subtotalCents,
-    updateQuantity,
-    removeItem,
     clearCart,
   } = useCart()
 
@@ -34,8 +33,8 @@ export function Cart() {
           {items.length === 0 ? (
             <Reveal className="cart-page-empty">
               <p>
-                Fill it with something warm and hand-poured — every candle is
-                made in small batches.
+                Looking for a little gift or a candle for your own home?
+                Have a look at what I’ve been making.
               </p>
               <Link to="/shop" className="btn btn-primary">
                 Shop the collection
@@ -46,58 +45,7 @@ export function Cart() {
               <Reveal className="cart-page-items">
                 <ul className="cart-lines cart-lines-page">
                   {items.map((item) => (
-                    <li key={item.id} className="cart-line">
-                      <Link to={`/product/${item.id}`} className="cart-line-media">
-                        <img src={item.image} alt={item.name} loading="lazy" />
-                      </Link>
-                      <div className="cart-line-body">
-                        <div className="cart-line-top">
-                          <Link
-                            to={`/product/${item.id}`}
-                            className="cart-line-name"
-                          >
-                            {item.name}
-                          </Link>
-                          <button
-                            type="button"
-                            className="cart-line-remove"
-                            aria-label={`Remove ${item.name}`}
-                            onClick={() => removeItem(item.id)}
-                          >
-                            Remove
-                          </button>
-                        </div>
-                        <p className="cart-line-collection">
-                          {item.collectionTitle}
-                        </p>
-                        <div className="cart-line-bottom">
-                          <div className="qty-stepper">
-                            <button
-                              type="button"
-                              aria-label={`Decrease quantity of ${item.name}`}
-                              onClick={() =>
-                                updateQuantity(item.id, item.quantity - 1)
-                              }
-                            >
-                              &minus;
-                            </button>
-                            <span>{item.quantity}</span>
-                            <button
-                              type="button"
-                              aria-label={`Increase quantity of ${item.name}`}
-                              onClick={() =>
-                                updateQuantity(item.id, item.quantity + 1)
-                              }
-                            >
-                              +
-                            </button>
-                          </div>
-                          <span className="cart-line-price">
-                            {formatPrice(item.priceCents * item.quantity)}
-                          </span>
-                        </div>
-                      </div>
-                    </li>
+                    <CartLine key={item.id} item={item} />
                   ))}
                 </ul>
                 <div className="cart-page-actions">
@@ -127,7 +75,7 @@ export function Cart() {
                   </div>
                   <div className="cart-totals-row cart-totals-total">
                     <span>Total</span>
-                    <span className="cart-totals-muted">—</span>
+                    <span className="cart-totals-muted">At checkout</span>
                   </div>
                 </div>
                 <Link to="/checkout" className="btn btn-primary cart-checkout-btn">
@@ -135,8 +83,8 @@ export function Cart() {
                 </Link>
                 <p className="cart-summary-note">
                   Shipping is calculated at checkout once you choose your
-                  country. NL orders over €25,00 and international orders over
-                  €50,00 ship free.
+                  country. NL orders of €25,00 or more and international orders of
+                  €50,00 or more ship free.
                 </p>
               </Reveal>
             </div>

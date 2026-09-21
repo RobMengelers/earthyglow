@@ -100,8 +100,8 @@ export function CheckoutConfirmation() {
       <ConfirmationShell eyebrow="Order status">
         <h1>We couldn&rsquo;t load your order</h1>
         <p className="checkout-done-lede">
-          If you were charged, your order is safe. Contact us and we&rsquo;ll
-          sort it out right away.
+          If a payment appears on your account, please contact me with your
+          order number so I can check it for you.
         </p>
         <div className="hero-actions">
           <Link to="/contact" className="btn btn-primary">
@@ -116,11 +116,11 @@ export function CheckoutConfirmation() {
     return (
       <ConfirmationShell eyebrow="Payment received">
         <span className="order-status-badge is-paid">Paid</span>
-        <h1>Thank you — your glow is on its way</h1>
+        <h1>Thank you for your order</h1>
         <p className="checkout-done-lede">
           Your order <strong>{order.orderNumber}</strong> is confirmed for{' '}
-          <strong>{formatPrice(order.totalCents)}</strong>. We&rsquo;ll email a
-          receipt shortly, then hand-pour and ship your candles.
+          <strong>{formatPrice(order.totalCents)}</strong>. Your invoice will arrive by email. I’ll get your candles ready
+          and send your tracking details when they’re on their way.
         </p>
         <div className="hero-actions">
           <Link to="/shop" className="btn btn-primary">
@@ -153,14 +153,17 @@ export function CheckoutConfirmation() {
       <span className="order-status-badge is-failed">
         {order.status === 'refunded' ? 'Refunded' : 'Not completed'}
       </span>
-      <h1>Your payment wasn&rsquo;t completed</h1>
+      <h1>{order.status === 'refunded' ? 'Your refund has been arranged' : 'Your payment wasn’t completed'}</h1>
       <p className="checkout-done-lede">
-        Order <strong>{order.orderNumber}</strong> hasn&rsquo;t been paid, so
-        nothing was charged. Your candles are still waiting in your cart.
+        {order.status === 'refunded' ? (
+          <>A refund has been arranged for order <strong>{order.orderNumber}</strong>. The time it takes to appear depends on your bank or payment provider.</>
+        ) : (
+          <>Payment for order <strong>{order.orderNumber}</strong> hasn’t completed. If you see a charge on your account, please contact me before trying again.</>
+        )}
       </p>
       <div className="hero-actions">
-        <Link to="/checkout" className="btn btn-primary">
-          Try payment again
+        <Link to={order.status === 'refunded' ? '/shop' : '/checkout'} className="btn btn-primary">
+          {order.status === 'refunded' ? 'Back to the shop' : 'Try payment again'}
         </Link>
         <Link to="/cart" className="btn btn-ghost">
           Back to cart

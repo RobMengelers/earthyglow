@@ -17,7 +17,10 @@ import { webhookRoutes } from './routes/webhooks.js'
 // Railway's reverse proxy reports via X-Forwarded-For, rather than proxy IPs.
 const app = Fastify({ logger: true, trustProxy: true })
 
-await app.register(cors, { origin: true })
+await app.register(cors, {
+  origin: true,
+  methods: ['GET', 'HEAD', 'POST', 'PATCH'],
+})
 await app.register(formbody)
 await app.register(rateLimit, {
   max: 120,

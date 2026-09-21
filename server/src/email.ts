@@ -214,7 +214,7 @@ export async function generateInvoicePdf(
     bodySemibold: await doc.embedFont(readFont('inter-600-normal.ttf')),
   }
 
-  // A centred frame with equal margins — nothing can drift off either side.
+  // A centred frame with equal margins; nothing can drift off either side.
   const margin = 60
   const contentLeft = margin
   const contentRight = pageWidth - margin
@@ -449,6 +449,28 @@ export async function generateInvoicePdf(
   return doc.save()
 }
 
+function renderCustomerEmail(content: string): string {
+  return `
+    <!doctype html>
+    <html>
+      <body style="margin:0; background:#fbf7f0; font-family:Arial,Helvetica,sans-serif; color:#2e2a25;">
+        <div style="max-width:620px; margin:0 auto; padding:32px 22px;">
+          <div style="padding:18px 0 22px; border-bottom:1px solid #e3d8c8;">
+            <img src="https://chimerical-cocada-3d3d76.netlify.app/logo-mark.png" width="46" height="46" alt="EarthyGlow" style="vertical-align:middle; border-radius:10px; margin-right:10px;" />
+            <span style="font-family:Georgia,serif; font-size:25px; vertical-align:middle; color:#2e2a25;">Earthy<span style="color:#5f3b25; font-style:italic;">Glow</span></span>
+          </div>
+          ${content}
+          <div style="margin-top:30px; padding-top:22px; border-top:1px solid #e3d8c8; color:#6b6157; line-height:1.6;">
+            With warmth,<br />
+            <strong style="font-family:Georgia,serif; font-size:18px; color:#5f3b25;">Naomi</strong><br />
+            <span style="font-size:13px;">Founder of EarthyGlow</span>
+          </div>
+        </div>
+      </body>
+    </html>
+  `
+}
+
 export async function sendOrderInvoice(
   orderNumber: string,
 ): Promise<boolean> {
@@ -485,43 +507,27 @@ export async function sendOrderInvoice(
     shippingCents: order.shippingCents,
     totalCents: order.totalCents,
     lines: order.items.map((item) => ({
-      name: item.variantLabel ? `${item.name} — ${item.variantLabel}` : item.name,
+      name: item.variantLabel ? `${item.name} (${item.variantLabel})` : item.name,
       quantity: item.quantity,
       unitPriceCents: item.unitPriceCents,
       lineTotalCents: item.lineTotalCents,
     })),
   })
 
-  const html = `
-    <!doctype html>
-    <html>
-      <body style="margin:0; background:#fbf7f0; font-family:Arial,Helvetica,sans-serif; color:#2e2a25;">
-        <div style="max-width:620px; margin:0 auto; padding:32px 22px;">
-          <div style="padding:18px 0 22px; border-bottom:1px solid #e3d8c8;">
-            <img src="https://chimerical-cocada-3d3d76.netlify.app/logo-mark.png" width="46" height="46" alt="EarthyGlow" style="vertical-align:middle; border-radius:10px; margin-right:10px;" />
-            <span style="font-family:Georgia,serif; font-size:25px; vertical-align:middle; color:#2e2a25;">Earthy<span style="color:#5f3b25; font-style:italic;">Glow</span></span>
-          </div>
+  const html = renderCustomerEmail(`
           <div style="padding:34px 0 12px;">
             <p style="margin:0 0 10px; color:#5f3b25; font-size:12px; font-weight:bold; letter-spacing:2px; text-transform:uppercase;">A little note from EarthyGlow</p>
             <h2 style="margin:0 0 18px; font-family:Georgia,serif; font-size:30px; font-weight:normal; color:#2e2a25;">Thank you, ${escapeHtml(order.customer.firstName)}.</h2>
-            <p style="color:#6b6157; line-height:1.7;">Your order <strong>${order.orderNumber}</strong> is safely paid and your invoice is attached. We’ll now hand-pour, lovingly pack, and send your candles your way.</p>
-            <p style="color:#6b6157; line-height:1.7;">We hope they bring a little more warmth and calm to your home.</p>
+            <p style="color:#6b6157; line-height:1.7;">Your order <strong>${order.orderNumber}</strong> is safely paid and your invoice is attached. I’ll get your candles ready and pack them with care.</p>
+            <p style="color:#6b6157; line-height:1.7;">I hope you enjoy finding a place for them in your home.</p>
           </div>
           <table style="border-collapse:collapse; width:100%; margin:16px 0 24px; background:#fffdf8; border:1px solid #e3d8c8; border-radius:12px;">
             <tr><td style="padding:12px 16px; color:#6b6157;">Order</td><td style="padding:12px 16px; text-align:right;"><strong>${order.orderNumber}</strong></td></tr>
             <tr><td style="padding:12px 16px; color:#6b6157;">Invoice date</td><td style="padding:12px 16px; text-align:right;">${formatDate(paidAt)}</td></tr>
             <tr><td style="padding:12px 16px; color:#6b6157;">Total paid</td><td style="padding:12px 16px; text-align:right; color:#5f3b25;"><strong>${formatEuro(order.totalCents)}</strong><br /><small style="color:#6b6157;">incl. 21% VAT (${formatEuro(includedVatCents(order.totalCents))})</small></td></tr>
           </table>
-          <p style="color:#6b6157; line-height:1.6;">Your invoice PDF is attached for your records. If you have any questions, simply reply to this email — we’re happy to help.</p>
-          <div style="margin-top:30px; padding-top:22px; border-top:1px solid #e3d8c8; color:#6b6157; line-height:1.6;">
-            With warmth,<br />
-            <strong style="font-family:Georgia,serif; font-size:18px; color:#5f3b25;">Naomi</strong><br />
-            <span style="font-size:13px;">Founder of EarthyGlow</span>
-          </div>
-        </div>
-      </body>
-    </html>
-  `
+          <p style="color:#6b6157; line-height:1.6;">Your invoice PDF is attached for your records. If you have any questions, simply reply to this email. I’m happy to help.</p>
+  `)
 
   const { error } = await resend!.emails.send({
     from: env.EMAIL_FROM,
@@ -602,7 +608,21 @@ export async function sendFulfillmentEmail(order: {
     from: env.EMAIL_FROM,
     to: [order.customer.email],
     subject: `Your EarthyGlow order ${order.orderNumber} is on its way`,
-    html: `<div style="font-family:Arial,sans-serif;color:#2e2a25;max-width:620px;padding:28px"><h2 style="font-family:Georgia,serif;color:#5f3b25">Your glow is on its way ✨</h2><p>Hi ${escapeHtml(order.customer.firstName)},</p><p>Your EarthyGlow order <strong>${escapeHtml(order.orderNumber)}</strong> has been processed and handed to the carrier.</p><p><strong>Transporter:</strong> ${escapeHtml(order.carrier ?? '—')}<br /><strong>Track &amp; trace:</strong> ${escapeHtml(order.trackingCode ?? '—')}</p><p>Thank you for supporting our small business.</p><p style="font-family:Georgia,serif;color:#5f3b25">With warmth,<br />Naomi<br /><small>Founder of EarthyGlow</small></p></div>`,
+    html: renderCustomerEmail(`
+          <div style="padding:34px 0 12px;">
+            <p style="margin:0 0 10px; color:#5f3b25; font-size:12px; font-weight:bold; letter-spacing:2px; text-transform:uppercase;">A little note from EarthyGlow</p>
+            <h2 style="margin:0 0 18px; font-family:Georgia,serif; font-size:30px; font-weight:normal; color:#2e2a25;">Your glow is on its way.</h2>
+            <p style="color:#6b6157; line-height:1.7;">Hi ${escapeHtml(order.customer.firstName)},</p>
+            <p style="color:#6b6157; line-height:1.7;">Your order <strong>${escapeHtml(order.orderNumber)}</strong> has been packed with care and handed to the carrier. I hope you enjoy your candles.</p>
+          </div>
+          <table style="border-collapse:collapse; width:100%; margin:16px 0 24px; background:#fffdf8; border:1px solid #e3d8c8; border-radius:12px;">
+            <tr><td style="padding:12px 16px; color:#6b6157;">Order</td><td style="padding:12px 16px; text-align:right;"><strong>${escapeHtml(order.orderNumber)}</strong></td></tr>
+            <tr><td style="padding:12px 16px; color:#6b6157;">Carrier</td><td style="padding:12px 16px; text-align:right;">${escapeHtml(order.carrier ?? 'Not provided')}</td></tr>
+            <tr><td style="padding:12px 16px; color:#6b6157;">Track &amp; trace</td><td style="padding:12px 16px; text-align:right; color:#5f3b25; overflow-wrap:anywhere; word-break:break-all;"><strong>${escapeHtml(order.trackingCode ?? 'Not provided')}</strong></td></tr>
+          </table>
+          <p style="color:#6b6157; line-height:1.6;">Use your tracking code on the carrier’s website to follow your parcel. Tracking updates may take a little time to appear.</p>
+          <p style="color:#6b6157; line-height:1.6;">Thank you for supporting my small business. If you have any questions about your delivery, simply reply to this email. I’m happy to help.</p>
+    `),
   })
   if (error) throw new Error(`Resend rejected fulfillment email: ${error.message}`)
   return true

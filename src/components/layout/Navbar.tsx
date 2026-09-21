@@ -20,7 +20,7 @@ export function Navbar() {
         <Link
           to="/"
           className="brand"
-          aria-label="EarthyGlow — home"
+          aria-label="EarthyGlow home"
           onClick={() => setOpen(false)}
         >
           <img src="/logo-mark.png" className="brand-logo" alt="" />

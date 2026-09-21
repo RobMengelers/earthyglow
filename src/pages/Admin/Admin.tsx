@@ -339,7 +339,7 @@ function OrderRow({
         <td>
           <span className={`admin-badge is-${order.status}`}>{order.status}</span>
         </td>
-        <td>{order.paymentMethod ?? '—'}</td>
+        <td>{order.paymentMethod ?? 'Not available'}</td>
         <td className="admin-price">{formatEuros(order.totalCents)}</td>
         <td>
           <span className="admin-muted">
@@ -347,7 +347,7 @@ function OrderRow({
               ? formatDateTime(order.invoiceSentAt)
               : order.status === 'paid'
                 ? 'not sent'
-                : '—'}
+                : 'Not available'}
           </span>
         </td>
         <td><span className={`admin-badge admin-fulfillment-badge is-${order.fulfillmentStatus}`}>{order.fulfillmentStatus === 'open' ? 'Open' : 'Processed'}</span></td>
@@ -409,7 +409,7 @@ function OrderRow({
               <div className="admin-detail-col">
                 <h3>Payment</h3>
                 <p>
-                  Method: {order.paymentMethod ?? '—'}
+                  Method: {order.paymentMethod ?? 'Not available'}
                   <br />
                   Subtotal: {formatEuros(order.subtotalCents)}
                   <br />
@@ -424,9 +424,9 @@ function OrderRow({
                       <br />
                       <strong>Shipping</strong>
                       <br />
-                      Transporter: {order.carrier ?? '—'}
+                      Transporter: {order.carrier ?? 'Not available'}
                       <br />
-                      Track &amp; trace: {order.trackingCode ?? '—'}
+                      Track &amp; trace: {order.trackingCode ?? 'Not available'}
                       <br />
                       Processed: {formatDateTime(order.fulfilledAt)}
                     </>
