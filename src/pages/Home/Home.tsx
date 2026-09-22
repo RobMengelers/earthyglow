@@ -8,6 +8,8 @@ import { Reveal } from '../../components/ui/Reveal'
 import { products } from '../../data/products'
 import { seasons } from '../../data/seasons'
 
+const featuredSeasons = seasons.filter((season) => season.id !== 'halloween')
+
 export function Home() {
   return (
     <>
@@ -20,11 +22,11 @@ export function Home() {
             <p className="eyebrow">Shop by season</p>
             <h2>Find your season</h2>
             <p className="section-lede">
-              Flower candles, seasonal scents and little Halloween ghosts, all poured by hand.
+              Flower candles and seasonal scents, all poured by hand.
             </p>
           </Reveal>
           <div className="collection-card-grid">
-            {seasons.map((season, i) => {
+            {featuredSeasons.map((season, i) => {
               const cover = products.find((product) => season.productIds.includes(product.id))
               return (
                 <Reveal key={season.id} delay={i * 90} className="collection-card-wrap">
