@@ -2,30 +2,37 @@ import { products } from './products'
 
 // Membership matches earthyglow.nl's seasonal collections (21 September 2026).
 // Sculptural candles remain available through All seasons and The Natural Glow.
+// `coverProductId` is the product whose image fronts the season card on the
+// homepage; it is picked explicitly so reordering `productIds` cannot silently
+// change that artwork.
 export const seasons = [
   {
     id: 'summer',
     label: 'Summer',
     description: 'Seaside shapes and flowers for a little summer at home.',
     productIds: ['floral-box', 'coconut-beach', 'floral-basket'],
+    coverProductId: 'coconut-beach',
   },
   {
     id: 'spring',
     label: 'Spring',
     description: 'Hand-poured flower candles for fresh starts and thoughtful gifts.',
     productIds: ['floral-box', 'floral-basket'],
+    coverProductId: 'floral-box',
   },
   {
     id: 'autumn',
     label: 'Autumn',
     description: 'Pumpkin spice, smoky vanilla and a few little ghosts for the season.',
     productIds: ['pumpkin-spice-wax-melts', 'scary-boo', 'boo-boo', 'pumpkin-boo', 'autumn-ember', 'pumpkin-spice-latte', 'pumpkin-spice'],
+    coverProductId: 'pumpkin-spice-wax-melts',
   },
   {
     id: 'halloween',
     label: 'Halloween',
     description: 'Meet the little ghosts I’ve made for your Halloween table and home.',
     productIds: ['scary-boo', 'boo-boo', 'pumpkin-boo', 'ghostlight-dinner-candle'],
+    coverProductId: 'scary-boo',
   },
 ]
 

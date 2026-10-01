@@ -27,7 +27,7 @@ export function Home() {
           </Reveal>
           <div className="collection-card-grid">
             {featuredSeasons.map((season, i) => {
-              const cover = products.find((product) => season.productIds.includes(product.id))
+              const cover = products.find((product) => product.id === season.coverProductId)
               return (
                 <Reveal key={season.id} delay={i * 90} className="collection-card-wrap">
                   <Link to={`/shop?season=${season.id}`} className="collection-card">
