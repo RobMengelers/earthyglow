@@ -153,6 +153,30 @@ type InvoiceData = {
   lines: InvoiceLine[]
 }
 
+// Structural shape of an order as fetched with `include: { customer, items }`.
+// Kept structural (like the other email helpers) so callers can pass a Prisma
+// result straight in.
+type InvoiceOrder = {
+  orderNumber: string
+  paidAt: Date | null
+  updatedAt: Date
+  address: string
+  postalCode: string
+  city: string
+  country: string
+  subtotalCents: number
+  shippingCents: number
+  totalCents: number
+  customer: { firstName: string; lastName: string; email: string | null }
+  items: {
+    name: string
+    variantLabel: string | null
+    quantity: number
+    unitPriceCents: number
+    lineTotalCents: number
+  }[]
+}
+
 // Uppercase eyebrow label with wide letter-spacing (pdf-lib has no tracking).
 function drawTracked(
   page: PDFPage,
@@ -471,6 +495,87 @@ function renderCustomerEmail(content: string): string {
   `
 }
 
+// Placeholder written to non-nullable text columns when the admin leaves a
+// customer detail blank, so the portal and the invoice both show a dash
+// instead of an empty gap.
+export const MISSING_DETAIL = '-'
+
+function customerDisplayName(customer: {
+  firstName: string
+  lastName: string
+}): string {
+  const name = [customer.firstName, customer.lastName]
+    .filter((part) => part && part !== MISSING_DETAIL)
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+  return name || MISSING_DETAIL
+}
+
+// Single source of truth for turning an order into invoice data, so the PDF
+// emailed to the customer and the PDF downloaded from the admin portal are
+// always identical.
+export function buildInvoiceData(order: InvoiceOrder): InvoiceData {
+  return {
+    orderNumber: order.orderNumber,
+    paidAt: order.paidAt ?? order.updatedAt,
+    customerName: customerDisplayName(order.customer),
+    customerEmail: order.customer.email ?? MISSING_DETAIL,
+    customerAddress: order.address,
+    customerPostalCode: order.postalCode,
+    customerCity: order.city,
+    customerCountry: order.country,
+    subtotalCents: order.subtotalCents,
+    shippingCents: order.shippingCents,
+    totalCents: order.totalCents,
+    lines: order.items.map((item) => ({
+      name: item.variantLabel ? `${item.name} (${item.variantLabel})` : item.name,
+      quantity: item.quantity,
+      unitPriceCents: item.unitPriceCents,
+      lineTotalCents: item.lineTotalCents,
+    })),
+  }
+}
+
+async function renderOrderInvoicePdf(
+  order: InvoiceOrder,
+): Promise<Uint8Array> {
+  return generateInvoicePdf(buildInvoiceData(order))
+}
+
+// Returns the archived PDF for an order, generating and persisting one on first
+// use. Storing before the email goes out means a resend (the retry sweep picks
+// up orders whose first send failed) always attaches the very same document.
+async function archiveInvoicePdf(order: {
+  id: string
+  invoicePdf: Uint8Array | null
+} & InvoiceOrder): Promise<Uint8Array> {
+  if (order.invoicePdf) {
+    return order.invoicePdf
+  }
+  const pdf = await renderOrderInvoicePdf(order)
+  await prisma.order.update({
+    where: { id: order.id },
+    data: { invoicePdf: Buffer.from(pdf) },
+  })
+  return pdf
+}
+
+// Public entry point for archiving an invoice outside the email flow, e.g. when
+// the shop records a sale that was made in person. The PDF is generated and
+// stored exactly as it would be for an emailed invoice, so the download in the
+// admin portal serves those bytes verbatim.
+export async function archiveInvoiceForOrder(
+  orderId: string,
+): Promise<Uint8Array | null> {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { customer: true, items: { orderBy: { id: 'asc' } } },
+  })
+  if (!order) return null
+  return archiveInvoicePdf(order)
+}
+
 export async function sendOrderInvoice(
   orderNumber: string,
 ): Promise<boolean> {
@@ -490,29 +595,15 @@ export async function sendOrderInvoice(
     return false
   }
 
-  const paidAt = order.paidAt ?? order.updatedAt
+  // Walk-in sales may have no contact details, and there is nowhere to send to.
+  if (!order.customer.email) {
+    return false
+  }
 
-  const pdf = await generateInvoicePdf({
-    orderNumber: order.orderNumber,
-    paidAt,
-    customerName: `${order.customer.firstName} ${order.customer.lastName}`
-      .replace(/\s+/g, ' ')
-      .trim(),
-    customerEmail: order.customer.email,
-    customerAddress: order.address,
-    customerPostalCode: order.postalCode,
-    customerCity: order.city,
-    customerCountry: order.country,
-    subtotalCents: order.subtotalCents,
-    shippingCents: order.shippingCents,
-    totalCents: order.totalCents,
-    lines: order.items.map((item) => ({
-      name: item.variantLabel ? `${item.name} (${item.variantLabel})` : item.name,
-      quantity: item.quantity,
-      unitPriceCents: item.unitPriceCents,
-      lineTotalCents: item.lineTotalCents,
-    })),
-  })
+  const invoice = buildInvoiceData(order)
+  const paidAt = invoice.paidAt
+
+  const pdf = await archiveInvoicePdf(order)
 
   const html = renderCustomerEmail(`
           <div style="padding:34px 0 12px;">
@@ -563,7 +654,7 @@ export async function sendNewOrderNotification(orderNumber: string): Promise<boo
     from: env.EMAIL_FROM,
     to: ['robmengelers@gmail.com'],
     subject: 'New EarthyGlow order',
-    html: `<div style="font-family:Arial,sans-serif;color:#2e2a25;max-width:620px;padding:28px"><h2 style="font-family:Georgia,serif;color:#5f3b25">A new order has arrived</h2><p>Order <strong>${escapeHtml(order.orderNumber)}</strong> has been paid.</p><p><strong>${escapeHtml(order.customer.firstName)} ${escapeHtml(order.customer.lastName)}</strong><br />${escapeHtml(order.customer.email)}</p><ul>${lines}</ul><p><strong>Total: ${formatEuro(order.totalCents)}</strong></p></div>`,
+    html: `<div style="font-family:Arial,sans-serif;color:#2e2a25;max-width:620px;padding:28px"><h2 style="font-family:Georgia,serif;color:#5f3b25">A new order has arrived</h2><p>Order <strong>${escapeHtml(order.orderNumber)}</strong> has been paid.</p><p><strong>${escapeHtml(customerDisplayName(order.customer))}</strong><br />${escapeHtml(order.customer.email ?? MISSING_DETAIL)}</p><ul>${lines}</ul><p><strong>Total: ${formatEuro(order.totalCents)}</strong></p></div>`,
   })
   if (error) throw new Error(`Resend rejected new-order notification: ${error.message}`)
   return true
@@ -619,9 +710,10 @@ export async function sendFulfillmentEmail(order: {
   orderNumber: string
   carrier: string | null
   trackingCode: string | null
-  customer: { firstName: string; email: string }
+  customer: { firstName: string; email: string | null }
 }): Promise<boolean> {
   if (!resend || !emailEnabled) return false
+  if (!order.customer.email) return false
   const { error } = await resend.emails.send({
     from: env.EMAIL_FROM,
     to: [order.customer.email],
@@ -646,8 +738,9 @@ export async function sendFulfillmentEmail(order: {
   return true
 }
 
-export async function sendRefundEmail(order: { orderNumber: string; totalCents: number; customer: { firstName: string; email: string } }): Promise<boolean> {
+export async function sendRefundEmail(order: { orderNumber: string; totalCents: number; customer: { firstName: string; email: string | null } }): Promise<boolean> {
   if (!resend) return false
+  if (!order.customer.email) return false
   const { error } = await resend.emails.send({ from: env.EMAIL_FROM, to: [order.customer.email], subject: 'Your EarthyGlow refund', html: `<div style="font-family:Arial,sans-serif;color:#2e2a25;max-width:620px;padding:28px"><h2 style="font-family:Georgia,serif;color:#5f3b25">Your refund has been arranged</h2><p>Hi ${escapeHtml(order.customer.firstName)},</p><p>We’ve sent a full refund of <strong>${formatEuro(order.totalCents)}</strong> for order <strong>${escapeHtml(order.orderNumber)}</strong> to Mollie. The time it takes to appear depends on your bank or payment provider.</p><p>With warmth,<br /><strong>Naomi</strong><br /><small>Founder of EarthyGlow</small></p></div>` })
   if (error) throw new Error(`Resend rejected refund email: ${error.message}`)
   return true

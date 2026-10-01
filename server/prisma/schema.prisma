@@ -46,7 +46,9 @@ model ProductVariant {
 
 model Customer {
   id        String   @id @default(uuid())
-  email     String   @unique
+  // Nullable so walk-in sales without contact details can be recorded: a
+  // unique index allows many NULLs, whereas a shared "-" would collide.
+  email     String?  @unique
   firstName String
   lastName  String
   phone     String?
@@ -75,6 +77,9 @@ model Order {
   notes           String?
   paidAt          DateTime?
   invoiceSentAt   DateTime?
+  // The exact bytes of the PDF that was emailed, archived so the invoice can be
+  // re-downloaded verbatim. Null for orders invoiced before this column existed.
+  invoicePdf      Bytes?
   newOrderEmailSentAt DateTime?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt

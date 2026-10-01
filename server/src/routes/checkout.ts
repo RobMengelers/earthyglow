@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { createPayment } from '../mollie.js'
+import { createOrderNumber } from '../order-number.js'
 import { prisma } from '../prisma.js'
 
 const SHIPPING_ZONES = {
@@ -40,12 +41,6 @@ const bodySchema = z.object({
   notes: z.string().trim().max(500).optional().default(''),
   paymentMethod: z.string().trim().min(2).max(40).optional(),
 })
-
-function createOrderNumber(): string {
-  const stamp = Date.now().toString(36).toUpperCase().slice(-5)
-  const random = Math.random().toString(36).toUpperCase().slice(2, 5)
-  return `EG-${stamp}${random}`
-}
 
 export async function checkoutRoutes(app: FastifyInstance) {
   app.post('/api/checkout', { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } }, async (request, reply) => {
