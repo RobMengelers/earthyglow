@@ -1,4 +1,4 @@
-import { Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes } from 'react-router-dom'
 import { Layout } from './components/layout/Layout'
 import { Home } from './pages/Home/Home'
 import { Shop } from './pages/Shop/Shop'
@@ -13,13 +13,22 @@ import { ContactInformation } from './pages/policies/ContactInformation'
 import { Cart } from './pages/Cart/Cart'
 import { Checkout } from './pages/Checkout/Checkout'
 import { CheckoutConfirmation } from './pages/CheckoutConfirmation/CheckoutConfirmation'
-import { Admin } from './pages/Admin/Admin'
+import { AdminLayout } from './pages/Admin/AdminLayout'
+import { NewOrderPage } from './pages/Admin/NewOrderPage'
+import { OrdersPage } from './pages/Admin/OrdersPage'
+import { OverviewPage } from './pages/Admin/OverviewPage'
 import { NotFound } from './pages/NotFound/NotFound'
 
 function App() {
   return (
     <Routes>
-      <Route path="/admin" element={<Admin />} />
+      {/* The portal is its own shell: no shop header, its own navigation. */}
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route index element={<Navigate to="/admin/overview" replace />} />
+        <Route path="overview" element={<OverviewPage />} />
+        <Route path="orders" element={<OrdersPage />} />
+        <Route path="orders/new" element={<NewOrderPage />} />
+      </Route>
       <Route element={<Layout />}>
         <Route index element={<Home />} />
         <Route path="/shop" element={<Shop />} />
