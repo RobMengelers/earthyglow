@@ -1,8 +1,9 @@
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { calcTotals, formatPrice, shippingZoneForCountry } from '../../../cart/CartContext'
 import { ShippingProgress } from '../../../cart/components/ShippingProgress'
 import { useCart } from '../../../cart/useCart'
 import { Reveal } from '../../../components/ui/Reveal'
+import { imageAttrs, SIZES } from '../../../lib/images'
 
 export function OrderSummary({ country }: { country: string }) {
   const { items, itemCount } = useCart()
@@ -17,7 +18,9 @@ export function OrderSummary({ country }: { country: string }) {
         {items.map((item) => (
           <li key={item.id} className="checkout-summary-line">
             <span className="checkout-summary-media">
-              <img src={item.image} alt="" loading="lazy" />
+              {item.image && (
+                <img {...imageAttrs(item.image, SIZES.thumb)} alt="" loading="lazy" />
+              )}
               <span className="checkout-summary-qty">{item.quantity}</span>
             </span>
                   <span className="checkout-summary-name">{item.name}{item.variantLabel && <small className="checkout-summary-variant">{item.variantLabel}</small>}</span>

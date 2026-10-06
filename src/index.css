@@ -1,4 +1,5 @@
 /* Shared foundations, then component and page styles. Keep this import order explicit. */
+@import './styles/fonts.css';
 @import './styles/theme.css';
 @import './styles/base.css';
 @import './styles/buttons.css';

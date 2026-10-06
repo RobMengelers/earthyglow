@@ -1,4 +1,14 @@
 import { PolicyLayout } from '../../components/layout/PolicyLayout'
+import { siteMeta } from '../../lib/seo'
+
+export function meta() {
+  return siteMeta({
+    title: 'Contact Information · EarthyGlow',
+    description:
+      'Contact EarthyGlow: e-mail, Chamber of Commerce number 42049155, VAT number NL005456394B38, made in the Netherlands.',
+    path: '/policies/contact-information',
+  })
+}
 
 export function ContactInformation() {
   return (
@@ -14,3 +24,5 @@ export function ContactInformation() {
     </PolicyLayout>
   )
 }
+
+export default ContactInformation

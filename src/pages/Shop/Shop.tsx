@@ -1,9 +1,25 @@
 import { useEffect, useRef } from 'react'
-import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router'
 import { getCollection } from '../../data/products'
 import { filterProducts, getSeason, seasons } from '../../data/seasons'
 import { ProductCard } from '../../components/catalog/ProductCard'
 import { Reveal } from '../../components/ui/Reveal'
+import { JsonLd } from '../../components/seo/JsonLd'
+import { breadcrumbLd, siteMeta, absoluteUrl } from '../../lib/seo'
+import type { Route } from './+types/Shop'
+
+export function meta({ params }: Route.MetaArgs) {
+  const collection = getCollection(params.collectionId)
+  return siteMeta({
+    title: collection
+      ? `${collection.title} · Shop · EarthyGlow`
+      : 'Shop · Hand-poured Soy Candles · EarthyGlow',
+    description:
+      collection?.blurb ??
+      'Browse hand-poured soy wax candles from EarthyGlow: flower candle gifts, seasonal scents and sculptural shapes, made by hand in the Netherlands.',
+    path: collection ? `/shop/${collection.id}` : '/shop',
+  })
+}
 
 export function Shop() {
   const { collectionId } = useParams()
@@ -30,8 +46,31 @@ export function Shop() {
     return seasonId ? `${path}?season=${seasonId}` : path
   }
 
+  const breadcrumbs = [
+    { name: 'Home', path: '/' },
+    { name: 'Shop', path: '/shop' },
+    ...(activeSeason || activeCollection
+      ? [{ name: (activeSeason?.label ?? activeCollection?.eyebrow) as string }]
+      : []),
+  ]
+
   return (
     <>
+      <JsonLd data={breadcrumbLd(breadcrumbs)} />
+      {shown.length > 0 && (
+        <JsonLd
+          data={{
+            '@context': 'https://schema.org',
+            '@type': 'ItemList',
+            itemListElement: shown.map((product, index) => ({
+              '@type': 'ListItem',
+              position: index + 1,
+              name: product.name,
+              url: absoluteUrl(`/product/${product.id}`),
+            })),
+          }}
+        />
+      )}
       <section className="page-hero shop-hero">
         <div className="container">
           <Reveal>
@@ -101,3 +140,5 @@ export function Shop() {
     </>
   )
 }
+
+export default Shop

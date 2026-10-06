@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import {
   submitOrder,
   fetchPaymentMethods,
@@ -15,6 +15,11 @@ import { ContactFields } from './components/ContactFields'
 import { ShippingFields } from './components/ShippingFields'
 import { PaymentMethods } from './components/PaymentMethods'
 import { OrderSummary } from './components/OrderSummary'
+import { siteMeta } from '../../lib/seo'
+
+export function meta() {
+  return siteMeta({ title: 'Checkout · EarthyGlow', robots: 'noindex, nofollow' })
+}
 
 export function Checkout() {
   const { items, clearCart } = useCart()
@@ -199,3 +204,5 @@ export function Checkout() {
     </>
   )
 }
+
+export default Checkout

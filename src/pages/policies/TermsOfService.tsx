@@ -1,4 +1,14 @@
 import { PolicyLayout } from '../../components/layout/PolicyLayout'
+import { siteMeta } from '../../lib/seo'
+
+export function meta() {
+  return siteMeta({
+    title: 'Terms of Service · EarthyGlow',
+    description:
+      'Terms of service for EarthyGlow: company information, handmade products, prices and payment, shipping costs and warranty on candles.',
+    path: '/policies/terms-of-service',
+  })
+}
 
 export function TermsOfService() {
   return (
@@ -48,3 +58,5 @@ export function TermsOfService() {
     </PolicyLayout>
   )
 }
+
+export default TermsOfService

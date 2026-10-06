@@ -19,6 +19,10 @@ body {
 
 img {
   max-width: 100%;
+  /* Intrinsic width/height attributes (used to reserve layout space) must not
+     win over CSS sizing — without this, framed images stretch to their full
+     pixel height instead of the aspect-ratio set by their container. */
+  height: auto;
   display: block;
 }
 

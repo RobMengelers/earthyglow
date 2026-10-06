@@ -1,13 +1,18 @@
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import {
   formatDateTime,
   formatEuros,
   formatRelativeTime,
   type AdminOverview,
 } from '../../admin/api'
+import { siteMeta } from '../../lib/seo'
 import { useAdmin } from './admin-context'
 
-export function OverviewPage() {
+export function meta() {
+  return siteMeta({ title: 'Overview · EarthyGlow Admin', robots: 'noindex, nofollow' })
+}
+
+export default function OverviewPage() {
   const { overview, overviewError, overviewLoading, refreshOverview } = useAdmin()
 
   return (

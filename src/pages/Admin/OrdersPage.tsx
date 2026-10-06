@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router'
 import {
   fetchAdminOrders,
   formatEuros,
@@ -9,6 +9,7 @@ import {
   type AdminOrdersResponse,
 } from '../../admin/api'
 import { useAdmin } from './admin-context'
+import { siteMeta } from '../../lib/seo'
 import { FulfillmentDialog } from './components/FulfillmentDialog'
 import { Modal } from './components/Modal'
 import { OrdersTable, type OrderRowAction } from './components/OrdersTable'
@@ -16,7 +17,11 @@ import { StatusFilter } from './components/StatusFilter'
 
 type Flash = { tone: 'success' | 'error'; text: string } | undefined
 
-export function OrdersPage() {
+export function meta() {
+  return siteMeta({ title: 'Orders · EarthyGlow Admin', robots: 'noindex, nofollow' })
+}
+
+export default function OrdersPage() {
   const { token } = useAdmin()
   const location = useLocation()
   const navigate = useNavigate()

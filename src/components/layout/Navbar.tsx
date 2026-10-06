@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, NavLink } from 'react-router-dom'
+import { Link, NavLink } from 'react-router'
 import { useCart } from '../../cart/useCart'
 
 const links = [
@@ -23,7 +23,13 @@ export function Navbar() {
           aria-label="EarthyGlow home"
           onClick={() => setOpen(false)}
         >
-          <img src="/logo-mark.png" className="brand-logo" alt="" />
+          <img
+            src="/logo-mark.png"
+            width={280}
+            height={280}
+            className="brand-logo"
+            alt=""
+          />
           <span className="brand-wordmark">
             Earthy<span>Glow</span>
           </span>

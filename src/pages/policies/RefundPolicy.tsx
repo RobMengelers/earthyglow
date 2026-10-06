@@ -1,4 +1,14 @@
 import { PolicyLayout } from '../../components/layout/PolicyLayout'
+import { siteMeta } from '../../lib/seo'
+
+export function meta() {
+  return siteMeta({
+    title: 'Refund Policy · EarthyGlow',
+    description:
+      'Refunds and returns for EarthyGlow candles: why handmade items are not automatically accepted, how to report a problem, and return costs.',
+    path: '/policies/refund-policy',
+  })
+}
 
 export function RefundPolicy() {
   return (
@@ -26,3 +36,5 @@ export function RefundPolicy() {
     </PolicyLayout>
   )
 }
+
+export default RefundPolicy

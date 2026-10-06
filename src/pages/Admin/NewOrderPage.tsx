@@ -1,5 +1,5 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router'
 import {
   createManualOrder,
   fetchAdminCatalog,
@@ -9,6 +9,7 @@ import {
 } from '../../admin/api'
 import { useAdmin } from './admin-context'
 import { LoadingButton } from '../../components/ui/LoadingButton'
+import { siteMeta } from '../../lib/seo'
 
 type ManualLine = {
   key: number
@@ -50,7 +51,11 @@ function catalogPriceCents(
   )
 }
 
-export function NewOrderPage() {
+export function meta() {
+  return siteMeta({ title: 'New order · EarthyGlow Admin', robots: 'noindex, nofollow' })
+}
+
+export default function NewOrderPage() {
   const { token } = useAdmin()
   const navigate = useNavigate()
 

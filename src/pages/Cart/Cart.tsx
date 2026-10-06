@@ -1,8 +1,13 @@
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { formatPrice } from '../../cart/CartContext'
 import { useCart } from '../../cart/useCart'
 import { CartLine } from '../../cart/components/CartLine'
 import { Reveal } from '../../components/ui/Reveal'
+import { siteMeta } from '../../lib/seo'
+
+export function meta() {
+  return siteMeta({ title: 'Cart · EarthyGlow', robots: 'noindex, follow' })
+}
 
 export function Cart() {
   const {
@@ -94,3 +99,5 @@ export function Cart() {
     </>
   )
 }
+
+export default Cart

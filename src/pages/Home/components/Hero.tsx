@@ -1,5 +1,6 @@
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { heroImage } from '../../../data/products'
+import { imageAttrs, SIZES } from '../../../lib/images'
 import { LiquidGlow } from './LiquidGlow'
 
 export function Hero() {
@@ -30,7 +31,11 @@ export function Hero() {
 
         <div className="hero-visual">
           <div className="hero-frame">
-            <img src={heroImage} alt="EarthyGlow candles in a warm, cosy setting" />
+            <img
+              {...imageAttrs(heroImage, SIZES.hero)}
+              alt="EarthyGlow candles in a warm, cosy setting"
+              fetchPriority="high"
+            />
             <LiquidGlow />
           </div>
         </div>

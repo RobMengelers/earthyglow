@@ -1,6 +1,18 @@
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { aboutImage } from '../../data/products'
+import { imageAttrs, SIZES } from '../../lib/images'
 import { Reveal } from '../../components/ui/Reveal'
+import { JsonLd } from '../../components/seo/JsonLd'
+import { breadcrumbLd, siteMeta } from '../../lib/seo'
+
+export function meta() {
+  return siteMeta({
+    title: 'About · EarthyGlow',
+    description:
+      'Meet Naomi, the maker behind EarthyGlow: hand-poured soy wax candles inspired by flowers, natural textures and the changing seasons.',
+    path: '/about',
+  })
+}
 
 const philosophy = [
   {
@@ -28,6 +40,12 @@ const philosophy = [
 export function About() {
   return (
     <>
+      <JsonLd
+        data={breadcrumbLd([
+          { name: 'Home', path: '/' },
+          { name: 'Our Story' },
+        ])}
+      />
       <section className="page-hero">
         <div className="container">
           <Reveal>
@@ -49,7 +67,11 @@ export function About() {
       <section className="about about-story">
         <div className="container about-grid">
           <Reveal className="about-visual">
-            <img src={aboutImage} alt="EarthyGlow candles and natural materials" loading="lazy" />
+            <img
+              {...imageAttrs(aboutImage, SIZES.feature)}
+              alt="EarthyGlow candles and natural materials"
+              loading="lazy"
+            />
           </Reveal>
           <Reveal delay={100} className="about-copy">
             <p className="eyebrow">My story</p>
@@ -106,3 +128,5 @@ export function About() {
     </>
   )
 }
+
+export default About

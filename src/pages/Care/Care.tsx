@@ -1,5 +1,16 @@
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { Reveal } from '../../components/ui/Reveal'
+import { JsonLd } from '../../components/seo/JsonLd'
+import { breadcrumbLd, siteMeta } from '../../lib/seo'
+
+export function meta() {
+  return siteMeta({
+    title: 'Candle Care & Safety · EarthyGlow',
+    description:
+      'How to care for hand-poured soy wax, flower, wooden wick and jar candles: trimming, burn times, safety tips and how to reuse your jar.',
+    path: '/care',
+  })
+}
 
 const careTips = [
   {
@@ -43,9 +54,59 @@ const safety = [
   'Use a snuffer or blow gently to extinguish. Never use water.',
 ]
 
+const faqs = [
+  {
+    question: 'How do I care for a flower candle?',
+    answer:
+      'Remove each flower from its stick and packaging, and place it on a heat-resistant dish before lighting. Never burn the arrangement in its box or basket.',
+  },
+  {
+    question: 'How often should I trim a wooden wick?',
+    answer:
+      'Trim wooden wicks to 3 to 5 mm before lighting. If the flame gets too high, put it out and let the candle cool before trimming and relighting.',
+  },
+  {
+    question: 'How long can I burn a jar candle?',
+    answer:
+      'Let the wax melt to the edges to help prevent tunnelling, keep burns to 2 to 4 hours, and never exceed 4 hours.',
+  },
+  {
+    question: 'When should I stop using a jar candle?',
+    answer:
+      'Stop using the candle when 10 mm of wax remains, and let it cool completely before handling.',
+  },
+  {
+    question: 'How can I reuse my candle jar?',
+    answer:
+      'Once your candle is finished and cool, clean the jar with warm water and use it around your home.',
+  },
+  {
+    question: 'What is the safest way to put out a candle?',
+    answer:
+      'Use a snuffer or blow gently to extinguish the flame. Never use water on a burning candle.',
+  },
+]
+
 export function Care() {
   return (
     <>
+      <JsonLd
+        data={breadcrumbLd([
+          { name: 'Home', path: '/' },
+          { name: 'Candle Care' },
+        ])}
+      />
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          mainEntity: faqs.map((faq) => ({
+            '@type': 'Question',
+            name: faq.question,
+            acceptedAnswer: { '@type': 'Answer', text: faq.answer },
+          })),
+        }}
+      />
       <section className="page-hero">
         <div className="container">
           <Reveal>
@@ -93,6 +154,25 @@ export function Care() {
           </Reveal>
         </div>
       </section>
+
+      <section className="faq">
+        <div className="container">
+          <Reveal className="section-head">
+            <p className="eyebrow">Good to know</p>
+            <h2>Frequently asked questions</h2>
+          </Reveal>
+          <Reveal className="faq-list">
+            {faqs.map((faq) => (
+              <details key={faq.question} className="faq-item">
+                <summary>{faq.question}</summary>
+                <p>{faq.answer}</p>
+              </details>
+            ))}
+          </Reveal>
+        </div>
+      </section>
     </>
   )
 }
+
+export default Care

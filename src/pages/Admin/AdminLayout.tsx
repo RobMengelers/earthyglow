@@ -1,5 +1,5 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react'
-import { Link, NavLink, Outlet } from 'react-router-dom'
+import { Link, NavLink, Outlet } from 'react-router'
 import {
   adminLogin,
   checkAdminSession,
@@ -10,7 +10,12 @@ import {
   type AdminOverview,
 } from '../../admin/api'
 import { LoadingButton } from '../../components/ui/LoadingButton'
+import { siteMeta } from '../../lib/seo'
 import { AdminContext, useAdmin, type AdminStatus } from './admin-context'
+
+export function meta() {
+  return siteMeta({ title: 'Admin · EarthyGlow', robots: 'noindex, nofollow' })
+}
 
 export function AdminLayout() {
   return (
@@ -20,8 +25,13 @@ export function AdminLayout() {
   )
 }
 
+export default AdminLayout
+
 function AdminProvider({ children }: { children: React.ReactNode }) {
-  const [token, setToken] = useState<string | null>(() => getAdminToken())
+  // localStorage does not exist on the server: start unresolved so the
+  // server-rendered "checking" state hydrates cleanly, then read the token.
+  const [token, setToken] = useState<string | null>(null)
+  const [tokenResolved, setTokenResolved] = useState(false)
   // The token that passed the session check. While it differs from `token` the
   // session is still being verified, which is what `status` reports.
   const [verifiedToken, setVerifiedToken] = useState<string | null>(null)
@@ -29,13 +39,26 @@ function AdminProvider({ children }: { children: React.ReactNode }) {
   const [overviewError, setOverviewError] = useState('')
   const [overviewKey, setOverviewKey] = useState(0)
 
-  const status: AdminStatus =
-    token === null ? 'signed-out' : verifiedToken === token ? 'signed-in' : 'checking'
+  const status: AdminStatus = !tokenResolved
+    ? 'checking'
+    : token === null
+      ? 'signed-out'
+      : verifiedToken === token
+        ? 'signed-in'
+        : 'checking'
 
   const expireSession = useCallback(() => {
     clearAdminToken()
     setToken(null)
     setVerifiedToken(null)
+  }, [])
+
+  useEffect(() => {
+    // localStorage does not exist on the server; reading it after mount keeps
+    // the server-rendered markup and the first client render identical.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- post-mount hydration from localStorage
+    setToken(getAdminToken())
+    setTokenResolved(true)
   }, [])
 
   // A stored token proves nothing: it may have expired while the tab was

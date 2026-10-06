@@ -5,7 +5,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { Product, ProductVariant } from '../data/products'
+import { getProduct, type Product, type ProductVariant } from '../data/products'
 import { fetchCatalog, reconcileCatalogItems } from './catalog'
 import {
   CartContext,
@@ -24,11 +24,22 @@ function isCartItem(value: unknown): value is CartItem {
     typeof item.productId === 'string' &&
     typeof item.name === 'string' &&
     typeof item.priceCents === 'number' &&
-    typeof item.image === 'string' &&
+    // Older carts predate the image field (or stored a since-renamed path);
+    // missing images are healed from the catalog in loadItems below.
+    (item.image === undefined || typeof item.image === 'string') &&
     typeof item.collectionTitle === 'string' &&
     typeof item.quantity === 'number' &&
     item.quantity > 0
   )
+}
+
+// The image is a snapshot taken when the line was added. Re-resolve it from
+// the catalog on every load so renamed or replaced photography never leaves
+// a stale path behind (a 404 renders as an empty thumbnail).
+function withCatalogImage(item: CartItem): CartItem {
+  const stored = typeof item.image === 'string' ? item.image : ''
+  const image = getProduct(item.productId)?.image ?? stored
+  return image === item.image ? item : { ...item, image }
 }
 
 function loadItems(): CartItem[] {
@@ -37,23 +48,36 @@ function loadItems(): CartItem[] {
     if (!raw) return []
     const parsed: unknown = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
-    return parsed.filter(isCartItem)
+    return parsed.filter(isCartItem).map(withCatalogImage)
   } catch {
     return []
   }
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>(loadItems)
+  // Cart contents live in localStorage, which does not exist on the server.
+  // Start empty on both server and client, then hydrate after mount so the
+  // server-rendered markup matches the first client render.
+  const [items, setItems] = useState<CartItem[]>([])
+  const [hydrated, setHydrated] = useState(false)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
 
   useEffect(() => {
+    // Storage can only be read after mount: the server render and the first
+    // client render both start empty so hydration matches.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- post-mount hydration from localStorage
+    setItems(loadItems())
+    setHydrated(true)
+  }, [])
+
+  useEffect(() => {
+    if (!hydrated) return
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
     } catch {
       // Storage can be unavailable (private mode); the cart still works in memory.
     }
-  }, [items])
+  }, [items, hydrated])
 
   // Reconcile line-item prices against the server catalog. Prices may have
   // changed since the item was added (or the client was tampered with); the
@@ -82,7 +106,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         if (existing) {
           return current.map((item) =>
               item.id === lineId
-              ? { ...item, quantity: item.quantity + quantity }
+              ? { ...item, quantity: item.quantity + quantity, image: product.image }
               : item,
           )
         }

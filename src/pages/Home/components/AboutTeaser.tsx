@@ -1,5 +1,6 @@
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { aboutImage } from '../../../data/products'
+import { imageAttrs, SIZES } from '../../../lib/images'
 import { Reveal } from '../../../components/ui/Reveal'
 
 export function AboutTeaser() {
@@ -7,7 +8,11 @@ export function AboutTeaser() {
     <section className="about" id="about">
       <div className="container about-grid">
         <Reveal className="about-visual">
-          <img src={aboutImage} alt="EarthyGlow candles and natural materials" loading="lazy" />
+          <img
+            {...imageAttrs(aboutImage, SIZES.feature)}
+            alt="EarthyGlow candles and natural materials"
+            loading="lazy"
+          />
         </Reveal>
         <Reveal delay={100} className="about-copy">
           <p className="eyebrow">Our story</p>

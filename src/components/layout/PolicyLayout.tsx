@@ -1,6 +1,8 @@
 import { type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { Reveal } from '../ui/Reveal'
+import { JsonLd } from '../seo/JsonLd'
+import { breadcrumbLd } from '../../lib/seo'
 
 type PolicyLayoutProps = {
   title: string
@@ -11,6 +13,13 @@ type PolicyLayoutProps = {
 export function PolicyLayout({ title, updated, children }: PolicyLayoutProps) {
   return (
     <>
+      <JsonLd
+        data={breadcrumbLd([
+          { name: 'Home', path: '/' },
+          { name: 'Policies' },
+          { name: title },
+        ])}
+      />
       <section className="page-hero">
         <div className="container">
           <Reveal>

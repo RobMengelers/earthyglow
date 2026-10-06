@@ -1,11 +1,22 @@
 import { type FormEvent, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { Reveal } from '../../components/ui/Reveal'
 import { SocialLinks } from '../../components/ui/SocialLinks'
 import { API_URL } from '../../cart/catalog'
 import { LoadingButton } from '../../components/ui/LoadingButton'
+import { JsonLd } from '../../components/seo/JsonLd'
+import { SITE_URL, absoluteUrl, breadcrumbLd, siteMeta } from '../../lib/seo'
 
 type SendState = 'idle' | 'sending' | 'sent' | 'error'
+
+export function meta() {
+  return siteMeta({
+    title: 'Contact · EarthyGlow',
+    description:
+      'Questions about an order or a candle? Get in touch with EarthyGlow — e-mail earthyglowcandles@gmail.com or send a message.',
+    path: '/contact',
+  })
+}
 
 export function Contact() {
   const [name, setName] = useState('')
@@ -34,6 +45,26 @@ export function Contact() {
 
   return (
     <>
+      <JsonLd
+        data={breadcrumbLd([
+          { name: 'Home', path: '/' },
+          { name: 'Contact' },
+        ])}
+      />
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'Organization',
+          name: 'EarthyGlow',
+          url: SITE_URL,
+          logo: absoluteUrl('/logo.png'),
+          email: 'earthyglowcandles@gmail.com',
+          founder: { '@type': 'Person', name: 'Naomi' },
+          address: { '@type': 'PostalAddress', addressCountry: 'NL' },
+          taxID: 'KvK 42049155',
+          vatID: 'NL005456394B38',
+        }}
+      />
       <section className="page-hero">
         <div className="container">
           <Reveal>
@@ -146,3 +177,5 @@ export function Contact() {
     </>
   )
 }
+
+export default Contact

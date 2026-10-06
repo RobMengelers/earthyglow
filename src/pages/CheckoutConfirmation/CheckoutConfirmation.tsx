@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router'
 import { formatPrice } from '../../cart/CartContext'
 import { API_URL } from '../../cart/catalog'
 import { useCart } from '../../cart/useCart'
 import { Reveal } from '../../components/ui/Reveal'
+import { siteMeta } from '../../lib/seo'
 
 type OrderStatus =
   | 'pending'
@@ -18,6 +19,13 @@ type OrderStatusResponse = {
   status: OrderStatus
   totalCents: number
   currency: string
+}
+
+export function meta() {
+  return siteMeta({
+    title: 'Order confirmation · EarthyGlow',
+    robots: 'noindex, nofollow',
+  })
 }
 
 export function CheckoutConfirmation() {
@@ -191,3 +199,5 @@ function ConfirmationShell({
     </section>
   )
 }
+
+export default CheckoutConfirmation

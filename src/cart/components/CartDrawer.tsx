@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { formatPrice } from '../CartContext'
 import { useCart } from '../useCart'
 import { CartLine } from './CartLine'

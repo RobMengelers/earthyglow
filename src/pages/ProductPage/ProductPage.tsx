@@ -1,4 +1,4 @@
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router'
 import { useState } from 'react'
 import { getCollection, getProduct, getRelated } from '../../data/products'
 import { ProductCard } from '../../components/catalog/ProductCard'
@@ -7,12 +7,38 @@ import { useCart } from '../../cart/useCart'
 import { formatPrice } from '../../cart/CartContext'
 import { NotFound } from '../NotFound/NotFound'
 import { seasonForProduct } from '../../data/seasons'
+import { JsonLd } from '../../components/seo/JsonLd'
+import { imageAttrs, SIZES } from '../../lib/images'
+import { SITE_URL, absoluteUrl, breadcrumbLd, siteMeta } from '../../lib/seo'
+import type { Route } from './+types/ProductPage'
 
 const perks = [
   '100% soy wax',
   'Vegan & cruelty-free',
   'Hand-poured in small batches',
 ]
+
+// Unknown products must fail with a real HTTP 404, not an in-page fallback.
+export function loader({ params }: Route.LoaderArgs) {
+  if (!getProduct(params.productId)) {
+    throw new Response('Not Found', { status: 404 })
+  }
+  return null
+}
+
+export function meta({ params }: Route.MetaArgs) {
+  const product = getProduct(params.productId)
+  if (!product) {
+    return siteMeta({ title: 'Product not found · EarthyGlow', robots: 'noindex' })
+  }
+  return siteMeta({
+    title: `${product.name} · EarthyGlow`,
+    description: product.description,
+    path: `/product/${product.id}`,
+    image: product.image,
+    type: 'product',
+  })
+}
 
 export function ProductPage() {
   const { productId } = useParams()
@@ -34,6 +60,34 @@ export function ProductPage() {
 
   return (
     <>
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'Product',
+          name: product.name,
+          description: product.description,
+          image: absoluteUrl(product.image),
+          sku: product.id,
+          brand: { '@type': 'Brand', name: 'EarthyGlow' },
+          offers: {
+            '@type': 'Offer',
+            url: `${SITE_URL}/product/${product.id}`,
+            priceCurrency: 'EUR',
+            price: (product.priceCents / 100).toFixed(2),
+            availability: product.soldOut
+              ? 'https://schema.org/OutOfStock'
+              : 'https://schema.org/InStock',
+            itemCondition: 'https://schema.org/NewCondition',
+          },
+        }}
+      />
+      <JsonLd
+        data={breadcrumbLd([
+          { name: 'Home', path: '/' },
+          { name: 'Shop', path: '/shop' },
+          { name: product.name },
+        ])}
+      />
       <section className="product-detail">
         <div className="container">
           <nav className="breadcrumb" aria-label="Breadcrumb">
@@ -53,7 +107,7 @@ export function ProductPage() {
           <div className="product-detail-grid">
             <Reveal className="product-detail-media">
               <div className="product-detail-frame">
-                <img src={product.image} alt={product.name} />
+                <img {...imageAttrs(product.image, SIZES.gallery)} alt={product.name} />
                 {product.soldOut && (
                   <span className="product-tag sold-out">Sold out</span>
                 )}
@@ -181,3 +235,5 @@ export function ProductPage() {
     </>
   )
 }
+
+export default ProductPage

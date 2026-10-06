@@ -1,13 +1,17 @@
 # EarthyGlow
 
-React, TypeScript, and Vite storefront with a separate backend in `server/`.
+React, TypeScript and React Router (framework mode, server-side rendered) storefront
+with a separate backend in `server/`.
 
 ## Development
 
 - `npm install` — install frontend dependencies.
-- `npm run dev` — start the frontend development server.
-- `npm run build` — type-check and create the production bundle.
+- `npm run dev` — start the frontend development server (SSR + Netlify emulation).
+- `npm run build` — create the production bundle and prerender static pages.
+- `npm run typecheck` — generate route types and run TypeScript.
 - `npm run lint` — run ESLint.
+- `node scripts/images.mjs` — regenerate responsive image variants and
+  `src/data/imageMeta.ts` after adding or replacing photos in `public/images`.
 
 See `server/package.json` for backend commands and `.env.example` for configuration.
 Run `npm --prefix server test` for catalog, variant-pricing and checkout regression checks.

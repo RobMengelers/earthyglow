@@ -1,9 +1,16 @@
 [build]
   command = "npm run build"
-  publish = "dist"
+  publish = "build/client"
 
-# SPA fallback so deep links like /checkout/confirmation reach the React app.
+[build.environment]
+  NODE_VERSION = "24"
+
+# Canonical host: serve the apex, never www.
 [[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+  from = "https://www.earthyglow.nl/*"
+  to = "https://earthyglow.nl/:splat"
+  status = 301
+  force = true
+
+[dev]
+  command = "react-router dev"

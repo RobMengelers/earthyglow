@@ -1,6 +1,7 @@
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import type { Product } from '../../data/products'
 import { getCollection } from '../../data/products'
+import { imageAttrs, SIZES } from '../../lib/images'
 import { Reveal } from '../ui/Reveal'
 
 type ProductCardProps = {
@@ -15,14 +16,18 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
     <Reveal delay={(index % 3) * 80} className="product-card-wrap">
       <Link to={`/product/${product.id}`} className="product-card">
         <div className="product-media">
-          <img src={product.image} alt={product.name} loading="lazy" />
+          <img
+            {...imageAttrs(product.image, SIZES.card)}
+            alt={product.name}
+            loading="lazy"
+          />
           {product.soldOut && (
             <span className="product-tag sold-out">Sold out</span>
           )}
         </div>
         <div className="product-body">
           {collection && <span className="product-collection">{collection.title}</span>}
-          <h4>{product.name}</h4>
+          <h3>{product.name}</h3>
           <span className="product-price">{product.price}</span>
         </div>
         <span className="product-cta">

@@ -40,7 +40,7 @@ export const collections: Collection[] = [
         name: 'The Floral Box',
         price: '€14,95',
         priceCents: 1495,
-        image: '/images/d99f763e-0f02-4797-9cff-2fdf82d96529.webp',
+        image: '/images/floral-box.webp',
         collectionId: 'little-glow',
         description:
           'Nine individually poured flower candles, arranged in a gift box and scented with Bluebell. I make these with approximately 220g of soy wax. Choose pink, baby blue or purple for someone you love, or for yourself.',
@@ -55,7 +55,7 @@ export const collections: Collection[] = [
         name: 'The Floral Basket',
         price: '€12,95',
         priceCents: 1295,
-        image: '/images/670b77ea-aeb3-4566-8863-e9fa02b40b8e.webp',
+        image: '/images/floral-basket.webp',
         collectionId: 'little-glow',
         description:
           'A basket of individually poured flower candles with an English Rose scent. Made with approximately 150g of soy wax and available in pink or red. A little bouquet you can enjoy at home or give as a gift.',
@@ -78,7 +78,7 @@ export const collections: Collection[] = [
         name: 'Coconut Beach',
         price: 'From €14,95',
         priceCents: 1495,
-        image: '/images/31eca091-4aa2-40ea-9a50-d76cdea8f7bc.webp',
+        image: '/images/coconut-beach.webp',
         collectionId: 'scented-glow',
         description:
           'A little beach scene, poured by hand with soy wax and scented with Coconut Island. Pineapple and orange meet creamy coconut, almond and peach. Choose your favourite of the four seaside shapes.',
@@ -94,7 +94,7 @@ export const collections: Collection[] = [
         name: 'Autumn Ember',
         price: '€14,95',
         priceCents: 1495,
-        image: '/images/50adf898-6887-4195-a3c6-286f4926778d.webp',
+        image: '/images/autumn-ember.webp',
         collectionId: 'scented-glow',
         description:
           'I decorate this soy wax candle with autumn-inspired wax details. Its Vanilla & Cinders fragrance brings together smoky vanilla, clove, cedarwood, amber and musk for an evening at home.',
@@ -104,7 +104,7 @@ export const collections: Collection[] = [
         name: 'Pumpkin Spice',
         price: '€14,95',
         priceCents: 1495,
-        image: '/images/5869d3a7-0b47-42bc-a78a-f8a3b78eab39.webp',
+        image: '/images/pumpkin-spice.webp',
         collectionId: 'scented-glow',
         soldOut: true,
         description:
@@ -115,7 +115,7 @@ export const collections: Collection[] = [
         name: 'Pumpkin Spice Latte',
         price: '€9,95',
         priceCents: 995,
-        image: '/images/Pumpkin_Spice_Latte.webp',
+        image: '/images/pumpkin-spice-latte.webp',
         collectionId: 'scented-glow',
         description:
           'A candle inspired by a favourite autumn drink, with whipped wax and handmade seasonal details. Poured with soy wax and scented with Pumpkin Spice. For your shelf, not your coffee cup.',
@@ -194,7 +194,7 @@ export const collections: Collection[] = [
         name: 'Column candle',
         price: 'From €9,95',
         priceCents: 995,
-        image: '/images/Schermafbeelding2026-05-03152509.webp',
+        image: '/images/column.webp',
         collectionId: 'natural-glow',
         description:
           'Straight, ribbed lines and a simple column shape, poured by hand with 100% soy wax. Fragrance-free, so you can enjoy the candlelight without an added scent.',
@@ -210,7 +210,7 @@ export const collections: Collection[] = [
         name: 'Pillar candle',
         price: 'From €6,95',
         priceCents: 695,
-        image: '/images/1b8dcdc0-1ca6-4d8b-bd8d-78d13c22efaf.webp',
+        image: '/images/pillar.webp',
         collectionId: 'natural-glow',
         description:
           'A ribbed pillar candle for a table or a favourite corner of your home. I pour it by hand with 100% soy wax and leave it fragrance-free.',
@@ -227,7 +227,7 @@ export const collections: Collection[] = [
         name: 'Spiral candle',
         price: 'From €6,95',
         priceCents: 695,
-        image: '/images/e3d2f8c0-1f58-4c8b-a2e7-a7aafead6d4d.webp',
+        image: '/images/spiral.webp',
         collectionId: 'natural-glow',
         description:
           'Soft twists and rounded lines give this candle its shape. Poured by hand with 100% soy wax, with no added fragrance.',
@@ -244,7 +244,7 @@ export const collections: Collection[] = [
         name: 'Shell candle',
         price: 'From €4,95',
         priceCents: 495,
-        image: '/images/Schermafbeelding_2026-05-03_153832.webp',
+        image: '/images/shell.webp',
         collectionId: 'natural-glow',
         description:
           'A small reminder of the seaside, with curved lines inspired by a shell. Poured by hand with 100% soy wax and no added fragrance.',
@@ -260,7 +260,7 @@ export const collections: Collection[] = [
         name: 'Arch candle',
         price: 'From €4,95',
         priceCents: 495,
-        image: '/images/7aa7691d-26fe-4ea2-8188-64529e4bda46.webp',
+        image: '/images/arch.webp',
         collectionId: 'natural-glow',
         description:
           'A simple arch shape that looks lovely on its own or beside your favourite objects. Made by hand with 100% soy wax and no added fragrance.',
@@ -277,7 +277,7 @@ export const collections: Collection[] = [
         name: 'Bubble candle',
         price: 'From €4,95',
         priceCents: 495,
-        image: '/images/6efade16-e5a8-4eb0-99e9-ad0a90b19f9a.webp',
+        image: '/images/bubble.webp',
         collectionId: 'natural-glow',
         description:
           'Rounded, playful bubbles in a candle you can tuck into a favourite corner. I pour it by hand with 100% soy wax and leave it fragrance-free.',
@@ -313,5 +313,5 @@ export function getRelated(product: Product, count = 3): Product[] {
     .slice(0, count) ?? products.filter((p) => p.id !== product.id).slice(0, count)
 }
 
-export const heroImage = '/images/17ba3741-6495-4fc7-84fe-a4653dbdda61.webp'
-export const aboutImage = '/images/Schermafbeelding_2026-05-30_164759.webp'
+export const heroImage = '/images/hero-candles.webp'
+export const aboutImage = '/images/about-candles.webp'

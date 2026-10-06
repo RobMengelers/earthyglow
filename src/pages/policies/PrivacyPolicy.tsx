@@ -1,4 +1,14 @@
 import { PolicyLayout } from '../../components/layout/PolicyLayout'
+import { siteMeta } from '../../lib/seo'
+
+export function meta() {
+  return siteMeta({
+    title: 'Privacy Policy · EarthyGlow',
+    description:
+      'How EarthyGlow handles personal data: what we collect when you order or contact us, why we use it, who receives it, and your GDPR rights.',
+    path: '/policies/privacy-policy',
+  })
+}
 
 export function PrivacyPolicy() {
   return (
@@ -58,3 +68,5 @@ export function PrivacyPolicy() {
     </PolicyLayout>
   )
 }
+
+export default PrivacyPolicy

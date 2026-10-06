@@ -1,6 +1,7 @@
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { formatPrice, type CartItem } from '../CartContext'
 import { useCart } from '../useCart'
+import { imageAttrs, SIZES } from '../../lib/images'
 
 type CartLineProps = {
   item: CartItem
@@ -20,7 +21,9 @@ export function CartLine({ item, compact = false, tabIndex, onNavigate }: CartLi
         tabIndex={tabIndex}
         onClick={onNavigate}
       >
-        <img src={item.image} alt={item.name} loading="lazy" />
+        {item.image && (
+          <img {...imageAttrs(item.image, SIZES.thumb)} alt={item.name} loading="lazy" />
+        )}
       </Link>
       <div className="cart-line-body">
         <div className="cart-line-top">

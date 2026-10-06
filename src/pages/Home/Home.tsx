@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { Hero } from './components/Hero'
 import { Divider } from '../../components/ui/Divider'
 import { AboutTeaser } from './components/AboutTeaser'
@@ -7,12 +7,38 @@ import { Newsletter } from './components/Newsletter'
 import { Reveal } from '../../components/ui/Reveal'
 import { products } from '../../data/products'
 import { seasons } from '../../data/seasons'
+import { JsonLd } from '../../components/seo/JsonLd'
+import { imageAttrs, SIZES } from '../../lib/images'
+import { SITE_URL, absoluteUrl, siteMeta } from '../../lib/seo'
 
 const featuredSeasons = seasons.filter((season) => season.id !== 'halloween')
+
+export function meta() {
+  return siteMeta({ path: '/' })
+}
 
 export function Home() {
   return (
     <>
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'WebSite',
+          name: 'EarthyGlow',
+          url: SITE_URL,
+        }}
+      />
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'Organization',
+          name: 'EarthyGlow',
+          url: SITE_URL,
+          logo: absoluteUrl('/logo.png'),
+          email: 'earthyglowcandles@gmail.com',
+          founder: { '@type': 'Person', name: 'Naomi' },
+        }}
+      />
       <Hero />
       <Divider />
 
@@ -32,7 +58,13 @@ export function Home() {
                 <Reveal key={season.id} delay={i * 90} className="collection-card-wrap">
                   <Link to={`/shop?season=${season.id}`} className="collection-card">
                     <div className="collection-card-media">
-                      {cover && <img src={cover.image} alt={season.label} loading="lazy" />}
+                      {cover && (
+                        <img
+                          {...imageAttrs(cover.image, SIZES.cover)}
+                          alt={season.label}
+                          loading="lazy"
+                        />
+                      )}
                       <span className="collection-card-count">{season.productIds.length} products</span>
                     </div>
                     <div className="collection-card-body">
@@ -60,3 +92,5 @@ export function Home() {
     </>
   )
 }
+
+export default Home

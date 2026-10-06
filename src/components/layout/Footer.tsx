@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { SocialLinks } from '../ui/SocialLinks'
 import { seasons } from '../../data/seasons'
 
@@ -15,7 +15,13 @@ export function Footer() {
       <div className="container footer-grid">
         <div className="footer-brand">
           <Link to="/" className="brand brand-light">
-            <img src="/logo-mark.png" className="brand-logo" alt="" />
+            <img
+              src="/logo-mark.png"
+              width={280}
+              height={280}
+              className="brand-logo"
+              alt=""
+            />
             <span className="brand-wordmark">
               Earthy<span>Glow</span>
             </span>
