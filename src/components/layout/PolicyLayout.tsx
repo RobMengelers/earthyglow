@@ -1,6 +1,7 @@
 import { type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { Reveal } from '../ui/Reveal'
+import { Divider } from '../ui/Divider'
 import { JsonLd } from '../seo/JsonLd'
 import { breadcrumbLd } from '../../lib/seo'
 
@@ -36,6 +37,8 @@ export function PolicyLayout({ title, updated, children }: PolicyLayoutProps) {
           </Reveal>
         </div>
       </section>
+
+      <Divider white />
 
       <section className="policy-body">
         <div className="container">

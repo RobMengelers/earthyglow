@@ -3,6 +3,7 @@ import { formatPrice } from '../../cart/CartContext'
 import { useCart } from '../../cart/useCart'
 import { CartLine } from '../../cart/components/CartLine'
 import { Reveal } from '../../components/ui/Reveal'
+import { Divider } from '../../components/ui/Divider'
 import { siteMeta } from '../../lib/seo'
 
 export function meta() {
@@ -32,6 +33,8 @@ export function Cart() {
           </Reveal>
         </div>
       </section>
+
+      <Divider white />
 
       <section className="cart-page">
         <div className="container">

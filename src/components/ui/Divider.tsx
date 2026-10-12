@@ -1,5 +1,11 @@
-export function Divider() {
-  return (
+import { Reveal } from './Reveal'
+
+type DividerProps = {
+  white?: boolean
+}
+
+export function Divider({ white = false }: DividerProps) {
+  const content = (
     <div className="page-divider" aria-hidden="true">
       <span className="divider-line" />
       <span className="divider-ornament">
@@ -22,5 +28,13 @@ export function Divider() {
       </span>
       <span className="divider-line" />
     </div>
+  )
+
+  return white ? (
+    <div className="page-divider--white">
+      <Reveal>{content}</Reveal>
+    </div>
+  ) : (
+    <Reveal>{content}</Reveal>
   )
 }

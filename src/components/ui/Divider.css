@@ -6,6 +6,10 @@
   padding: 10px 0 0;
 }
 
+.page-divider--white {
+  background: var(--surface);
+}
+
 .divider-line {
   height: 1px;
   width: min(190px, 20vw);

@@ -81,6 +81,64 @@ const manualOrderSchema = z.object({
   sendInvoiceEmail: z.boolean().optional().default(false),
 })
 
+// The shop prices everything VAT-inclusive at 21% (see the invoice), so a
+// purchase's receipt total is split exactly the way invoices are: net is what
+// is left after pulling the included VAT out of the gross price.
+const VAT_INCLUSIVE_RATE_21 = 121
+export function includedVatSplit(costCents: number): {
+  netCents: number
+  vatCents: number
+} {
+  const netCents = Math.round((costCents * 100) / VAT_INCLUSIVE_RATE_21)
+  return { netCents, vatCents: costCents - netCents }
+}
+
+// Purchases arrive as a JSON form; cost is the number typed by the admin (with
+// a comma or a dot as the decimal separator) and is parsed into cents server
+// side so a malformed value can never pollute the books.
+const purchaseFieldsSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Choose the date it was bought'),
+  description: z.string().trim().min(1, 'Describe what you bought').max(300),
+  cost: z.string().regex(/^\d{1,7}([,.]\d{1,2})?$/, 'Enter the total cost in euros, e.g. 24,50'),
+})
+
+const purchaseDocumentSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+  type: z.string().trim().max(120).default('application/octet-stream'),
+  // Base64 of the uploaded file. The cap keeps a single receipt/document
+  // manageable (~15 MB of decoded bytes) without unbounded request bodies.
+  data: z.string().min(1).max(20 * 1024 * 1024),
+})
+
+function eurosToCents(value: string): number | null {
+  const normalized = value.replace(',', '.')
+  const parsed = Number.parseFloat(normalized)
+  if (!Number.isFinite(parsed)) return null
+  return Math.round(parsed * 100)
+}
+
+// A calendar date entered on the form, anchored at midday UTC so converting to
+// local dates never shifts it onto the previous or next day.
+function dateBoughtFromForm(value: string): Date {
+  return new Date(`${value}T12:00:00.000Z`)
+}
+
+// Filenames come from the browser and could carry quotes, path separators or
+// other bytes that are unsafe in a Content-Disposition header.
+function safeFileName(name: string): string {
+  const cleaned = Array.from(name.trim())
+    .filter(
+      (char) =>
+        char.charCodeAt(0) >= 32 &&
+        char !== '"' &&
+        char !== '\\' &&
+        char !== '/',
+    )
+    .join('')
+    .replace(/\s+/g, ' ')
+  return cleaned.length > 0 ? cleaned.slice(0, 120) : 'document'
+}
+
 export async function adminRoutes(app: FastifyInstance) {
   // Admin auth is only available when an ADMIN_PASSWORD is configured.
   const enabled = env.ADMIN_PASSWORD.length > 0
@@ -347,16 +405,25 @@ export async function adminRoutes(app: FastifyInstance) {
     },
   )
 
-  // Powers the dashboard: status counts, how the last 30 days compare to the 30
-  // before it, what still needs shipping, and the newest orders. Aggregated in
-  // the database so the landing page stays cheap as the table grows.
-  app.get('/api/admin/overview', { preHandler: requireAdmin }, async () => {
+  // Powers the dashboard: status counts, how the last 30 days / quarter / year
+  // compare to the same window before it, what still needs shipping, and the
+  // newest orders. Aggregated in the database so the landing page stays cheap
+  // as the table grows. `period` picks the window; anything else falls back to
+  // 30 days.
+  const OVERVIEW_DAYS: Record<string, number> = {
+    '30d': 30,
+    quarter: 90,
+    year: 365,
+  }
+  app.get('/api/admin/overview', { preHandler: requireAdmin }, async (request) => {
+    const query = request.query as { period?: string }
+    const days = OVERVIEW_DAYS[query.period ?? '30d'] ?? 30
     const now = Date.now()
     const DAY = 24 * 60 * 60 * 1000
-    const periodStart = new Date(now - 30 * DAY)
-    const previousPeriodStart = new Date(now - 60 * DAY)
+    const periodStart = new Date(now - days * DAY)
+    const previousPeriodStart = new Date(now - 2 * days * DAY)
 
-    const [counts, revenue, previousRevenue, unfulfilledCount, customerCount, recent] =
+    const [counts, revenue, previousRevenue, expenses, previousExpenses, unfulfilledCount, customerCount, recent] =
       await Promise.all([
         prisma.order.groupBy({ by: ['status'], _count: true }),
         prisma.order.aggregate({
@@ -370,6 +437,14 @@ export async function adminRoutes(app: FastifyInstance) {
             paidAt: { gte: previousPeriodStart, lt: periodStart },
           },
         }),
+        prisma.purchase.aggregate({
+          _sum: { costCents: true },
+          where: { dateBought: { gte: periodStart } },
+        }),
+        prisma.purchase.aggregate({
+          _sum: { costCents: true },
+          where: { dateBought: { gte: previousPeriodStart, lt: periodStart } },
+        }),
         // "Paid but never marked processed" is the shop's real to-do list.
         prisma.order.count({ where: { status: 'paid', fulfillmentStatus: 'open' } }),
         prisma.customer.count(),
@@ -381,14 +456,14 @@ export async function adminRoutes(app: FastifyInstance) {
         }),
       ])
 
-    // Ids only, so the dashboard never drags PDF bytes over the wire.
+    const cachedIds = recent.map((order) => order.id)
     const archivedIds = new Set(
-      recent.length === 0
+      cachedIds.length === 0
         ? []
         : (
             await prisma.order.findMany({
               where: {
-                id: { in: recent.map((order) => order.id) },
+                id: { in: cachedIds },
                 invoicePdf: { not: null },
               },
               select: { id: true },
@@ -399,10 +474,19 @@ export async function adminRoutes(app: FastifyInstance) {
     const stats: Record<string, number> = {}
     for (const row of counts) stats[row.status] = row._count
 
+    const revenueCents = revenue._sum.totalCents ?? 0
+    const previousRevenueCents = previousRevenue._sum.totalCents ?? 0
+    const expensesCents = expenses._sum.costCents ?? 0
+    const previousExpensesCents = previousExpenses._sum.costCents ?? 0
+
     return {
       stats,
-      revenueCents: revenue._sum.totalCents ?? 0,
-      previousRevenueCents: previousRevenue._sum.totalCents ?? 0,
+      revenueCents,
+      previousRevenueCents,
+      expensesCents,
+      previousExpensesCents,
+      profitCents: revenueCents - expensesCents,
+      previousProfitCents: previousRevenueCents - previousExpensesCents,
       unfulfilledCount,
       customerCount,
       recentOrders: recent.map((order) => ({
@@ -411,6 +495,119 @@ export async function adminRoutes(app: FastifyInstance) {
       })),
     }
   })
+
+  // The purchases page: every recorded purchase, newest first. The document
+  // bytes stay out of the list response (they are served by their own route).
+  app.get('/api/admin/purchases', { preHandler: requireAdmin }, async () => {
+    const purchases = await prisma.purchase.findMany({
+      orderBy: { dateBought: 'desc' },
+      omit: { documentBytes: true },
+    })
+    return {
+      purchases: purchases.map((purchase) => ({
+        ...purchase,
+        ...includedVatSplit(purchase.costCents),
+        hasDocument: purchase.documentName !== null,
+      })),
+    }
+  })
+
+  // Records a purchase. `date` is the day it was bought, `description` the free
+  // text, `cost` the VAT-inclusive total (split into net + 21% VAT), and
+  // `document` is an optional base64-encoded receipt.
+  app.post(
+    '/api/admin/purchases',
+    { preHandler: requireAdmin, bodyLimit: 21 * 1024 * 1024 },
+    async (request, reply) => {
+      const body = request.body as Record<string, unknown>
+      const fields = purchaseFieldsSchema.safeParse({
+        date: body.date,
+        description: body.description,
+        cost: body.cost,
+      })
+      if (!fields.success) {
+        return reply
+          .code(400)
+          .send({ error: fields.error.issues[0]?.message ?? 'Invalid purchase' })
+      }
+
+      const costCents = eurosToCents(fields.data.cost)
+      if (costCents === null || costCents <= 0) {
+        return reply
+          .code(400)
+          .send({ error: 'Enter the total cost in euros, e.g. 24,50' })
+      }
+
+      let parsedDocument: z.infer<typeof purchaseDocumentSchema> | null = null
+      if (body.document !== undefined && body.document !== null) {
+        const parsed = purchaseDocumentSchema.safeParse(body.document)
+        if (!parsed.success) {
+          return reply.code(400).send({ error: 'The uploaded document is not valid' })
+        }
+        parsedDocument = parsed.data
+      }
+
+      const purchase = await prisma.purchase.create({
+        data: {
+          dateBought: dateBoughtFromForm(fields.data.date),
+          description: fields.data.description,
+          costCents,
+          documentName: parsedDocument ? safeFileName(parsedDocument.name) : null,
+          documentMime: parsedDocument ? parsedDocument.type : null,
+          documentBytes: parsedDocument
+            ? Buffer.from(parsedDocument.data, 'base64')
+            : null,
+        },
+        omit: { documentBytes: true },
+      })
+
+      return {
+        purchase: {
+          ...purchase,
+          ...includedVatSplit(purchase.costCents),
+          hasDocument: purchase.documentName !== null,
+        },
+      }
+    },
+  )
+
+  app.delete(
+    '/api/admin/purchases/:id',
+    { preHandler: requireAdmin },
+    async (request, reply) => {
+      const params = request.params as { id: string }
+      try {
+        await prisma.purchase.delete({ where: { id: params.id } })
+      } catch {
+        return reply.code(404).send({ error: 'Purchase not found' })
+      }
+      return { ok: true }
+    },
+  )
+
+  // Serves the document (receipt) that was attached to a purchase, so the admin
+  // can open the original file exactly as it was uploaded.
+  app.get(
+    '/api/admin/purchases/:id/document',
+    { preHandler: requireAdmin },
+    async (request, reply) => {
+      const params = request.params as { id: string }
+      const purchase = await prisma.purchase.findUnique({
+        where: { id: params.id },
+        select: { documentName: true, documentMime: true, documentBytes: true },
+      })
+      if (!purchase || !purchase.documentBytes || !purchase.documentName) {
+        return reply.code(404).send({ error: 'No document for this purchase' })
+      }
+      return reply
+        .type(purchase.documentMime ?? 'application/octet-stream')
+        .header(
+          'Content-Disposition',
+          `attachment; filename="${purchase.documentName}"`,
+        )
+        .send(Buffer.from(purchase.documentBytes))
+    },
+  )
 
   app.patch('/api/admin/orders/:id/fulfillment', { preHandler: requireAdmin }, async (request, reply) => {
     const body = request.body as { status?: unknown; carrier?: unknown; trackingCode?: unknown }

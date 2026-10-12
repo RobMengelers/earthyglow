@@ -18,6 +18,7 @@ export type ProductVariant = {
   label: string
   priceCents?: number
   swatch?: string
+  image?: string
 }
 
 export type Collection = {
@@ -31,8 +32,8 @@ export type Collection = {
 export const collections: Collection[] = [
   {
     id: 'little-glow',
-    eyebrow: 'The Little Glow',
-    title: 'Flower candle gifts',
+    eyebrow: 'Scented Thealights',
+    title: 'Little Glow Thealights',
     blurb:
       'Hand-poured flower candles, arranged in boxes and baskets. A bouquet with a little something different.',
     products: [
@@ -47,9 +48,9 @@ export const collections: Collection[] = [
         description:
           'Nine individually poured flower candles, arranged in a gift box and scented with Bluebell. I make these with approximately 220g of soy wax. Choose pink, baby blue or purple for someone you love, or for yourself.',
         variants: [
-          { id: 'pink', label: 'Pink', swatch: '#e8a1b5', priceCents: 1495 },
-          { id: 'baby-blue', label: 'Baby blue', swatch: '#9fc9e8', priceCents: 1495 },
-          { id: 'purple', label: 'Purple', swatch: '#9b72c4', priceCents: 1495 },
+          { id: 'pink', label: 'Pink', swatch: '#e8a1b5', priceCents: 1495, image: '/images/products/floral-box/image-4.webp' },
+          { id: 'baby-blue', label: 'Baby blue', swatch: '#9fc9e8', priceCents: 1495, image: '/images/products/floral-box/image-5.webp' },
+          { id: 'purple', label: 'Purple', swatch: '#9b72c4', priceCents: 1495, image: '/images/products/floral-box/image-6.webp' },
         ],
       },
       {
@@ -63,16 +64,16 @@ export const collections: Collection[] = [
         description:
           'A basket of individually poured flower candles with an English Rose scent. Made with approximately 150g of soy wax and available in pink or red. A little bouquet you can enjoy at home or give as a gift.',
         variants: [
-          { id: 'floral-basket-pink', label: 'Pink', priceCents: 1295, swatch: '#e8a1b5' },
-          { id: 'floral-basket-red', label: 'Red', priceCents: 1295, swatch: '#c94c55' },
+          { id: 'floral-basket-pink', label: 'Pink', priceCents: 1295, swatch: '#e8a1b5', image: '/images/products/floral-basket/image-1.webp' },
+          { id: 'floral-basket-red', label: 'Red', priceCents: 1295, swatch: '#c94c55', image: '/images/products/floral-basket/image-3.webp' },
         ],
       },
     ],
   },
   {
     id: 'scented-glow',
-    eyebrow: 'The Scented Glow',
-    title: 'Scented soy candles',
+    eyebrow: 'Scented Candles',
+    title: 'The Scented Glow',
     blurb:
       'From Coconut Island to Pumpkin Spice, find a fragrance for your favourite time of year.',
     products: [
@@ -87,10 +88,10 @@ export const collections: Collection[] = [
         description:
           'A little beach scene, poured by hand with soy wax and scented with Coconut Island. Pineapple and orange meet creamy coconut, almond and peach. Choose your favourite of the four seaside shapes.',
         variants: [
-          { id: 'oyster', label: 'Oyster', priceCents: 1495 },
-          { id: 'coconut', label: 'Coconut', priceCents: 1795 },
-          { id: 'shell', label: 'Shell', priceCents: 1795 },
-          { id: 'sea-star', label: 'Sea star', priceCents: 1795 },
+          { id: 'oyster', label: 'Oyster', priceCents: 1495, image: '/images/products/coconut-beach/image-5.webp' },
+          { id: 'coconut', label: 'Coconut', priceCents: 1795, image: '/images/products/coconut-beach/image-2.webp' },
+          { id: 'shell', label: 'Shell', priceCents: 1795, image: '/images/products/coconut-beach/image-4.webp' },
+          { id: 'sea-star', label: 'Sea star', priceCents: 1795, image: '/images/products/coconut-beach/image-3.webp' },
         ],
       },
       {
@@ -131,7 +132,7 @@ export const collections: Collection[] = [
   },
   {
     id: 'halloween',
-    eyebrow: 'The Halloween Glow',
+    eyebrow: 'Ghosts & pumpkins',
     title: 'Halloween candles',
     blurb: 'Little ghosts, pumpkin shapes and autumn scents. A few playful things I’ve made for the season.',
     products: [
@@ -196,8 +197,8 @@ export const collections: Collection[] = [
   },
   {
     id: 'natural-glow',
-    eyebrow: 'The Natural Glow',
-    title: 'Sculptural natural candles',
+    eyebrow: 'Fragrance-free',
+    title: 'The Natural Glow',
     blurb:
       'Fragrance-free soy wax candles in simple, sculptural shapes. Choose one for your favourite spot at home.',
     products: [
@@ -213,9 +214,9 @@ export const collections: Collection[] = [
           'Straight, ribbed lines and a simple column shape, poured by hand with 100% soy wax. Fragrance-free, so you can enjoy the candlelight without an added scent.',
         variantLabel: 'size or bundle',
         variants: [
-          { id: 'column-small', label: 'Small', priceCents: 995 },
-          { id: 'column-large', label: 'Large', priceCents: 1295 },
-          { id: 'column-bundle', label: 'Bundle', priceCents: 1995 },
+          { id: 'column-small', label: 'Small', priceCents: 995, image: '/images/products/column/image-3.webp' },
+          { id: 'column-large', label: 'Large', priceCents: 1295, image: '/images/products/column/image-2.webp' },
+          { id: 'column-bundle', label: 'Bundle', priceCents: 1995, image: '/images/products/column/image-3.webp' },
         ],
       },
       {
@@ -230,10 +231,10 @@ export const collections: Collection[] = [
           'A ribbed pillar candle for a table or a favourite corner of your home. I pour it by hand with 100% soy wax and leave it fragrance-free.',
         variantLabel: 'size or bundle',
         variants: [
-          { id: 'pillar-small', label: 'Small', priceCents: 695 },
-          { id: 'pillar-medium', label: 'Medium', priceCents: 995 },
-          { id: 'pillar-large', label: 'Large', priceCents: 1295 },
-          { id: 'pillar-bundle', label: 'Bundle', priceCents: 2495 },
+          { id: 'pillar-small', label: 'Small', priceCents: 695, image: '/images/products/pillar/image-3.webp' },
+          { id: 'pillar-medium', label: 'Medium', priceCents: 995, image: '/images/products/pillar/image-2.webp' },
+          { id: 'pillar-large', label: 'Large', priceCents: 1295, image: '/images/products/pillar/image-1.webp' },
+          { id: 'pillar-bundle', label: 'Bundle', priceCents: 2495, image: '/images/products/pillar/image-3.webp' },
         ],
       },
       {
@@ -248,10 +249,10 @@ export const collections: Collection[] = [
           'Soft twists and rounded lines give this candle its shape. Poured by hand with 100% soy wax, with no added fragrance.',
         variantLabel: 'size or bundle',
         variants: [
-          { id: 'spiral-small', label: 'Small', priceCents: 695 },
-          { id: 'spiral-medium', label: 'Medium', priceCents: 995 },
-          { id: 'spiral-large', label: 'Large', priceCents: 1295 },
-          { id: 'spiral-bundle', label: 'Bundle', priceCents: 2495 },
+          { id: 'spiral-small', label: 'Small', priceCents: 695, image: '/images/products/spiral/image-3.webp' },
+          { id: 'spiral-medium', label: 'Medium', priceCents: 995, image: '/images/products/spiral/image-2.webp' },
+          { id: 'spiral-large', label: 'Large', priceCents: 1295, image: '/images/products/spiral/image-1.webp' },
+          { id: 'spiral-bundle', label: 'Bundle', priceCents: 2495, image: '/images/products/spiral/image-3.webp' },
         ],
       },
       {
@@ -266,9 +267,9 @@ export const collections: Collection[] = [
           'A small reminder of the seaside, with curved lines inspired by a shell. Poured by hand with 100% soy wax and no added fragrance.',
         variantLabel: 'size or bundle',
         variants: [
-          { id: 'shell-small', label: 'Small', priceCents: 495 },
-          { id: 'shell-large', label: 'Large', priceCents: 895 },
-          { id: 'shell-bundle', label: 'Bundle', priceCents: 1195 },
+          { id: 'shell-small', label: 'Small', priceCents: 495, image: '/images/products/shell/image-3.webp' },
+          { id: 'shell-large', label: 'Large', priceCents: 895, image: '/images/products/shell/image-2.webp' },
+          { id: 'shell-bundle', label: 'Bundle', priceCents: 1195, image: '/images/products/shell/image-1.webp' },
         ],
       },
       {
@@ -283,10 +284,10 @@ export const collections: Collection[] = [
           'A simple arch shape that looks lovely on its own or beside your favourite objects. Made by hand with 100% soy wax and no added fragrance.',
         variantLabel: 'size or bundle',
         variants: [
-          { id: 'arch-small', label: 'Small', priceCents: 495 },
-          { id: 'arch-medium', label: 'Medium', priceCents: 695 },
-          { id: 'arch-large', label: 'Large', priceCents: 895 },
-          { id: 'arch-bundle', label: 'Bundle', priceCents: 1595 },
+          { id: 'arch-small', label: 'Small', priceCents: 495, image: '/images/products/arch/image-3.webp' },
+          { id: 'arch-medium', label: 'Medium', priceCents: 695, image: '/images/products/arch/image-2.webp' },
+          { id: 'arch-large', label: 'Large', priceCents: 895, image: '/images/products/arch/image-1.webp' },
+          { id: 'arch-bundle', label: 'Bundle', priceCents: 1595, image: '/images/products/arch/image-3.webp' },
         ],
       },
       {
@@ -301,10 +302,10 @@ export const collections: Collection[] = [
           'Rounded, playful bubbles in a candle you can tuck into a favourite corner. I pour it by hand with 100% soy wax and leave it fragrance-free.',
         variantLabel: 'size or bundle',
         variants: [
-          { id: 'bubble-small', label: 'Small', priceCents: 495 },
-          { id: 'bubble-medium', label: 'Medium', priceCents: 695 },
-          { id: 'bubble-large', label: 'Large', priceCents: 895 },
-          { id: 'bubble-bundle', label: 'Bundle', priceCents: 1595 },
+          { id: 'bubble-small', label: 'Small', priceCents: 495, image: '/images/products/bubble/image-3.webp' },
+          { id: 'bubble-medium', label: 'Medium', priceCents: 695, image: '/images/products/bubble/image-2.webp' },
+          { id: 'bubble-large', label: 'Large', priceCents: 895, image: '/images/products/bubble/image-1.webp' },
+          { id: 'bubble-bundle', label: 'Bundle', priceCents: 1595, image: '/images/products/bubble/image-3.webp' },
         ],
       },
     ],

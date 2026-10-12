@@ -1,7 +1,7 @@
 import type { CartItem } from './CartContext'
 import { API_URL } from './catalog'
 
-export type CheckoutDetails = {
+type CheckoutDetails = {
   firstName: string
   lastName: string
   email: string

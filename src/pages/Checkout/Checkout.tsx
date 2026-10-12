@@ -9,6 +9,7 @@ import {
 } from '../../cart/checkout'
 import { useCart } from '../../cart/useCart'
 import { Reveal } from '../../components/ui/Reveal'
+import { Divider } from '../../components/ui/Divider'
 import { LoadingButton } from '../../components/ui/LoadingButton'
 import { countries } from './countries'
 import { ContactFields } from './components/ContactFields'
@@ -154,6 +155,8 @@ export function Checkout() {
           </Reveal>
         </div>
       </section>
+
+      <Divider white />
 
       <section className="checkout-body">
         <div className="container checkout-grid">

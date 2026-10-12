@@ -14,24 +14,6 @@
   position: static;
 }
 
-.product-detail-frame {
-  position: relative;
-  border: 2px solid var(--edge);
-  background: var(--surface);
-  overflow: hidden;
-}
-
-.product-detail-frame img {
-  width: 100%;
-  aspect-ratio: 4 / 5;
-  object-fit: cover;
-}
-
-.product-detail-frame .product-tag {
-  top: 14px;
-  left: 14px;
-}
-
 .product-detail-info h1 {
   font-size: clamp(2rem, 3.8vw, 2.9rem);
   margin: 0.4rem 0 0.6rem;
@@ -148,7 +130,9 @@
   gap: 0.4rem;
   padding-top: 1.4rem;
   border-top: 1px solid var(--line);
-  font-size: 0.95rem;
+  font-size: 0.85rem;
+  color: var(--body);
+  max-width: 52ch;
 }
 
 .product-detail-meta strong {

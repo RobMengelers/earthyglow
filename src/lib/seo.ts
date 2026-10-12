@@ -1,13 +1,13 @@
 import type { MetaDescriptor } from 'react-router'
 
 export const SITE_URL = 'https://earthyglow.nl'
-export const SITE_NAME = 'EarthyGlow'
-export const DEFAULT_TITLE = 'EarthyGlow · Hand-poured Soy Candles'
-export const DEFAULT_DESCRIPTION =
+const SITE_NAME = 'EarthyGlow'
+const DEFAULT_TITLE = 'EarthyGlow · Hand-poured Soy Candles'
+const DEFAULT_DESCRIPTION =
   'Meet EarthyGlow: 100% soy wax candles, poured by hand by Naomi in the Netherlands. Flower candles, seasonal scents and sculptural shapes.'
-export const DEFAULT_OG_IMAGE = '/og-cover.png'
-export const OG_IMAGE_WIDTH = 1200
-export const OG_IMAGE_HEIGHT = 630
+const DEFAULT_OG_IMAGE = '/og-cover.png'
+const OG_IMAGE_WIDTH = 1200
+const OG_IMAGE_HEIGHT = 630
 
 export function absoluteUrl(pathOrUrl: string): string {
   if (pathOrUrl.startsWith('http://') || pathOrUrl.startsWith('https://')) {

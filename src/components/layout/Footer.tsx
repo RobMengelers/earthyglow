@@ -67,7 +67,11 @@ export function Footer() {
       </div>
       <div className="footer-bottom">
         <div className="container">
-          <span>© {new Date().getFullYear()} EarthyGlow. All rights reserved.</span>
+          <div className="footer-legal">
+            <span>© {new Date().getFullYear()} EarthyGlow. All rights reserved.</span>
+            <span>KVK 42049155</span>
+            <span>VAT NL005456394B38</span>
+          </div>
           <span>Handmade with care in the Netherlands</span>
         </div>
       </div>

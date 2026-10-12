@@ -38,6 +38,8 @@ function stubOverview(
     rows?: RecentRow[]
     revenue?: number
     previousRevenue?: number
+    expenses?: number
+    previousExpenses?: number
     unfulfilled?: number
     customerCount?: number
   } = {},
@@ -52,19 +54,41 @@ function stubOverview(
 
   const rows = options.rows ?? [recentRow('a', true), recentRow('b', false)]
   const findManyCalls: { where?: Record<string, unknown>; select?: unknown; take?: number }[] = []
+  const dateWindows: { revenue: { gte?: Date; lt?: Date }; expenses: { gte?: Date; lt?: Date } }[] = []
 
   stub(prisma.order, 'groupBy', async () => [
     { status: 'paid', _count: 4 },
     { status: 'pending', _count: 1 },
   ])
   stub(prisma.order, 'aggregate', async (args: { where: Record<string, unknown> }) => {
-    // The route asks twice: the last 30 days and the 30 before that.
+    // The route asks twice: the current window and the same window before it.
     const isPrevious = (args.where.paidAt as { lt?: Date }).lt !== undefined
+    dateWindows.push({
+      revenue: {
+        gte: (args.where.paidAt as { gte?: Date }).gte,
+        lt: (args.where.paidAt as { lt?: Date }).lt,
+      },
+      expenses: {},
+    })
     return {
       _sum: {
         totalCents: isPrevious
           ? (options.previousRevenue ?? 8000)
           : (options.revenue ?? 12500),
+      },
+    }
+  })
+  stub(prisma.purchase, 'aggregate', async (args: { where: Record<string, unknown> }) => {
+    const isPrevious = (args.where.dateBought as { lt?: Date }).lt !== undefined
+    dateWindows[dateWindows.length - 1].expenses = {
+      gte: (args.where.dateBought as { gte?: Date }).gte,
+      lt: (args.where.dateBought as { lt?: Date }).lt,
+    }
+    return {
+      _sum: {
+        costCents: isPrevious
+          ? (options.previousExpenses ?? 2000)
+          : (options.expenses ?? 3500),
       },
     }
   })
@@ -90,10 +114,10 @@ function stubOverview(
     })
   })
 
-  return { findManyCalls }
+  return { findManyCalls, dateWindows }
 }
 
-async function fetchOverview() {
+async function fetchOverview(period = '') {
   const app = Fastify()
   await app.register(adminRoutes)
   const login = await app.inject({
@@ -103,7 +127,7 @@ async function fetchOverview() {
   })
   const response = await app.inject({
     method: 'GET',
-    url: '/api/admin/overview',
+    url: `/api/admin/overview${period ? `?period=${period}` : ''}`,
     headers: { authorization: `Bearer ${login.json().token}` },
   })
   return { app, response }
@@ -118,6 +142,10 @@ test('overview reports status counts, revenue and work waiting', async (t) => {
   assert.deepEqual(body.stats, { paid: 4, pending: 1 })
   assert.equal(body.revenueCents, 12500)
   assert.equal(body.previousRevenueCents, 8000)
+  assert.equal(body.expensesCents, 3500)
+  assert.equal(body.previousExpensesCents, 2000)
+  assert.equal(body.profitCents, 12500 - 3500)
+  assert.equal(body.previousProfitCents, 8000 - 2000)
   assert.equal(body.unfulfilledCount, 3)
   assert.equal(body.customerCount, 9)
   assert.equal(body.recentOrders.length, 2)
@@ -168,4 +196,34 @@ test('overview requires an admin token', async (t) => {
   await app.register(adminRoutes)
   const response = await app.inject({ method: 'GET', url: '/api/admin/overview' })
   assert.equal(response.statusCode, 401)
+})
+
+test('overview compares the same window before it for the requested period', async (t) => {
+  const DAY = 24 * 60 * 60 * 1000
+  const { dateWindows } = stubOverview(t)
+  await fetchOverview()
+  await fetchOverview('quarter')
+
+  // dateWindows fills per fetch: [current, previous] then [current, previous].
+  const defaultPrevious = dateWindows[1]
+  const quarterPrevious = dateWindows[3]
+
+  const defaultGap = defaultPrevious.revenue.lt!.getTime() - defaultPrevious.revenue.gte!.getTime()
+  assert.ok(
+    Math.abs(defaultGap - 30 * DAY) < 2000,
+    `default window should be 30 days, got ${defaultGap / DAY}`,
+  )
+
+  const quarterGap = quarterPrevious.revenue.lt!.getTime() - quarterPrevious.revenue.gte!.getTime()
+  assert.ok(
+    Math.abs(quarterGap - 90 * DAY) < 2000,
+    `quarter window should be 90 days, got ${quarterGap / DAY}`,
+  )
+
+  // The previous quarter should sit right before "now − 180 days".
+  const quarterStart = quarterPrevious.revenue.gte!.getTime()
+  assert.ok(
+    Math.abs(quarterStart + 180 * DAY - Date.now()) < 5000,
+    'previous quarter should start ~180 days ago',
+  )
 })

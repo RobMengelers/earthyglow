@@ -1,6 +1,6 @@
 import { API_URL } from '../cart/catalog'
 
-export const ADMIN_TOKEN_KEY = 'earthyglow-admin-token'
+const ADMIN_TOKEN_KEY = 'earthyglow-admin-token'
 
 export type AdminLoginResult = {
   token: string
@@ -39,7 +39,7 @@ export async function checkAdminSession(token: string): Promise<boolean> {
   }
 }
 
-export type AdminCustomer = {
+type AdminCustomer = {
   firstName: string
   lastName: string
   // Null for in-person sales recorded without contact details.
@@ -47,7 +47,7 @@ export type AdminCustomer = {
   phone: string | null
 }
 
-export type AdminOrderItem = {
+type AdminOrderItem = {
   name: string
   variantId?: string | null
   variantLabel?: string | null
@@ -95,13 +95,21 @@ export type AdminOverview = {
   revenueCents: number
   /** The 30 days before that, for the trend arrow. */
   previousRevenueCents: number
+  /** Purchase (materials) cost in the last 30 days, VAT-inclusive. */
+  expensesCents: number
+  /** The 30 days before that, for the trend arrow. */
+  previousExpensesCents: number
+  /** revenueCents − expensesCents over the last 30 days. */
+  profitCents: number
+  /** previousRevenueCents − previousExpensesCents. */
+  previousProfitCents: number
   /** Paid orders that were never marked processed: the shop's to-do list. */
   unfulfilledCount: number
   customerCount: number
   recentOrders: AdminOrder[]
 }
 
-export type AdminCatalogVariant = {
+type AdminCatalogVariant = {
   id: string
   label: string
   priceCents?: number
@@ -123,7 +131,7 @@ export async function fetchAdminCatalog(): Promise<AdminCatalogProduct[]> {
   return body.products
 }
 
-export type ManualOrderItemInput = {
+type ManualOrderItemInput = {
   productId: string
   variantId?: string
   // The admin may override the catalog price for a market or trade sale.
@@ -203,8 +211,13 @@ export async function fetchAdminOrders(
 
 // Everything the dashboard needs in one round trip. The layout keeps the result
 // in context so the nav badge and the overview page never fetch it twice.
-export async function fetchAdminOverview(token: string): Promise<AdminOverview> {
-  const response = await fetch(`${API_URL}/api/admin/overview`, {
+export type OverviewPeriod = '30d' | 'quarter' | 'year'
+
+export async function fetchAdminOverview(
+  token: string,
+  period: OverviewPeriod = '30d',
+): Promise<AdminOverview> {
+  const response = await fetch(`${API_URL}/api/admin/overview?period=${period}`, {
     headers: { Authorization: `Bearer ${token}` },
   })
   if (!response.ok) {
@@ -224,6 +237,150 @@ export async function refundAdminOrder(token: string, orderId: string): Promise<
   const response = await fetch(`${API_URL}/api/admin/orders/${orderId}/refund`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
   if (!response.ok) throw new Error((await response.json().catch(() => null) as { error?: string } | null)?.error ?? 'Could not refund order')
   return (await response.json()) as AdminOrder
+}
+
+export type AdminPurchase = {
+  id: string
+  dateBought: string
+  description: string
+  /** VAT-inclusive receipt total, the number the admin typed. */
+  costCents: number
+  /** Derived: what the purchase cost excl. 21% VAT. */
+  netCents: number
+  /** Derived: the 21% VAT taken out of costCents. */
+  vatCents: number
+  hasDocument: boolean
+  documentName: string | null
+  createdAt: string
+}
+
+export type AdminPurchasesResponse = {
+  purchases: AdminPurchase[]
+}
+
+export async function fetchAdminPurchases(
+  token: string,
+): Promise<AdminPurchasesResponse> {
+  const response = await fetch(`${API_URL}/api/admin/purchases`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!response.ok) {
+    if (response.status === 401) throw new Error('Session expired')
+    throw new Error(`Failed to load purchases (${response.status})`)
+  }
+  return (await response.json()) as AdminPurchasesResponse
+}
+
+export type AdminPurchaseInput = {
+  /** Day it was bought, YYYY-MM-DD. */
+  date: string
+  description: string
+  /** The total the receipt shows, exactly as typed (e.g. "24,50"). */
+  cost: string
+  /** Optional receipt/delivery note. */
+  document?: File
+}
+
+export async function createAdminPurchase(
+  token: string,
+  input: AdminPurchaseInput,
+): Promise<AdminPurchase> {
+  const payload: Record<string, unknown> = {
+    date: input.date,
+    description: input.description,
+    cost: input.cost,
+  }
+  if (input.document) {
+    payload.document = {
+      name: input.document.name,
+      type: input.document.type || 'application/octet-stream',
+      data: await fileToBase64(input.document),
+    }
+  }
+
+  const response = await fetch(`${API_URL}/api/admin/purchases`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  const body = (await response.json().catch(() => null)) as
+    | { purchase?: AdminPurchase; error?: string }
+    | null
+  if (!response.ok) {
+    throw new Error(body?.error ?? 'Could not save the purchase')
+  }
+  return body?.purchase as AdminPurchase
+}
+
+export async function deleteAdminPurchase(
+  token: string,
+  id: string,
+): Promise<void> {
+  const response = await fetch(`${API_URL}/api/admin/purchases/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!response.ok) {
+    throw new Error(
+      (await response.json().catch(() => null) as { error?: string } | null)
+        ?.error ?? 'Could not delete the purchase',
+    )
+  }
+}
+
+// Fetches the attached receipt/document and hands it to the browser as a file.
+export async function downloadAdminPurchaseDocument(
+  token: string,
+  purchase: AdminPurchase,
+): Promise<void> {
+  const response = await fetch(
+    `${API_URL}/api/admin/purchases/${purchase.id}/document`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  )
+  if (!response.ok) {
+    throw new Error(
+      (await response.json().catch(() => null) as { error?: string } | null)
+        ?.error ?? 'Could not download the document',
+    )
+  }
+
+  const url = URL.createObjectURL(await response.blob())
+  const link = document.createElement('a')
+  link.href = url
+  link.download = purchase.documentName ?? 'document'
+  document.body.append(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
+}
+
+// The 21% VAT split the server derives for every purchase, mirrored here so
+// the form can preview it live before anything is saved.
+export function splitIncludedVat(costCents: number): {
+  netCents: number
+  vatCents: number
+} {
+  const netCents = Math.round((costCents * 100) / 121)
+  return { netCents, vatCents: costCents - netCents }
+}
+
+export function eurosToCents(value: string): number | null {
+  const normalized = value.trim().replace(',', '.')
+  if (!/^\d{1,7}(\.\d{1,2})?$/.test(normalized)) return null
+  const cents = Math.round(Number.parseFloat(normalized) * 100)
+  return Number.isFinite(cents) && cents > 0 ? cents : null
+}
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = String(reader.result ?? '')
+      resolve(result.slice(result.indexOf(',') + 1))
+    }
+    reader.onerror = () => reject(reader.error ?? new Error('Could not read the file'))
+    reader.readAsDataURL(file)
+  })
 }
 
 // Fetches the archived invoice PDF and hands it to the browser as a file, so the
@@ -284,7 +441,15 @@ export function formatDateTimeOrDash(value: string | null): string {
   return value ? formatDateTime(value) : '—'
 }
 
-export function formatDateOrDash(value: string | null): string {
+// Calendar date only, for purchases and other day-accurate records.
+export function formatDate(value: string | null): string {
+  if (!value) return '—'
+  return new Intl.DateTimeFormat('nl-NL', { dateStyle: 'medium' }).format(
+    new Date(value),
+  )
+}
+
+function formatDateOrDash(value: string | null): string {
   if (!value) return '—'
   return new Intl.DateTimeFormat('nl-NL', { dateStyle: 'medium' }).format(
     new Date(value),

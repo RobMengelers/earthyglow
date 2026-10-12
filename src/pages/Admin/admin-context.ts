@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react'
-import type { AdminOverview } from '../../admin/api'
+import type { AdminOverview, OverviewPeriod } from '../../admin/api'
 
 export type AdminStatus = 'checking' | 'signed-out' | 'signed-in'
 
@@ -10,6 +10,9 @@ export type AdminContextValue = {
   overview: AdminOverview | null
   overviewError: string
   overviewLoading: boolean
+  /** Which window the overview is currently showing. */
+  overviewPeriod: OverviewPeriod
+  setOverviewPeriod: (period: OverviewPeriod) => void
   signIn: (username: string, password: string) => Promise<void>
   signOut: () => void
   /** Re-runs the overview fetch; used by the dashboard's retry button. */

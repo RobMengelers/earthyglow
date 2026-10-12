@@ -88,6 +88,25 @@
   opacity: 0.7;
 }
 
+.footer-legal {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.footer-legal span + span::before {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.55;
+  margin-right: 0.75rem;
+  vertical-align: middle;
+}
+
 @media (max-width: 960px) {
 
   .footer-grid {

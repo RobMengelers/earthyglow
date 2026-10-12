@@ -21,9 +21,8 @@ export function meta() {
 
 export function links() {
   return [
-    { rel: 'icon', href: '/favicon.ico', sizes: '48x48' },
-    { rel: 'icon', type: 'image/png', href: '/logo.png' },
-    { rel: 'apple-touch-icon', href: '/logo.png' },
+    { rel: 'icon', type: 'image/png', href: '/favicon.png', sizes: '64x64' },
+    { rel: 'apple-touch-icon', type: 'image/png', href: '/favicon.png' },
     { rel: 'manifest', href: '/site.webmanifest' },
     {
       rel: 'preload',

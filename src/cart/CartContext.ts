@@ -40,7 +40,7 @@ export type ShippingZone = {
   freeThresholdCents: number
 }
 
-export const SHIPPING_ZONES: Record<'netherlands' | 'international', ShippingZone> =
+const SHIPPING_ZONES: Record<'netherlands' | 'international', ShippingZone> =
   {
     netherlands: {
       id: 'netherlands',

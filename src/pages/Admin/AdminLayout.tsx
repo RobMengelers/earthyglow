@@ -8,6 +8,7 @@ import {
   getAdminToken,
   setAdminToken,
   type AdminOverview,
+  type OverviewPeriod,
 } from '../../admin/api'
 import { LoadingButton } from '../../components/ui/LoadingButton'
 import { siteMeta } from '../../lib/seo'
@@ -38,6 +39,10 @@ function AdminProvider({ children }: { children: React.ReactNode }) {
   const [overview, setOverview] = useState<AdminOverview | null>(null)
   const [overviewError, setOverviewError] = useState('')
   const [overviewKey, setOverviewKey] = useState(0)
+  const [overviewPeriod, setOverviewPeriod] = useState<OverviewPeriod>('30d')
+  // True while a fetch is in flight so the dashboard can dim its cards while
+  // the window (or the retry button) reloads the numbers.
+  const [overviewBusy, setOverviewBusy] = useState(false)
 
   const status: AdminStatus = !tokenResolved
     ? 'checking'
@@ -83,11 +88,12 @@ function AdminProvider({ children }: { children: React.ReactNode }) {
     if (status !== 'signed-in' || !token) return
     let cancelled = false
 
-    fetchAdminOverview(token)
+    fetchAdminOverview(token, overviewPeriod)
       .then((next) => {
         if (cancelled) return
         setOverview(next)
         setOverviewError('')
+        setOverviewBusy(false)
       })
       .catch((error: unknown) => {
         if (cancelled) return
@@ -95,13 +101,15 @@ function AdminProvider({ children }: { children: React.ReactNode }) {
         // An expired session must not leave a half-working portal behind.
         if (message === 'Session expired') {
           expireSession()
+          setOverviewBusy(false)
           return
         }
         setOverviewError(message)
+        setOverviewBusy(false)
       })
 
     return () => { cancelled = true }
-  }, [status, token, overviewKey, expireSession])
+  }, [status, token, overviewKey, overviewPeriod, expireSession])
 
   async function signIn(username: string, password: string) {
     const result = await adminLogin(username, password)
@@ -115,6 +123,12 @@ function AdminProvider({ children }: { children: React.ReactNode }) {
     setVerifiedToken(null)
     setOverview(null)
     setOverviewError('')
+    setOverviewBusy(false)
+  }
+
+  function changeOverviewPeriod(period: OverviewPeriod) {
+    setOverviewPeriod(period)
+    setOverviewBusy(true)
   }
 
   return (
@@ -125,11 +139,15 @@ function AdminProvider({ children }: { children: React.ReactNode }) {
         overview,
         overviewError,
         // Nothing to show yet and nothing wrong: the dashboard is loading.
-        overviewLoading:
-          status === 'signed-in' && overview === null && overviewError === '',
+        overviewLoading: status === 'signed-in' && overviewBusy,
+        overviewPeriod,
+        setOverviewPeriod: changeOverviewPeriod,
         signIn,
         signOut,
-        refreshOverview: () => setOverviewKey((key) => key + 1),
+        refreshOverview: () => {
+          setOverviewBusy(true)
+          setOverviewKey((key) => key + 1)
+        },
       }}
     >
       {children}
@@ -169,6 +187,9 @@ function AdminShell() {
           </NavLink>
           <NavLink to="/admin/overview" end className="admin-nav-link">
             Overview
+          </NavLink>
+          <NavLink to="/admin/purchases" end className="admin-nav-link">
+            Purchases
           </NavLink>
           <NavLink to="/admin/orders" end className="admin-nav-link">
             Orders

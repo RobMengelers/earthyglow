@@ -13,7 +13,7 @@ import { env } from './env.js'
 import { prisma } from './prisma.js'
 
 const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null
-export const emailEnabled = Boolean(resend && env.EMAIL_FROM)
+const emailEnabled = Boolean(resend && env.EMAIL_FROM)
 
 // ---- Website palette (src/index.css custom properties) ----
 const CREAM: RGB = rgb(0.984, 0.969, 0.941) // --bg  #fbf7f0
@@ -214,7 +214,7 @@ function trackedWidth(
   return w
 }
 
-export async function generateInvoicePdf(
+async function generateInvoicePdf(
   data: InvoiceData,
 ): Promise<Uint8Array> {
   const doc = await PDFDocument.create()
@@ -515,7 +515,7 @@ function customerDisplayName(customer: {
 // Single source of truth for turning an order into invoice data, so the PDF
 // emailed to the customer and the PDF downloaded from the admin portal are
 // always identical.
-export function buildInvoiceData(order: InvoiceOrder): InvoiceData {
+function buildInvoiceData(order: InvoiceOrder): InvoiceData {
   return {
     orderNumber: order.orderNumber,
     paidAt: order.paidAt ?? order.updatedAt,
@@ -605,13 +605,36 @@ export async function sendOrderInvoice(
 
   const pdf = await archiveInvoicePdf(order)
 
+  const productRows = order.items
+    .map(
+      (item) =>
+        `<tr>
+          <td style="padding:11px 16px; color:#2e2a25;">${escapeHtml(item.variantLabel ? `${item.name} (${item.variantLabel})` : item.name)}</td>
+          <td style="padding:11px 16px; text-align:right; color:#6b6157; white-space:nowrap;">${item.quantity}</td>
+          <td style="padding:11px 16px; text-align:right; color:#6b6157; white-space:nowrap;">${formatEuro(item.unitPriceCents)}</td>
+          <td style="padding:11px 16px; text-align:right; color:#5f3b25; font-weight:bold; white-space:nowrap;">${formatEuro(item.lineTotalCents)}</td>
+        </tr>`,
+    )
+    .join('')
+
   const html = renderCustomerEmail(`
           <div style="padding:34px 0 12px;">
             <p style="margin:0 0 10px; color:#5f3b25; font-size:12px; font-weight:bold; letter-spacing:2px; text-transform:uppercase;">A little note from EarthyGlow</p>
             <h2 style="margin:0 0 18px; font-family:Georgia,serif; font-size:30px; font-weight:normal; color:#2e2a25;">Thank you, ${escapeHtml(order.customer.firstName)}.</h2>
             <p style="color:#6b6157; line-height:1.7;">Your order <strong>${order.orderNumber}</strong> is safely paid and your invoice is attached. I’ll get your candles ready and pack them with care.</p>
-            <p style="color:#6b6157; line-height:1.7;">I hope you enjoy finding a place for them in your home.</p>
+            <p style="color:#6b6157; line-height:1.7;">Here’s what you ordered:</p>
           </div>
+          <table style="border-collapse:collapse; width:100%; margin:0 0 24px; background:#fffdf8; border:1px solid #e3d8c8; border-radius:12px; overflow:hidden;">
+            <thead>
+              <tr>
+                <th style="padding:10px 16px; text-align:left; color:#5f3b25; font-size:11px; font-weight:bold; letter-spacing:1.5px; text-transform:uppercase; background:#f4ecdd;">Description</th>
+                <th style="padding:10px 16px; text-align:right; color:#5f3b25; font-size:11px; font-weight:bold; letter-spacing:1.5px; text-transform:uppercase; background:#f4ecdd;">Qty</th>
+                <th style="padding:10px 16px; text-align:right; color:#5f3b25; font-size:11px; font-weight:bold; letter-spacing:1.5px; text-transform:uppercase; background:#f4ecdd;">Unit price</th>
+                <th style="padding:10px 16px; text-align:right; color:#5f3b25; font-size:11px; font-weight:bold; letter-spacing:1.5px; text-transform:uppercase; background:#f4ecdd;">Amount</th>
+              </tr>
+            </thead>
+            <tbody>${productRows}</tbody>
+          </table>
           <table style="border-collapse:collapse; width:100%; margin:16px 0 24px; background:#fffdf8; border:1px solid #e3d8c8; border-radius:12px;">
             <tr><td style="padding:12px 16px; color:#6b6157;">Order</td><td style="padding:12px 16px; text-align:right;"><strong>${order.orderNumber}</strong></td></tr>
             <tr><td style="padding:12px 16px; color:#6b6157;">Invoice date</td><td style="padding:12px 16px; text-align:right;">${formatDate(paidAt)}</td></tr>

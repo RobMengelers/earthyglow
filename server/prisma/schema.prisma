@@ -109,3 +109,23 @@ model OrderItem {
 
   @@index([orderId])
 }
+
+// A purchase: materials and supplies bought to make the candles. The entered
+// costCents is the VAT-inclusive total from the receipt; the 21% VAT split is
+// derived from it (the shop prices everything VAT-inclusive, like the invoice).
+model Purchase {
+  id            String   @id @default(uuid())
+  dateBought    DateTime
+  description   String
+  costCents     Int
+  // The document is optional (a receipt or delivery note). Stored as bytes
+  // following the invoice PDF precedent; the client only ever receives the
+  // file via a dedicated download endpoint.
+  documentName  String?
+  documentMime  String?
+  documentBytes Bytes?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([dateBought])
+}

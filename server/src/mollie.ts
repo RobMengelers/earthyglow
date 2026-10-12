@@ -46,7 +46,7 @@ type CreatePaymentInput = {
   method?: string
 }
 
-export function buildRedirectUrl(orderNumber: string, mock: boolean): string {
+function buildRedirectUrl(orderNumber: string, mock: boolean): string {
   const url = `${env.FRONTEND_URL}/checkout/confirmation?order=${encodeURIComponent(orderNumber)}`
   return mock ? `${url}&mock=1` : url
 }

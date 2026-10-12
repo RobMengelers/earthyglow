@@ -125,9 +125,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
           },
         ]
       })
-      if (items.length === 0) setIsDrawerOpen(true)
+      setIsDrawerOpen(true)
     },
-    [items.length],
+    [],
   )
 
   const removeItem = useCallback((id: string) => {

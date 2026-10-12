@@ -22,7 +22,7 @@ export function RefundPolicy() {
 
       <h2>2. Not satisfied?</h2>
       <p>
-        Please contact us within 7 days via email at{' '}
+        Please contact us within 7 days after receiving the candles via email at{' '}
         <a href="mailto:earthyglowcandles@gmail.com">earthyglowcandles@gmail.com</a>
         . I’ll look into it with you and discuss a suitable solution, such as a
         replacement or partial refund.

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
-import { getCollection } from '../../data/products'
+import { collections, getCollection } from '../../data/products'
 import { filterProducts, getSeason, seasons, holidays } from '../../data/seasons'
 import { ProductCard } from '../../components/catalog/ProductCard'
 import { Reveal } from '../../components/ui/Reveal'
@@ -122,6 +122,15 @@ export function Shop() {
     return () => cleanup.forEach((fn) => fn())
   }, [activeSeason?.id])
   const shown = filterProducts(activeSeason?.id, activeCollection?.id)
+  const grouped = !activeSeason && !activeCollection
+  const groups = grouped
+    ? collections
+        .map((collection) => ({
+          collection,
+          products: shown.filter((product) => product.collectionId === collection.id),
+        }))
+        .filter((group) => group.products.length > 0)
+    : []
   const heading = activeSeason
     ? `${activeSeason.label} favourites`
     : activeCollection?.title ?? 'Find your next little glow'
@@ -179,9 +188,11 @@ export function Shop() {
         </div>
       </section>
 
+      {/* <Divider white />x */}
+
       <section className="shop-body">
         <div className="container">
-          <div className="shop-filters">
+          <Reveal className="shop-filters">
             <p className="shop-filter-caption">A glow for every season</p>
             <nav ref={seasonNavRef} className="season-nav" aria-label="Shop by season">
               {[{ id: '', label: 'All candles' }, ...seasons].map((season) => {
@@ -193,6 +204,7 @@ export function Shop() {
                     to={filterUrl(season.id || undefined)}
                     className={`season-link${selected ? ' is-active' : ''}`}
                     aria-current={selected ? 'page' : undefined}
+                    preventScrollReset
                   >
                     <span>{season.label}</span>
                     <span className="season-count" aria-hidden="true">{String(count).padStart(2, '0')}</span>
@@ -215,7 +227,7 @@ export function Shop() {
               </div>
             </nav>
 
-          </div>
+          </Reveal>
 
           <div className="season-dropdown-menu" role="menu" id="holidays-dropdown">
             {holidays.map((holiday) => {
@@ -237,6 +249,7 @@ export function Shop() {
                   }}
                   role="menuitem"
                   aria-current={selected ? 'page' : undefined}
+                  preventScrollReset
                 >
                   <span>{holiday.label}</span>
                   <span className="season-count" aria-hidden="true">{String(count).padStart(2, '0')}</span>
@@ -245,15 +258,39 @@ export function Shop() {
             })}
           </div>
 
-                    {shown.length > 0 ? (
-            <div
-              key={`${activeSeason?.id ?? 'all'}:${activeCollection?.id ?? 'all'}`}
-              className="product-grid"
-            >
-              {shown.map((product, i) => (
-                <ProductCard key={product.id} product={product} index={i} />
-              ))}
-            </div>
+          {shown.length > 0 ? (
+            grouped ? (
+              <div key="all" className="product-groups">
+                {groups.map(({ collection, products: collectionProducts }) => (
+                  <section
+                    key={collection.id}
+                    className="product-group"
+                    aria-labelledby={`collection-${collection.id}`}
+                  >
+                    <Reveal className="product-group-head">
+                      <div>
+                        <p className="eyebrow">{collection.eyebrow}</p>
+                        <h2 id={`collection-${collection.id}`}>{collection.title}</h2>
+                      </div>
+                    </Reveal>
+                    <div className="product-grid">
+                      {collectionProducts.map((product, i) => (
+                        <ProductCard key={product.id} product={product} index={i} />
+                      ))}
+                    </div>
+                  </section>
+                ))}
+              </div>
+            ) : (
+              <div
+                key={`${activeSeason?.id ?? 'all'}:${activeCollection?.id ?? 'all'}`}
+                className="product-grid"
+              >
+                {shown.map((product, i) => (
+                  <ProductCard key={product.id} product={product} index={i} />
+                ))}
+              </div>
+            )
           ) : (
             <div className="shop-empty">
               <p className="eyebrow">A different little glow</p>

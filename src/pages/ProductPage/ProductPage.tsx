@@ -15,7 +15,9 @@ import type { Route } from './+types/ProductPage'
 const perks = [
   '100% soy wax',
   'Vegan & cruelty-free',
+  'Mica powder for colour',
   'Hand-poured in small batches',
+  'Paraben-free & Phthalates-free', 
 ]
 
 // Unknown products must fail with a real HTTP 404, not an in-page fallback.
@@ -46,7 +48,6 @@ export function ProductPage() {
   const product = getProduct(productId)
   const [variantId, setVariantId] = useState('')
   const [quantity, setQuantity] = useState(1)
-  const galleryImages = product?.images?.length ? product.images : [product?.image ?? '']
   const [galleryIndex, setGalleryIndex] = useState(0)
 
   if (!product) {
@@ -59,6 +60,12 @@ export function ProductPage() {
   const collectionTitle = collection?.title ?? 'EarthyGlow'
   const season = seasonForProduct(product.id)
   const selectedVariant = product.variants?.find((variant) => variant.id === variantId)
+
+  const baseGallery = product.images?.length ? product.images : [product.image]
+  const variantImage = selectedVariant?.image
+  const galleryImages = variantImage
+    ? [variantImage, ...baseGallery.filter((img) => img !== variantImage)]
+    : baseGallery
 
   return (
     <>
@@ -163,7 +170,7 @@ export function ProductPage() {
                   <div className="product-option-list">
                     {product.variants.map((variant) => (
                       <label key={variant.id} className={`product-option${variantId === variant.id ? ' is-selected' : ''}`}>
-                        <input type="radio" name="product-variant" value={variant.id} checked={variantId === variant.id} onChange={() => setVariantId(variant.id)} />
+                        <input type="radio" name="product-variant" value={variant.id} checked={variantId === variant.id} onChange={() => { setVariantId(variant.id); setGalleryIndex(0) }} />
                         <span
                           className={variant.swatch ? 'product-option-swatch' : undefined}
                           style={variant.swatch ? { backgroundColor: variant.swatch } : undefined}
@@ -227,15 +234,7 @@ export function ProductPage() {
               )}
 
               <div className="product-detail-meta">
-                <p>
-                  <strong>Shipping:</strong> shipped from the Netherlands
-                </p>
-                <p>
-                  <strong>Made:</strong> hand-poured in small batches
-                </p>
-                <p>
-                  <strong>Made by hand:</strong> small differences in colour and finish are part of each candle.
-                </p>
+                <p>Made by hand, small differences in colour and finish are part of each candle.</p>
               </div>
             </Reveal>
           </div>

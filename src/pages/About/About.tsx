@@ -2,6 +2,7 @@ import { Link } from 'react-router'
 import { aboutImage } from '../../data/products'
 import { imageAttrs, SIZES } from '../../lib/images'
 import { Reveal } from '../../components/ui/Reveal'
+import { Divider } from '../../components/ui/Divider'
 import { JsonLd } from '../../components/seo/JsonLd'
 import { breadcrumbLd, siteMeta } from '../../lib/seo'
 
@@ -40,6 +41,8 @@ export function About() {
           </Reveal>
         </div>
       </section>
+
+      <Divider white />
 
       <section className="about about-story">
         <div className="container about-grid">

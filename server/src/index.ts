@@ -19,7 +19,7 @@ const app = Fastify({ logger: true, trustProxy: true })
 
 await app.register(cors, {
   origin: true,
-  methods: ['GET', 'HEAD', 'POST', 'PATCH'],
+  methods: ['GET', 'HEAD', 'POST', 'PATCH', 'DELETE'],
 })
 await app.register(formbody)
 await app.register(rateLimit, {

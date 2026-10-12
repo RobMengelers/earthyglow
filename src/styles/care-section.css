@@ -25,14 +25,6 @@
   border: 1px solid var(--line-light);
   border-radius: var(--radius);
   padding: 2.2rem 1.9rem;
-  transition:
-    transform 0.3s ease,
-    background 0.3s ease;
-}
-
-.care-card:hover {
-  transform: translateY(-6px);
-  background: rgba(251, 247, 240, 0.09);
 }
 
 .care-step {

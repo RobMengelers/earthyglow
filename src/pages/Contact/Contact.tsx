@@ -1,6 +1,7 @@
 import { type FormEvent, useState } from 'react'
 import { Link } from 'react-router'
 import { Reveal } from '../../components/ui/Reveal'
+import { Divider } from '../../components/ui/Divider'
 import { SocialLinks } from '../../components/ui/SocialLinks'
 import { API_URL } from '../../cart/catalog'
 import { LoadingButton } from '../../components/ui/LoadingButton'
@@ -82,6 +83,8 @@ export function Contact() {
           </Reveal>
         </div>
       </section>
+
+      <Divider white />
 
       <section className="contact-body">
         <div className="container contact-grid">

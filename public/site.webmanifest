@@ -4,8 +4,8 @@
   "description": "Hand-poured soy wax candles from the Netherlands.",
   "icons": [
     {
-      "src": "/logo.png",
-      "sizes": "256x256",
+      "src": "/favicon.png",
+      "sizes": "64x64",
       "type": "image/png"
     }
   ],

@@ -10,6 +10,7 @@ export default [
   route('admin', './pages/Admin/AdminLayout.tsx', [
     index('./pages/Admin/admin-index.tsx'),
     route('overview', './pages/Admin/OverviewPage.tsx'),
+    route('purchases', './pages/Admin/PurchasesPage.tsx'),
     route('orders', './pages/Admin/OrdersPage.tsx'),
     route('orders/new', './pages/Admin/NewOrderPage.tsx'),
   ]),

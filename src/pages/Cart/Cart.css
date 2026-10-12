@@ -1,4 +1,5 @@
 .cart-page {
+  background: var(--surface);
   padding: 56px 0 96px;
 }
 

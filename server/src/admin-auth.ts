@@ -1,6 +1,6 @@
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto'
 
-export const ADMIN_SESSION_TTL_SECONDS = 12 * 60 * 60
+const ADMIN_SESSION_TTL_SECONDS = 12 * 60 * 60
 
 const JWT_HEADER = Buffer.from(
   JSON.stringify({ alg: 'HS256', typ: 'JWT' }),
