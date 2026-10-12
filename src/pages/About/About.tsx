@@ -14,29 +14,6 @@ export function meta() {
   })
 }
 
-const philosophy = [
-  {
-    title: 'Pure ingredients',
-    text: 'I use 100% soy wax for my candles.',
-  },
-  {
-    title: 'Honest craftsmanship',
-    text: 'I pour in small batches and finish each candle by hand.',
-  },
-  {
-    title: 'Nature based designs',
-    text: 'Flowers, shells and earthy colours inspire my collections.',
-  },
-  {
-    title: 'Soft, warm ambiance',
-    text: 'A little candlelight for the moments you take for yourself.',
-  },
-  {
-    title: 'Enjoy it again',
-    text: 'If your candle comes in a jar, clean it once finished and give it a new use.',
-  },
-] as const
-
 export function About() {
   return (
     <>
@@ -90,23 +67,6 @@ export function About() {
         </div>
       </section>
 
-      <section className="philosophy">
-        <div className="container">
-          <Reveal className="section-head">
-            <p className="eyebrow">What matters to me</p>
-            <h2>How I make my candles</h2>
-          </Reveal>
-          <div className="philosophy-grid">
-            {philosophy.map((item, i) => (
-              <Reveal key={item.title} delay={i * 80} className="philosophy-card">
-                <h3>{item.title}</h3>
-                <p>{item.text}</p>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </section>
-
       <section className="quote">
         <div className="container">
           <Reveal className="quote-inner">
@@ -117,7 +77,7 @@ export function About() {
               gift, it means a lot to have your support.
             </blockquote>
             <p className="quote-thanks">
-              With warmth, Naomi
+              With love, Naomi
             </p>
             <Link to="/shop" className="btn btn-primary">
               Shop the collection

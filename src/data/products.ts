@@ -4,6 +4,7 @@ export type Product = {
   price: string
   priceCents: number
   image: string
+  images?: string[]
   soldOut?: boolean
   description: string
   collectionId: string
@@ -41,6 +42,7 @@ export const collections: Collection[] = [
         price: '€14,95',
         priceCents: 1495,
         image: '/images/floral-box.webp',
+        images: Array.from({ length: 10 }, (_, index) => `/images/products/floral-box/image-${index + 1}.webp`),
         collectionId: 'little-glow',
         description:
           'Nine individually poured flower candles, arranged in a gift box and scented with Bluebell. I make these with approximately 220g of soy wax. Choose pink, baby blue or purple for someone you love, or for yourself.',
@@ -56,6 +58,7 @@ export const collections: Collection[] = [
         price: '€12,95',
         priceCents: 1295,
         image: '/images/floral-basket.webp',
+        images: Array.from({ length: 5 }, (_, index) => `/images/products/floral-basket/image-${index + 1}.webp`),
         collectionId: 'little-glow',
         description:
           'A basket of individually poured flower candles with an English Rose scent. Made with approximately 150g of soy wax and available in pink or red. A little bouquet you can enjoy at home or give as a gift.',
@@ -79,6 +82,7 @@ export const collections: Collection[] = [
         price: 'From €14,95',
         priceCents: 1495,
         image: '/images/coconut-beach.webp',
+        images: ['/images/products/coconut-beach/image-1.webp', '/images/products/coconut-beach/image-2.webp', '/images/products/coconut-beach/image-3.webp', '/images/products/coconut-beach/image-4.webp', '/images/products/coconut-beach/image-5.webp'],
         collectionId: 'scented-glow',
         description:
           'A little beach scene, poured by hand with soy wax and scented with Coconut Island. Pineapple and orange meet creamy coconut, almond and peach. Choose your favourite of the four seaside shapes.',
@@ -95,6 +99,7 @@ export const collections: Collection[] = [
         price: '€14,95',
         priceCents: 1495,
         image: '/images/autumn-ember.webp',
+        images: ['/images/products/autumn-ember/image-1.webp', '/images/products/autumn-ember/image-2.webp'],
         collectionId: 'scented-glow',
         description:
           'I decorate this soy wax candle with autumn-inspired wax details. Its Vanilla & Cinders fragrance brings together smoky vanilla, clove, cedarwood, amber and musk for an evening at home.',
@@ -105,6 +110,7 @@ export const collections: Collection[] = [
         price: '€14,95',
         priceCents: 1495,
         image: '/images/pumpkin-spice.webp',
+        images: ['/images/products/pumpkin-spice/image-1.webp', '/images/products/pumpkin-spice/image-2.webp'],
         collectionId: 'scented-glow',
         soldOut: true,
         description:
@@ -116,6 +122,7 @@ export const collections: Collection[] = [
         price: '€9,95',
         priceCents: 995,
         image: '/images/pumpkin-spice-latte.webp',
+        images: ['/images/products/pumpkin-spice-latte/image-1.webp', '/images/products/pumpkin-spice-latte/image-2.webp'],
         collectionId: 'scented-glow',
         description:
           'A candle inspired by a favourite autumn drink, with whipped wax and handmade seasonal details. Poured with soy wax and scented with Pumpkin Spice. For your shelf, not your coffee cup.',
@@ -134,6 +141,7 @@ export const collections: Collection[] = [
         price: '€2,95',
         priceCents: 295,
         image: '/images/ghostlight-dinner-candle.webp',
+        images: ['/images/products/ghostlight-dinner-candle/image-1.webp'],
         collectionId: 'halloween',
         description:
           'A twisted dinner candle with a little ghost face, poured by hand with 100% soy wax. A playful addition to your Halloween table or a small gift for someone who loves the season.',
@@ -145,6 +153,7 @@ export const collections: Collection[] = [
         price: '€8,95',
         priceCents: 895,
         image: '/images/pumpkin-boo.webp',
+        images: ['/images/products/pumpkin-boo/image-1.webp', '/images/products/pumpkin-boo/image-2.webp'],
         collectionId: 'halloween',
         description:
           'A little ghost and pumpkin, finished by hand in soy wax. Pumpkin Boo has a warm Pumpkin Spice fragrance for autumn evenings at home.',
@@ -155,6 +164,7 @@ export const collections: Collection[] = [
         price: '€8,95',
         priceCents: 895,
         image: '/images/boo-boo.webp',
+        images: ['/images/products/boo-boo/image-1.webp', '/images/products/boo-boo/image-2.webp'],
         collectionId: 'halloween',
         description:
           'A handmade ghost detail sits on this soy wax candle. Scented with Vanilla & Cinders, with smoky vanilla, clove, cedarwood, amber and musk.',
@@ -165,6 +175,7 @@ export const collections: Collection[] = [
         price: '€8,95',
         priceCents: 895,
         image: '/images/scary-boo.webp',
+        images: ['/images/products/scary-boo/image-1.webp', '/images/products/scary-boo/image-2.webp'],
         collectionId: 'halloween',
         description:
           'A spooky little addition to your autumn shelf, decorated by hand with a ghost-inspired wax detail. Made with soy wax and scented with Vanilla & Cinders.',
@@ -175,6 +186,7 @@ export const collections: Collection[] = [
         price: '€4,95',
         priceCents: 495,
         image: '/images/pumpkin-spice-wax-melts.webp',
+        images: ['/images/products/pumpkin-spice-wax-melts/image-1.webp', '/images/products/pumpkin-spice-wax-melts/image-2.webp'],
         collectionId: 'halloween',
         description:
           'Little pumpkin-shaped wax melts with a warm Pumpkin Spice fragrance. I pour them by hand with soy wax and pack approximately 70g in each bag. Use them in a suitable wax warmer.',
@@ -195,6 +207,7 @@ export const collections: Collection[] = [
         price: 'From €9,95',
         priceCents: 995,
         image: '/images/column.webp',
+        images: ['/images/products/column/image-1.webp', '/images/products/column/image-2.webp', '/images/products/column/image-3.webp'],
         collectionId: 'natural-glow',
         description:
           'Straight, ribbed lines and a simple column shape, poured by hand with 100% soy wax. Fragrance-free, so you can enjoy the candlelight without an added scent.',
@@ -211,6 +224,7 @@ export const collections: Collection[] = [
         price: 'From €6,95',
         priceCents: 695,
         image: '/images/pillar.webp',
+        images: Array.from({ length: 5 }, (_, index) => `/images/products/pillar/image-${index + 1}.webp`),
         collectionId: 'natural-glow',
         description:
           'A ribbed pillar candle for a table or a favourite corner of your home. I pour it by hand with 100% soy wax and leave it fragrance-free.',
@@ -228,6 +242,7 @@ export const collections: Collection[] = [
         price: 'From €6,95',
         priceCents: 695,
         image: '/images/spiral.webp',
+        images: Array.from({ length: 5 }, (_, index) => `/images/products/spiral/image-${index + 1}.webp`),
         collectionId: 'natural-glow',
         description:
           'Soft twists and rounded lines give this candle its shape. Poured by hand with 100% soy wax, with no added fragrance.',
@@ -245,6 +260,7 @@ export const collections: Collection[] = [
         price: 'From €4,95',
         priceCents: 495,
         image: '/images/shell.webp',
+        images: Array.from({ length: 3 }, (_, index) => `/images/products/shell/image-${index + 1}.webp`),
         collectionId: 'natural-glow',
         description:
           'A small reminder of the seaside, with curved lines inspired by a shell. Poured by hand with 100% soy wax and no added fragrance.',
@@ -261,6 +277,7 @@ export const collections: Collection[] = [
         price: 'From €4,95',
         priceCents: 495,
         image: '/images/arch.webp',
+        images: ['/images/products/arch/image-1.webp', '/images/products/arch/image-2.webp', '/images/products/arch/image-3.webp', '/images/products/arch/image-4.webp'],
         collectionId: 'natural-glow',
         description:
           'A simple arch shape that looks lovely on its own or beside your favourite objects. Made by hand with 100% soy wax and no added fragrance.',
@@ -278,6 +295,7 @@ export const collections: Collection[] = [
         price: 'From €4,95',
         priceCents: 495,
         image: '/images/bubble.webp',
+        images: Array.from({ length: 4 }, (_, index) => `/images/products/bubble/image-${index + 1}.webp`),
         collectionId: 'natural-glow',
         description:
           'Rounded, playful bubbles in a candle you can tuck into a favourite corner. I pour it by hand with 100% soy wax and leave it fragrance-free.',

@@ -46,6 +46,8 @@ export function ProductPage() {
   const product = getProduct(productId)
   const [variantId, setVariantId] = useState('')
   const [quantity, setQuantity] = useState(1)
+  const galleryImages = product?.images?.length ? product.images : [product?.image ?? '']
+  const [galleryIndex, setGalleryIndex] = useState(0)
 
   if (!product) {
     return <NotFound />
@@ -106,10 +108,38 @@ export function ProductPage() {
 
           <div className="product-detail-grid">
             <Reveal className="product-detail-media">
-              <div className="product-detail-frame">
-                <img {...imageAttrs(product.image, SIZES.gallery)} alt={product.name} />
-                {product.soldOut && (
-                  <span className="product-tag sold-out">Sold out</span>
+              <div className="product-gallery">
+                <div className="product-gallery-main">
+                  <div className="product-gallery-track" style={{ transform: `translateX(-${galleryIndex * 100}%)` }}>
+                    {galleryImages.map((image) => (
+                      <img key={image} {...imageAttrs(image, SIZES.gallery)} alt={product.name} />
+                    ))}
+                  </div>
+                  {galleryImages.length > 1 && (
+                    <>
+                      <button type="button" className="product-gallery-arrow product-gallery-prev" onClick={() => setGalleryIndex((index) => (index - 1 + galleryImages.length) % galleryImages.length)} aria-label="Previous product image">‹</button>
+                      <button type="button" className="product-gallery-arrow product-gallery-next" onClick={() => setGalleryIndex((index) => (index + 1) % galleryImages.length)} aria-label="Next product image">›</button>
+                      <span className="product-gallery-count" aria-live="polite">{galleryIndex + 1} / {galleryImages.length}</span>
+                    </>
+                  )}
+                  {product.soldOut && (
+                    <span className="product-tag sold-out">Sold out</span>
+                  )}
+                </div>
+                {galleryImages.length > 1 && (
+                  <div className="product-gallery-thumbs">
+                    {galleryImages.map((img, idx) => (
+                      <button
+                        key={img}
+                        type="button"
+                        className={`product-gallery-thumb${galleryIndex === idx ? ' is-active' : ''}`}
+                        onClick={() => setGalleryIndex(idx)}
+                        aria-label={`Show image ${idx + 1}`}
+                      >
+                        <img {...imageAttrs(img, '64px')} alt="" loading="lazy" />
+                      </button>
+                    ))}
+                  </div>
                 )}
               </div>
             </Reveal>

@@ -2,7 +2,6 @@ import { Link } from 'react-router'
 import { Hero } from './components/Hero'
 import { Divider } from '../../components/ui/Divider'
 import { AboutTeaser } from './components/AboutTeaser'
-import { CareTeaser } from './components/CareTeaser'
 import { Newsletter } from './components/Newsletter'
 import { Reveal } from '../../components/ui/Reveal'
 import { products } from '../../data/products'
@@ -11,7 +10,7 @@ import { JsonLd } from '../../components/seo/JsonLd'
 import { imageAttrs, SIZES } from '../../lib/images'
 import { SITE_URL, absoluteUrl, siteMeta } from '../../lib/seo'
 
-const featuredSeasons = seasons.filter((season) => season.id !== 'halloween')
+const featuredSeasons = seasons
 
 export function meta() {
   return siteMeta({ path: '/' })
@@ -87,7 +86,6 @@ export function Home() {
       </section>
 
       <AboutTeaser />
-      <CareTeaser />
       <Newsletter />
     </>
   )

@@ -14,7 +14,7 @@
 
 .collection-card-media {
   position: relative;
-  aspect-ratio: 4 / 3.4;
+  aspect-ratio: 4 / 3.2;
   background: linear-gradient(180deg, var(--sand-2), var(--sand));
   overflow: hidden;
 }
@@ -43,7 +43,7 @@
 }
 
 .collection-card-body {
-  padding: 1.3rem 1.4rem 1.3rem;
+  padding: 1.15rem 1.25rem 1.15rem;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -55,16 +55,16 @@
 }
 
 .collection-card-body h3 {
-  font-size: 1.42rem;
-  margin-bottom: 0.5rem;
+  font-size: 1.32rem;
+  margin-bottom: 0.45rem;
 }
 
 .collection-card-body p {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 
 .collection-card-body .product-cta {
   padding: 0;
   margin-top: auto;
-  padding-top: 1.1rem;
+  padding-top: 0.9rem;
 }

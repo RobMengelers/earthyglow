@@ -485,7 +485,7 @@ function renderCustomerEmail(content: string): string {
           </div>
           ${content}
           <div style="margin-top:30px; padding-top:22px; border-top:1px solid #e3d8c8; color:#6b6157; line-height:1.6;">
-            With warmth,<br />
+            With love,<br />
             <strong style="font-family:Georgia,serif; font-size:18px; color:#5f3b25;">Naomi</strong><br />
             <span style="font-size:13px;">Founder of EarthyGlow</span>
           </div>
@@ -617,7 +617,7 @@ export async function sendOrderInvoice(
             <tr><td style="padding:12px 16px; color:#6b6157;">Invoice date</td><td style="padding:12px 16px; text-align:right;">${formatDate(paidAt)}</td></tr>
             <tr><td style="padding:12px 16px; color:#6b6157;">Total paid</td><td style="padding:12px 16px; text-align:right; color:#5f3b25;"><strong>${formatEuro(order.totalCents)}</strong><br /><small style="color:#6b6157;">incl. 21% VAT (${formatEuro(includedVatCents(order.totalCents))})</small></td></tr>
           </table>
-          <p style="color:#6b6157; line-height:1.6;">Your invoice PDF is attached for your records. If you have any questions, simply reply to this email. I’m happy to help.</p>
+          <p style="color:#6b6157; line-height:1.6;">Your invoice PDF is attached for your records.</p>
   `)
 
   const { error } = await resend!.emails.send({
@@ -731,7 +731,7 @@ export async function sendFulfillmentEmail(order: {
             <tr><td style="padding:12px 16px; color:#6b6157;">Track &amp; trace</td><td style="padding:12px 16px; text-align:right; color:#5f3b25; overflow-wrap:anywhere; word-break:break-all;"><strong>${escapeHtml(order.trackingCode ?? 'Not provided')}</strong></td></tr>
           </table>
           <p style="color:#6b6157; line-height:1.6;">Use your tracking code on the carrier’s website to follow your parcel. Tracking updates may take a little time to appear.</p>
-          <p style="color:#6b6157; line-height:1.6;">Thank you for supporting my small business. If you have any questions about your delivery, simply reply to this email. I’m happy to help.</p>
+          <p style="color:#6b6157; line-height:1.6;">Thank you for supporting my small business.</p>
     `),
   })
   if (error) throw new Error(`Resend rejected fulfillment email: ${error.message}`)
@@ -741,7 +741,7 @@ export async function sendFulfillmentEmail(order: {
 export async function sendRefundEmail(order: { orderNumber: string; totalCents: number; customer: { firstName: string; email: string | null } }): Promise<boolean> {
   if (!resend) return false
   if (!order.customer.email) return false
-  const { error } = await resend.emails.send({ from: env.EMAIL_FROM, to: [order.customer.email], subject: 'Your EarthyGlow refund', html: `<div style="font-family:Arial,sans-serif;color:#2e2a25;max-width:620px;padding:28px"><h2 style="font-family:Georgia,serif;color:#5f3b25">Your refund has been arranged</h2><p>Hi ${escapeHtml(order.customer.firstName)},</p><p>We’ve sent a full refund of <strong>${formatEuro(order.totalCents)}</strong> for order <strong>${escapeHtml(order.orderNumber)}</strong> to Mollie. The time it takes to appear depends on your bank or payment provider.</p><p>With warmth,<br /><strong>Naomi</strong><br /><small>Founder of EarthyGlow</small></p></div>` })
+  const { error } = await resend.emails.send({ from: env.EMAIL_FROM, to: [order.customer.email], subject: 'Your EarthyGlow refund', html: `<div style="font-family:Arial,sans-serif;color:#2e2a25;max-width:620px;padding:28px"><h2 style="font-family:Georgia,serif;color:#5f3b25">Your refund has been arranged</h2><p>Hi ${escapeHtml(order.customer.firstName)},</p><p>We’ve sent a full refund of <strong>${formatEuro(order.totalCents)}</strong> for order <strong>${escapeHtml(order.orderNumber)}</strong> to Mollie. The time it takes to appear depends on your bank or payment provider.</p><p>With love,<br /><strong>Naomi</strong><br /><small>Founder of EarthyGlow</small></p></div>` })
   if (error) throw new Error(`Resend rejected refund email: ${error.message}`)
   return true
 }

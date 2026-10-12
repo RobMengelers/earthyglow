@@ -27,3 +27,29 @@
   font-size: 1.05rem;
   margin-bottom: 2rem;
 }
+
+.newsletter-socials {
+  display: flex;
+  gap: 1.4rem;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+.newsletter-socials a {
+  font-weight: 600;
+  color: var(--amber-soft);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  transition: color 0.25s ease;
+}
+
+.newsletter-socials a svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+.newsletter-socials a:hover {
+  color: var(--surface);
+}

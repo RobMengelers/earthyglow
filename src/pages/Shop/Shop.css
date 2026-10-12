@@ -18,10 +18,20 @@
 .season-nav {
   position: relative;
   display: flex;
+  align-items: center;
   gap: clamp(24px, 4vw, 56px);
   border-bottom: 1px solid var(--line);
   overflow-x: auto;
   scrollbar-width: thin;
+  overflow-y: visible;
+  padding-bottom: 2px;
+}
+
+.season-divider {
+  flex: 0 0 1px;
+  align-self: stretch;
+  margin-block: 20px 24px;
+  background: var(--line);
 }
 
 .season-link {
@@ -94,9 +104,19 @@
 
   .season-nav {
     gap: 26px;
+    overflow-y: visible;
+    padding-bottom: 2px;
   }
 
   .season-link {
+    padding-bottom: 16px;
+  }
+
+  .season-divider {
+    margin-block: 12px 14px;
+  }
+
+  .season-dropdown-trigger {
     padding-bottom: 16px;
   }
 
@@ -104,7 +124,83 @@
 
 @media (prefers-reduced-motion: reduce) {
   .season-link,
-  .season-link::after {
+  .season-link::after,
+  .season-chevron {
     transition: none;
   }
+}
+
+
+.season-dropdown {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.season-dropdown-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: clamp(1.2rem, 2.2vw, 1.65rem);
+  line-height: 1.3;
+  color: var(--body);
+  padding: 8px 2px 20px;
+  white-space: nowrap;
+}
+
+.season-dropdown-trigger::after {
+  content: none;
+}
+
+.season-chevron {
+  width: 16px;
+  height: 16px;
+  transition: transform 150ms ease;
+  flex-shrink: 0;
+}
+
+.season-dropdown.is-open .season-chevron {
+  transform: rotate(180deg);
+}
+
+.season-dropdown-menu {
+  position: fixed;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: 0 12px 28px rgba(55, 42, 31, 0.12);
+  min-width: 180px;
+  display: none;
+  z-index: 40;
+  flex-direction: column;
+  padding: 4px 0;
+}
+
+.season-dropdown.is-open .season-dropdown-menu {
+  display: flex;
+}
+
+.season-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  color: var(--body);
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.season-dropdown-item:hover {
+  background: var(--bg-2);
+  color: var(--clay);
+}
+
+.season-dropdown-item.is-active {
+  color: var(--clay);
+  font-weight: 600;
 }

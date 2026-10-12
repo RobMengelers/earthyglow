@@ -28,20 +28,36 @@ export const seasons = [
     coverProductId: 'pumpkin-spice-wax-melts',
   },
   {
+    id: 'winter',
+    label: 'Winter',
+    description: 'Cosy candles to brighten the darkest days of the year.',
+    productIds: [],
+    coverProductId: 'autumn-ember',
+  },
+]
+
+export const holidays = [
+  {
     id: 'halloween',
     label: 'Halloween',
     description: 'Meet the little ghosts I’ve made for your Halloween table and home.',
     productIds: ['scary-boo', 'boo-boo', 'pumpkin-boo', 'ghostlight-dinner-candle'],
-    coverProductId: 'scary-boo',
+  },
+  {
+    id: 'christmas',
+    label: 'Christmas',
+    description: 'Cosy festive candles - coming soon.',
+    productIds: [],
   },
 ]
 
 export function getSeason(id: string | null) {
-  return seasons.find((season) => season.id === id)
+  if (!id) return undefined
+  return seasons.find((season) => season.id === id) || holidays.find((holiday) => holiday.id === id)
 }
 
 export function seasonForProduct(productId: string) {
-  return seasons.find((season) => season.productIds.includes(productId))
+  return seasons.find((season) => season.productIds.includes(productId)) || holidays.find((holiday) => holiday.productIds.includes(productId))
 }
 
 export function filterProducts(seasonId?: string, collectionId?: string) {
