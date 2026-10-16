@@ -171,9 +171,9 @@ export function Shop() {
         <div className="container">
           <Reveal>
             <nav className="breadcrumb" aria-label="Breadcrumb">
-              <Link to="/">Home</Link>
+              <Link to="/" prefetch="intent">Home</Link>
               <span aria-hidden="true">/</span>
-              <Link to="/shop">Shop</Link>
+              <Link to="/shop" prefetch="intent">Shop</Link>
               {(activeSeason || activeCollection) && (
                 <>
                   <span aria-hidden="true">/</span>
@@ -204,6 +204,7 @@ export function Shop() {
                     to={filterUrl(season.id || undefined)}
                     className={`season-link${selected ? ' is-active' : ''}`}
                     aria-current={selected ? 'page' : undefined}
+                    prefetch="intent"
                     preventScrollReset
                   >
                     <span>{season.label}</span>
@@ -249,6 +250,7 @@ export function Shop() {
                   }}
                   role="menuitem"
                   aria-current={selected ? 'page' : undefined}
+                  prefetch="intent"
                   preventScrollReset
                 >
                   <span>{holiday.label}</span>
@@ -296,7 +298,7 @@ export function Shop() {
               <p className="eyebrow">A different little glow</p>
               <h2>No candles in this combination just yet</h2>
               <p>Explore all the pieces for this season, or browse all seasons.</p>
-              <Link className="btn btn-primary" to={filterUrl(activeSeason?.id)}>
+              <Link className="btn btn-primary" to={filterUrl(activeSeason?.id)} prefetch="intent">
                 {activeSeason ? `Explore ${activeSeason.label.toLowerCase()}` : 'Explore all products'}
               </Link>
             </div>

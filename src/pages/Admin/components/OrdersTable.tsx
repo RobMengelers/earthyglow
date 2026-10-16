@@ -115,25 +115,27 @@ function OrderRow({
             {order.fulfillmentStatus === 'open' ? 'To do' : 'Sent'}
           </span>
         </td>
-        <td className="admin-row-actions">
-          {order.status === 'paid' && order.fulfillmentStatus === 'open' && (
-            <button
-              type="button"
-              className="admin-row-action"
-              onClick={() => onAction('process', order)}
-            >
-              Send
-            </button>
-          )}
-          {order.status === 'paid' && (
-            <button
-              type="button"
-              className="admin-row-action is-quiet"
-              onClick={() => onAction('refund', order)}
-            >
-              Refund
-            </button>
-          )}
+        <td>
+          <div className="admin-row-actions">
+            {order.status === 'paid' && order.fulfillmentStatus === 'open' && (
+              <button
+                type="button"
+                className="admin-row-action"
+                onClick={() => onAction('process', order)}
+              >
+                Send
+              </button>
+            )}
+            {order.status === 'paid' && (
+              <button
+                type="button"
+                className="admin-row-action is-quiet"
+                onClick={() => onAction('refund', order)}
+              >
+                Refund
+              </button>
+            )}
+          </div>
         </td>
       </tr>
       {open && (
@@ -173,25 +175,44 @@ function InvoiceCell({ order, token }: { order: AdminOrder; token: string }) {
     // Orders invoiced before archiving existed cannot produce a faithful copy,
     // so say that rather than offering a button that cannot work.
     return (
-      <span className="admin-muted admin-invoice-missing">
-        {order.invoiceSentAt ? 'not archived' : '—'}
+      <span className="admin-invoice-cell">
+        <span className="admin-invoice-badge is-missing">
+          {order.invoiceSentAt ? 'Not archived' : 'No invoice'}
+        </span>
       </span>
     )
   }
 
   return (
     <span className="admin-invoice-cell">
-      <span className="admin-muted">
-        {order.invoiceSentAt ? `sent ${formatDateTimeOrDash(order.invoiceSentAt)}` : 'not sent'}
+      <span className="admin-invoice-top">
+        <span className={`admin-invoice-badge ${order.invoiceSentAt ? 'is-sent' : 'is-pending'}`}>
+          {order.invoiceSentAt ? 'Sent' : 'Not sent'}
+        </span>
+        <button
+          type="button"
+          className="admin-invoice-download"
+          onClick={() => void handleDownload()}
+          disabled={downloading}
+          aria-label={`Download invoice ${order.orderNumber} as PDF`}
+          title="Download invoice PDF"
+        >
+          {downloading ? (
+            '…'
+          ) : (
+            <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+              <path
+                d="M8 1.5v8m0 0 3-3m-3 3-3-3M3 12.5h10"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          )}
+        </button>
       </span>
-      <button
-        type="button"
-        className="admin-invoice-download"
-        onClick={() => void handleDownload()}
-        disabled={downloading}
-      >
-        {downloading ? 'Preparing…' : 'PDF'}
-      </button>
       {error !== '' && <small className="admin-invoice-error">{error}</small>}
     </span>
   )

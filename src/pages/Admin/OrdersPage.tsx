@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router'
 import {
   fetchAdminOrders,
@@ -6,7 +6,6 @@ import {
   refundAdminOrder,
   updateFulfillment,
   type AdminOrder,
-  type AdminOrdersResponse,
 } from '../../admin/api'
 import { useAdmin } from './admin-context'
 import { siteMeta } from '../../lib/seo'
@@ -16,6 +15,17 @@ import { OrdersTable, type OrderRowAction } from './components/OrdersTable'
 import { StatusFilter } from './components/StatusFilter'
 
 type Flash = { tone: 'success' | 'error'; text: string } | undefined
+
+// The pages loaded so far for one set of filters. Tagged with the filters it
+// belongs to so a change shows the loading state without a flash of old rows.
+type OrdersView = {
+  key: string
+  orders: AdminOrder[]
+  stats: Record<string, number>
+  total: number
+  paidTotalCents: number
+  nextCursor: string | null
+}
 
 export function meta() {
   return siteMeta({ title: 'Orders · EarthyGlow Admin', robots: 'noindex, nofollow' })
@@ -42,34 +52,45 @@ export default function OrdersPage() {
   >(null)
   const noticeShown = useRef(false)
 
-  // Results are tagged with the request they belong to, so switching views
-  // shows a loading state without an extra render to clear the old data.
-  const requestKey = `${token ?? ''}|${status}|${reloadKey}`
-  const [result, setResult] = useState<{
-    key: string
-    data: AdminOrdersResponse
-  } | null>(null)
+  const filtersKey = `${token ?? ''}|${status}|${onlyOpen}|${query}|${reloadKey}`
+  const [view, setView] = useState<OrdersView | null>(null)
   const [failure, setFailure] = useState<{ key: string; message: string } | null>(null)
+  const [loadingMore, setLoadingMore] = useState(false)
 
   useEffect(() => {
     if (!token) return
     let cancelled = false
-
-    fetchAdminOrders(token, status === 'all' ? undefined : status)
-      .then((data) => {
-        if (cancelled) return
-        setResult({ key: requestKey, data })
+    // Filters live on the server now, so the search box debounces slightly to
+    // avoid firing a request for every keystroke.
+    const handle = setTimeout(() => {
+      fetchAdminOrders(token, {
+        status: status === 'all' ? undefined : status,
+        q: query || undefined,
+        fulfilmentOpen: onlyOpen,
       })
-      .catch((error: unknown) => {
-        if (cancelled) return
-        setFailure({
-          key: requestKey,
-          message: error instanceof Error ? error.message : 'Could not load orders',
+        .then((result) => {
+          if (cancelled) return
+          setFailure(null)
+          setView({
+            key: filtersKey,
+            orders: result.orders,
+            stats: result.stats,
+            total: result.total,
+            paidTotalCents: result.paidTotalCents,
+            nextCursor: result.nextCursor,
+          })
         })
-      })
+        .catch((error: unknown) => {
+          if (cancelled) return
+          setFailure({
+            key: filtersKey,
+            message: error instanceof Error ? error.message : 'Could not load orders',
+          })
+        })
+    }, query ? 250 : 0)
 
-    return () => { cancelled = true }
-  }, [token, status, requestKey])
+    return () => { cancelled = true; clearTimeout(handle) }
+  }, [token, status, onlyOpen, query, filtersKey])
 
   // Coming back from "new order" carries its outcome in the route state, so the
   // message survives the redirect without a global store.
@@ -81,30 +102,39 @@ export default function OrdersPage() {
     navigate(`${location.pathname}${location.search}`, { replace: true, state: null })
   }, [location.state, location.pathname, location.search, navigate])
 
-  const data = result?.key === requestKey ? result.data : null
-  const loadError = failure?.key === requestKey ? failure.message : ''
+  const data = view?.key === filtersKey ? view : null
+  const loadError = failure?.key === filtersKey ? failure.message : ''
   const loading = data === null && loadError === ''
+  const hasFilters = status !== 'all' || onlyOpen || query !== ''
 
-  const visibleOrders = useMemo(() => {
-    if (!data) return []
-    const needle = query.trim().toLowerCase()
-    return data.orders.filter((order) => {
-      if (onlyOpen && order.fulfillmentStatus !== 'open') return false
-      if (needle === '') return true
-      const { firstName, lastName, email } = order.customer
-      return (
-        order.orderNumber.toLowerCase().includes(needle) ||
-        `${firstName} ${lastName}`.toLowerCase().includes(needle) ||
-        (email ?? '').toLowerCase().includes(needle) ||
-        order.city.toLowerCase().includes(needle)
+  async function loadMore() {
+    if (!token || !data || !data.nextCursor || loadingMore) return
+    setLoadingMore(true)
+    try {
+      const next = await fetchAdminOrders(token, {
+        status: status === 'all' ? undefined : status,
+        q: query || undefined,
+        fulfilmentOpen: onlyOpen,
+        cursor: data.nextCursor,
+      })
+      setView((current) =>
+        current && current.key === filtersKey
+          ? {
+              ...current,
+              orders: [...current.orders, ...next.orders],
+              nextCursor: next.nextCursor,
+            }
+          : current,
       )
-    })
-  }, [data, query, onlyOpen])
-
-  const visibleRevenue = visibleOrders.reduce(
-    (sum, order) => (order.status === 'paid' ? sum + order.totalCents : sum),
-    0,
-  )
+    } catch (error) {
+      setFlash({
+        tone: 'error',
+        text: error instanceof Error ? error.message : 'Could not load more orders',
+      })
+    } finally {
+      setLoadingMore(false)
+    }
+  }
 
   function updateParams(
     patch: Record<string, string | null>,
@@ -121,16 +151,13 @@ export default function OrdersPage() {
   }
 
   function applyUpdate(order: AdminOrder) {
-    setResult((current) =>
+    setView((current) =>
       current
         ? {
             ...current,
-            data: {
-              ...current.data,
-              orders: current.data.orders.map((item) =>
-                item.id === order.id ? order : item,
-              ),
-            },
+            orders: current.orders.map((item) =>
+              item.id === order.id ? order : item,
+            ),
           }
         : current,
     )
@@ -182,7 +209,8 @@ export default function OrdersPage() {
     }
   }
 
-  const count = visibleOrders.length
+  const count = data?.total ?? 0
+  const loaded = data?.orders.length ?? 0
 
   return (
     <div className="admin-page">
@@ -190,10 +218,17 @@ export default function OrdersPage() {
         <div>
           <h1>Orders</h1>
           <p className="admin-page-sub">
-            {loading
+            {loading || !data
               ? 'Everything bought online and in the shop.'
-              : `${count} in view · ${formatEuros(visibleRevenue)} paid`}
+              : `${count} in view · ${formatEuros(data.paidTotalCents)} paid${
+                  loaded < count ? ` · showing ${loaded}` : ''
+                }`}
           </p>
+        </div>
+        <div className="admin-page-actions">
+          <Link to="/admin/orders/new" className="btn btn-primary">
+            + New order
+          </Link>
         </div>
       </header>
 
@@ -260,15 +295,15 @@ export default function OrdersPage() {
         </p>
       )}
 
-      {data && count === 0 && (
+      {data && data.orders.length === 0 && (
         <div className="admin-empty">
-          <h2>{data.orders.length === 0 ? 'No orders here yet' : 'Nothing matches'}</h2>
+          <h2>{hasFilters ? 'Nothing matches' : 'No orders here yet'}</h2>
           <p>
-            {data.orders.length === 0
-              ? 'Online orders and sales recorded in the shop both land here.'
-              : 'Try another status, or clear the search and the “to fulfil” filter.'}
+            {hasFilters
+              ? 'Try another status, or clear the search and the “to fulfil” filter.'
+              : 'Online orders and sales recorded in the shop both land here.'}
           </p>
-          {data.orders.length === 0 && (
+          {!hasFilters && (
             <Link to="/admin/orders/new" className="btn btn-primary">
               Record a sale
             </Link>
@@ -276,10 +311,10 @@ export default function OrdersPage() {
         </div>
       )}
 
-      {data && count > 0 && (
+      {data && data.orders.length > 0 && (
         <>
           <OrdersTable
-            orders={visibleOrders}
+            orders={data.orders}
             token={token ?? ''}
             expanded={expanded}
             onToggleExpand={(id) => setExpanded((current) => (current === id ? null : id))}
@@ -291,6 +326,21 @@ export default function OrdersPage() {
               )
             }
           />
+
+          {data.nextCursor && (
+            <div className="admin-load-more">
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => void loadMore()}
+                disabled={loadingMore}
+              >
+                {loadingMore
+                  ? 'Loading…'
+                  : `Load more (${data.total - data.orders.length} older)`}
+              </button>
+            </div>
+          )}
 
           {dialog?.kind === 'fulfil' && (
             <FulfillmentDialog

@@ -121,7 +121,7 @@ export function Care() {
         <div className="container">
           <Reveal>
             <nav className="breadcrumb" aria-label="Breadcrumb">
-              <Link to="/">Home</Link>
+              <Link to="/" prefetch="intent">Home</Link>
               <span aria-hidden="true">/</span>
               <span aria-current="page">Candle Care</span>
             </nav>

@@ -14,7 +14,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
 
   return (
     <Reveal delay={(index % 3) * 80} className="product-card-wrap">
-      <Link to={`/product/${product.id}`} className="product-card">
+      <Link to={`/product/${product.id}`} className="product-card" prefetch="viewport">
         <div className="product-media">
           <img
             {...imageAttrs(product.image, SIZES.card)}

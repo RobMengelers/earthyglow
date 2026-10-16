@@ -134,10 +134,17 @@ test('orders list reports hasInvoicePdf without leaking pdf bytes', async (t) =>
   }
   t.after(() => { for (const undo of restore) undo() })
 
+  const archiveQueries: { where?: { id?: { in?: string[] } } }[] = []
   stub('groupBy', async () => [{ status: 'paid', _count: 2 }])
-  stub('findMany', async (args: { select?: { id?: boolean }; omit?: Record<string, boolean> }) => {
+  stub('aggregate', async (args: { _sum?: unknown }) =>
+    args._sum ? { _sum: { totalCents: 9500 } } : { _count: 2 },
+  )
+  stub('findMany', async (args: { select?: { id?: boolean }; omit?: Record<string, boolean>; where?: { id?: { in?: string[] } } }) => {
     // Only the id-only "which orders are archived" query passes `select`.
-    if (args.select) return [{ id: 'order-2' }]
+    if (args.select) {
+      archiveQueries.push(args)
+      return [{ id: 'order-2' }]
+    }
     const rows = [makeOrder({ id: 'order-1' }), makeOrder({ id: 'order-2' })]
     // Mirror Prisma: `omit` is what keeps the bytea column out of the response,
     // so dropping it from the query must make this test fail.
@@ -159,6 +166,9 @@ test('orders list reports hasInvoicePdf without leaking pdf bytes', async (t) =>
   assert.equal(response.statusCode, 200)
   const body = response.json()
   assert.equal(body.orders.length, 2)
+  assert.equal(body.total, 2)
+  assert.equal(body.paidTotalCents, 9500)
+  assert.equal(body.nextCursor, null, 'a full page under the limit has no next cursor')
   assert.deepEqual(
     body.orders.map((order: { id: string; hasInvoicePdf: boolean }) => [
       order.id,
@@ -167,4 +177,98 @@ test('orders list reports hasInvoicePdf without leaking pdf bytes', async (t) =>
     [['order-1', false], ['order-2', true]],
   )
   assert.ok(!('invoicePdf' in body.orders[0]), 'raw bytes must not be serialised')
+  // The archive lookup must be scoped to the orders on the page, never the
+  // whole table.
+  assert.equal(archiveQueries.length, 1, 'exactly one archive lookup')
+  assert.deepEqual(archiveQueries[0]?.where?.id?.in, ['order-1', 'order-2'])
 })
+
+test('orders list skips the archive lookup when there are no orders', async (t) => {
+  const restore: (() => void)[] = []
+  const stub = (key: string, impl: unknown) => {
+    const original = Reflect.get(prisma.order, key)
+    Reflect.set(prisma.order, key, impl)
+    restore.push(() => { Reflect.set(prisma.order, key, original) })
+  }
+  t.after(() => { for (const undo of restore) undo() })
+
+  let findManyCalls = 0
+  stub('groupBy', async () => [])
+  stub('aggregate', async (args: { _sum?: unknown }) =>
+    args._sum ? { _sum: { totalCents: null } } : { _count: 0 },
+  )
+  stub('findMany', async () => {
+    findManyCalls += 1
+    return []
+  })
+
+  const { app, token } = await authedApp()
+  const response = await app.inject({
+    method: 'GET',
+    url: '/api/admin/orders',
+    headers: { authorization: `Bearer ${token}` },
+  })
+
+  assert.equal(response.statusCode, 200)
+  assert.deepEqual(response.json().orders, [])
+  assert.equal(response.json().paidTotalCents, 0)
+  assert.equal(findManyCalls, 1, 'no wasted archive query')
+})
+
+test('orders list pages with an opaque cursor', async (t) => {
+  const restore: (() => void)[] = []
+  const stub = (key: string, impl: unknown) => {
+    const original = Reflect.get(prisma.order, key)
+    Reflect.set(prisma.order, key, impl)
+    restore.push(() => { Reflect.set(prisma.order, key, original) })
+  }
+  t.after(() => { for (const undo of restore) undo() })
+
+  stub('groupBy', async () => [])
+  stub('aggregate', async (args: { _sum?: unknown }) =>
+    args._sum ? { _sum: { totalCents: 0 } } : { _count: 3 },
+  )
+  const pageQueries: {
+    take?: number
+    cursor?: { id: string }
+    skip?: number
+  }[] = []
+  stub('findMany', async (args: { select?: unknown; take?: number; cursor?: { id: string }; skip?: number }) => {
+    if (args.select) return []
+    pageQueries.push(args)
+    // One row past the limit is what tells the endpoint there is more to come.
+    return [
+      makeOrder({ id: 'order-1' }),
+      makeOrder({ id: 'order-2' }),
+      makeOrder({ id: 'order-3' }),
+    ]
+  })
+
+  const { app, token } = await authedApp()
+  const headers = { authorization: `Bearer ${token}` }
+
+  const first = await app.inject({
+    method: 'GET',
+    url: '/api/admin/orders?limit=2',
+    headers,
+  })
+  assert.equal(first.statusCode, 200)
+  const firstBody = first.json()
+  assert.deepEqual(
+    firstBody.orders.map((order: { id: string }) => order.id),
+    ['order-1', 'order-2'],
+  )
+  assert.equal(firstBody.nextCursor, 'order-2')
+  assert.equal(firstBody.total, 3)
+  assert.equal(pageQueries[0]?.take, 3, 'fetches limit + 1 to detect more')
+
+  const second = await app.inject({
+    method: 'GET',
+    url: '/api/admin/orders?limit=2&cursor=order-2',
+    headers,
+  })
+  assert.equal(second.statusCode, 200)
+  assert.deepEqual(pageQueries[1]?.cursor, { id: 'order-2' })
+  assert.equal(pageQueries[1]?.skip, 1)
+})
+

@@ -24,7 +24,7 @@ export function Cart() {
         <div className="container">
           <Reveal>
             <nav className="breadcrumb" aria-label="Breadcrumb">
-              <Link to="/">Home</Link>
+              <Link to="/" prefetch="intent">Home</Link>
               <span aria-hidden="true">/</span>
               <span aria-current="page">Cart</span>
             </nav>
@@ -44,7 +44,7 @@ export function Cart() {
                 Looking for a little gift or a candle for your own home?
                 Have a look at what I’ve been making.
               </p>
-              <Link to="/shop" className="btn btn-primary">
+              <Link to="/shop" className="btn btn-primary" prefetch="intent">
                 Shop the collection
               </Link>
             </Reveal>
@@ -57,7 +57,7 @@ export function Cart() {
                   ))}
                 </ul>
                 <div className="cart-page-actions">
-                  <Link to="/shop" className="cart-view-link">
+                  <Link to="/shop" className="cart-view-link" prefetch="intent">
                     Continue shopping
                   </Link>
                   <button
@@ -86,7 +86,7 @@ export function Cart() {
                     <span className="cart-totals-muted">At checkout</span>
                   </div>
                 </div>
-                <Link to="/checkout" className="btn btn-primary cart-checkout-btn">
+                <Link to="/checkout" className="btn btn-primary cart-checkout-btn" prefetch="intent">
                   Go to checkout
                 </Link>
                 <p className="cart-summary-note">

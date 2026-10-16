@@ -32,7 +32,7 @@ export function AboutTeaser() {
             <li>Poured by hand in small batches</li>
             <li>Shapes and colours inspired by nature</li>
           </ul>
-          <Link to="/about" className="btn btn-primary">
+          <Link to="/about" className="btn btn-primary" prefetch="intent">
             Read the full story
           </Link>
         </Reveal>

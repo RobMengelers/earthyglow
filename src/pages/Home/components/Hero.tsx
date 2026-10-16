@@ -20,10 +20,10 @@ export function Hero() {
             with 100% soy wax, bringing a little of the outdoors into your home.
           </p>
           <div className="hero-actions">
-            <Link to="/shop" className="btn btn-primary">
+            <Link to="/shop" className="btn btn-primary" prefetch="intent">
               Shop the collection
             </Link>
-            <Link to="/about" className="btn btn-ghost">
+            <Link to="/about" className="btn btn-ghost" prefetch="intent">
               Our story
             </Link>
           </div>

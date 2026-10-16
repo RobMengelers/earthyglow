@@ -87,6 +87,23 @@ export type AdminOrder = {
 export type AdminOrdersResponse = {
   stats: Record<string, number>
   orders: AdminOrder[]
+  /** Opaque id to pass back as `cursor` for the next page, or null at the end. */
+  nextCursor: string | null
+  /** How many orders match the current filters (not just this page). */
+  total: number
+  /** Paid value of everything matching the current filters. */
+  paidTotalCents: number
+}
+
+export type AdminOrdersQuery = {
+  status?: string
+  /** Free text over order number, customer name/email and city. */
+  q?: string
+  /** Restrict to paid orders still awaiting fulfilment. */
+  fulfilmentOpen?: boolean
+  /** Cursor from a previous response's `nextCursor`. */
+  cursor?: string | null
+  limit?: number
 }
 
 export type AdminOverview = {
@@ -193,13 +210,19 @@ export const ADMIN_STATUSES = ORDER_STATUSES as readonly string[]
 
 export async function fetchAdminOrders(
   token: string,
-  status?: string,
+  options: AdminOrdersQuery = {},
 ): Promise<AdminOrdersResponse> {
-  const query =
-    status && (ORDER_STATUSES as readonly string[]).includes(status)
-      ? `?status=${encodeURIComponent(status)}`
-      : ''
-  const response = await fetch(`${API_URL}/api/admin/orders${query}`, {
+  const params = new URLSearchParams()
+  if (options.status && (ORDER_STATUSES as readonly string[]).includes(options.status)) {
+    params.set('status', options.status)
+  }
+  if (options.q) params.set('q', options.q)
+  if (options.fulfilmentOpen) params.set('fulfilment', 'open')
+  if (options.cursor) params.set('cursor', options.cursor)
+  if (options.limit) params.set('limit', String(options.limit))
+  const query = params.toString()
+
+  const response = await fetch(`${API_URL}/api/admin/orders${query ? `?${query}` : ''}`, {
     headers: { Authorization: `Bearer ${token}` },
   })
   if (!response.ok) {
@@ -352,6 +375,151 @@ export async function downloadAdminPurchaseDocument(
   link.click()
   link.remove()
   URL.revokeObjectURL(url)
+}
+
+export type AdminMaterial = {
+  id: string
+  name: string
+  /** The unit quantities are entered in: "kg" for wax, "g" for scent. */
+  unit: string
+  /** What is still on hand, in `unit`. */
+  quantity: number
+  createdAt: string
+}
+
+export type AdminRecipeIngredient = {
+  materialId: string
+  /** How much one product uses, in the material's unit. */
+  amount: number
+  material: { id: string; name: string; unit: string; quantity: number }
+  /** Derived server-side: floor(material.quantity / amount). */
+  possibleUnits: number
+}
+
+export type AdminRecipeField = {
+  label: string
+  value: string
+}
+
+export type AdminRecipe = {
+  id: string
+  product: { id: string; name: string }
+  ingredients: AdminRecipeIngredient[]
+  fields: AdminRecipeField[]
+  /** How many of the product the leftover stock can still make (tightest ingredient). */
+  possibleUnits: number
+}
+
+export type AdminMaterialsResponse = {
+  materials: AdminMaterial[]
+  recipes: AdminRecipe[]
+}
+
+export async function fetchAdminMaterials(
+  token: string,
+): Promise<AdminMaterialsResponse> {
+  const response = await fetch(`${API_URL}/api/admin/materials`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!response.ok) {
+    if (response.status === 401) throw new Error('Session expired')
+    throw new Error(`Failed to load materials (${response.status})`)
+  }
+  return (await response.json()) as AdminMaterialsResponse
+}
+
+export type AdminMaterialInput = {
+  name: string
+  unit: string
+  /** The amount on hand right now, exactly as typed (e.g. "2,5"). */
+  quantity: string
+}
+
+export async function createAdminMaterial(
+  token: string,
+  input: AdminMaterialInput,
+): Promise<AdminMaterial> {
+  const response = await fetch(`${API_URL}/api/admin/materials`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  const body = (await response.json().catch(() => null)) as
+    | { material?: AdminMaterial; error?: string }
+    | null
+  if (!response.ok) throw new Error(body?.error ?? 'Could not save the material')
+  return body?.material as AdminMaterial
+}
+
+/** Adds to the stock of a material; a negative amount corrects it down. */
+export async function addAdminMaterialStock(
+  token: string,
+  id: string,
+  amount: string,
+): Promise<AdminMaterial> {
+  const response = await fetch(`${API_URL}/api/admin/materials/${id}/stock`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ amount }),
+  })
+  const body = (await response.json().catch(() => null)) as
+    | { material?: AdminMaterial; error?: string }
+    | null
+  if (!response.ok) throw new Error(body?.error ?? 'Could not update the stock')
+  return body?.material as AdminMaterial
+}
+
+export async function deleteAdminMaterial(token: string, id: string): Promise<void> {
+  const response = await fetch(`${API_URL}/api/admin/materials/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!response.ok) {
+    throw new Error(
+      (await response.json().catch(() => null) as { error?: string } | null)
+        ?.error ?? 'Could not delete the material',
+    )
+  }
+}
+
+export type AdminRecipeInput = {
+  productId: string
+  ingredients: { materialId: string; amount: string }[]
+  fields: { label: string; value: string }[]
+}
+
+export async function createAdminRecipe(
+  token: string,
+  input: AdminRecipeInput,
+): Promise<AdminRecipe> {
+  const response = await fetch(`${API_URL}/api/admin/recipes`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  const body = (await response.json().catch(() => null)) as
+    | { recipe?: AdminRecipe; error?: string }
+    | null
+  if (!response.ok) throw new Error(body?.error ?? 'Could not save the recipe')
+  return body?.recipe as AdminRecipe
+}
+
+export async function deleteAdminRecipe(token: string, id: string): Promise<void> {
+  const response = await fetch(`${API_URL}/api/admin/recipes/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!response.ok) {
+    throw new Error(
+      (await response.json().catch(() => null) as { error?: string } | null)
+        ?.error ?? 'Could not delete the recipe',
+    )
+  }
+}
+
+/** "2,5" — the nl-NL way the shop writes amounts, used across the admin. */
+export function formatAmount(value: number): string {
+  return new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 3 }).format(value)
 }
 
 // The 21% VAT split the server derives for every purchase, mirrored here so

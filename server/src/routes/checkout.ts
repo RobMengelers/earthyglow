@@ -138,7 +138,7 @@ export async function checkoutRoutes(app: FastifyInstance) {
           notes: notes || null,
           paymentMethod: paymentMethod ?? null,
           items: {
-            create: lines.map((line) => ({
+            create: lines.map((line, index) => ({
               productId: line.product.id,
               name: line.product.name,
               variantId: line.variantId,
@@ -146,6 +146,7 @@ export async function checkoutRoutes(app: FastifyInstance) {
               unitPriceCents: line.unitPriceCents,
               quantity: line.quantity,
               lineTotalCents: line.lineTotalCents,
+              position: index,
             })),
           },
         },

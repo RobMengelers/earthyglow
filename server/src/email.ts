@@ -570,7 +570,7 @@ export async function archiveInvoiceForOrder(
 ): Promise<Uint8Array | null> {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
-    include: { customer: true, items: { orderBy: { id: 'asc' } } },
+    include: { customer: true, items: { orderBy: [{ position: 'asc' }, { id: 'asc' }] } },
   })
   if (!order) return null
   return archiveInvoicePdf(order)
@@ -587,7 +587,7 @@ export async function sendOrderInvoice(
     where: { orderNumber },
     include: {
       customer: true,
-      items: { orderBy: { id: 'asc' } },
+      items: { orderBy: [{ position: 'asc' }, { id: 'asc' }] },
     },
   })
 
@@ -669,7 +669,7 @@ export async function sendNewOrderNotification(orderNumber: string): Promise<boo
   if (!emailEnabled) return false
   const order = await prisma.order.findUnique({
     where: { orderNumber },
-    include: { customer: true, items: { orderBy: { id: 'asc' } } },
+    include: { customer: true, items: { orderBy: [{ position: 'asc' }, { id: 'asc' }] } },
   })
   if (!order) return false
   const lines = order.items.map((item) => `<li>${escapeHtml(item.name)}${item.variantLabel ? ` (${escapeHtml(item.variantLabel)})` : ''} × ${item.quantity}</li>`).join('')
@@ -785,6 +785,11 @@ export async function retryUnsentInvoices(): Promise<InvoiceRetryStats> {
 
   const orders = await prisma.order.findMany({
     where: { status: 'paid', invoiceSentAt: null },
+    // Oldest first, and capped so a backlog (e.g. a rejected API key) cannot
+    // turn one sweep into hundreds of outbound requests; the next sweep picks
+    // up where this one left off.
+    orderBy: { createdAt: 'asc' },
+    take: 50,
     select: { orderNumber: true },
   })
 

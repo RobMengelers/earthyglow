@@ -17,7 +17,7 @@ export function PolicyLayout({ title, updated, children }: PolicyLayoutProps) {
       <JsonLd
         data={breadcrumbLd([
           { name: 'Home', path: '/' },
-          { name: 'Policies' },
+          { name: 'Policies', path: '/policies' },
           { name: title },
         ])}
       />
@@ -25,9 +25,9 @@ export function PolicyLayout({ title, updated, children }: PolicyLayoutProps) {
         <div className="container">
           <Reveal>
             <nav className="breadcrumb" aria-label="Breadcrumb">
-              <Link to="/">Home</Link>
+              <Link to="/" prefetch="intent">Home</Link>
               <span aria-hidden="true">/</span>
-              <span>Policies</span>
+              <Link to="/policies" prefetch="intent">Policies</Link>
               <span aria-hidden="true">/</span>
               <span aria-current="page">{title}</span>
             </nav>

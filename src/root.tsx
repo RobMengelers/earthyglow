@@ -9,6 +9,7 @@ import {
   isRouteErrorResponse,
   redirect,
   useRouteError,
+  type ClientLoaderFunctionArgs,
   type LoaderFunctionArgs,
 } from 'react-router'
 import { CartProvider } from './cart/CartProvider'
@@ -62,6 +63,20 @@ export function Layout({ children }: { children: ReactNode }) {
 export function loader({ request }: LoaderFunctionArgs) {
   // Canonical URLs have no trailing slash (Netlify cannot express this as a
   // redirect rule without looping), so enforce it at the application layer.
+  const url = new URL(request.url)
+  if (url.pathname.length > 1 && url.pathname.endsWith('/')) {
+    url.pathname = url.pathname.replace(/\/+$/, '')
+    return redirect(`${url.pathname}${url.search}`, 301)
+  }
+  return null
+}
+
+// Client navigation never needs the server: the root only canonicalises the
+// trailing slash, and mirroring it here keeps navigations off the serverless
+// function (e.g. shop season filters change the query and would otherwise
+// revalidate this loader on the server). The server loader still runs for real
+// document requests.
+export function clientLoader({ request }: ClientLoaderFunctionArgs) {
   const url = new URL(request.url)
   if (url.pathname.length > 1 && url.pathname.endsWith('/')) {
     url.pathname = url.pathname.replace(/\/+$/, '')

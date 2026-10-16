@@ -21,10 +21,10 @@ export function NotFound() {
           cozy probably does. Browse the collection instead.
         </p>
         <div className="hero-actions">
-          <Link to="/" className="btn btn-primary">
+          <Link to="/" className="btn btn-primary" prefetch="intent">
             Back home
           </Link>
-          <Link to="/shop" className="btn btn-ghost">
+          <Link to="/shop" className="btn btn-ghost" prefetch="intent">
             Shop the collection
           </Link>
         </div>
@@ -44,7 +44,7 @@ export function ErrorBoundary() {
           <h1>Something went wrong</h1>
           <p>{error.statusText || 'Please try again in a moment.'}</p>
           <div className="hero-actions">
-            <Link to="/" className="btn btn-primary">
+            <Link to="/" className="btn btn-primary" prefetch="intent">
               Back home
             </Link>
           </div>

@@ -1,47 +1,29 @@
-import { type FormEvent, useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router'
 import {
-  createAdminPurchase,
   deleteAdminPurchase,
   downloadAdminPurchaseDocument,
-  eurosToCents,
   fetchAdminPurchases,
   formatDate,
   formatEuros,
-  splitIncludedVat,
   type AdminPurchase,
 } from '../../admin/api'
-import { LoadingButton } from '../../components/ui/LoadingButton'
 import { siteMeta } from '../../lib/seo'
 import { useAdmin } from './admin-context'
-
-const MAX_DOCUMENT_BYTES = 15 * 1024 * 1024
 
 export function meta() {
   return siteMeta({ title: 'Purchases · EarthyGlow Admin', robots: 'noindex, nofollow' })
 }
 
-function todayInput(): string {
-  // The date input wants local calendar days; toISOString alone would shift it
-  // in timezones behind UTC.
-  const now = new Date()
-  return new Date(now.getTime() - now.getTimezoneOffset() * 60_000)
-    .toISOString()
-    .slice(0, 10)
-}
-
 export default function PurchasesPage() {
   const { token, refreshOverview } = useAdmin()
+  const location = useLocation()
+  const navigate = useNavigate()
   const [purchases, setPurchases] = useState<AdminPurchase[] | null>(null)
   const [loadError, setLoadError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
-
-  const [date, setDate] = useState(todayInput)
-  const [description, setDescription] = useState('')
-  const [cost, setCost] = useState('')
-  const [document, setDocument] = useState<File | null>(null)
-  const [formError, setFormError] = useState('')
-  const [saved, setSaved] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
+  const [flash, setFlash] = useState<{ tone: 'success' | 'error'; text: string } | undefined>(undefined)
+  const noticeShown = useRef(false)
 
   useEffect(() => {
     if (!token) return
@@ -59,6 +41,16 @@ export default function PurchasesPage() {
     return () => { cancelled = true }
   }, [token, reloadKey])
 
+  // The add page sends you back here with the outcome in the route state, so
+  // the confirmation survives the redirect without a global store.
+  useEffect(() => {
+    const notice = (location.state as { notice?: string } | null)?.notice
+    if (!notice || noticeShown.current) return
+    noticeShown.current = true
+    setFlash({ tone: 'success', text: notice })
+    navigate(`${location.pathname}${location.search}`, { replace: true, state: null })
+  }, [location.state, location.pathname, location.search, navigate])
+
   const totals = purchases?.reduce(
     (sum, purchase) => ({
       costCents: sum.costCents + purchase.costCents,
@@ -68,44 +60,6 @@ export default function PurchasesPage() {
     { costCents: 0, netCents: 0, vatCents: 0 },
   )
 
-  async function handleSubmit(event: FormEvent) {
-    event.preventDefault()
-    if (!token) return
-    setFormError('')
-    setSaved(false)
-
-    const costCents = eurosToCents(cost)
-    if (costCents === null) {
-      setFormError('Enter the total cost in euros, e.g. 24,50')
-      return
-    }
-    if (document && document.size > MAX_DOCUMENT_BYTES) {
-      setFormError('The document is too large (max 15 MB)')
-      return
-    }
-
-    setSubmitting(true)
-    try {
-      const purchase = await createAdminPurchase(token, {
-        date,
-        description,
-        cost,
-        document: document ?? undefined,
-      })
-      setPurchases((current) => [purchase, ...(current ?? [])])
-      setDate(todayInput())
-      setDescription('')
-      setCost('')
-      setDocument(null)
-      setSaved(true)
-      refreshOverview()
-    } catch (error) {
-      setFormError(error instanceof Error ? error.message : 'Could not save the purchase')
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
   async function removePurchase(purchase: AdminPurchase) {
     if (!token) return
     if (!window.confirm(`Delete the purchase "${purchase.description}"?`)) return
@@ -114,7 +68,10 @@ export default function PurchasesPage() {
       setPurchases((current) => (current ?? []).filter((item) => item.id !== purchase.id))
       refreshOverview()
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : 'Could not delete the purchase')
+      setFlash({
+        tone: 'error',
+        text: error instanceof Error ? error.message : 'Could not delete the purchase',
+      })
     }
   }
 
@@ -124,7 +81,10 @@ export default function PurchasesPage() {
       try {
         await downloadAdminPurchaseDocument(token, purchase)
       } catch (error) {
-        setFormError(error instanceof Error ? error.message : 'Could not download the document')
+        setFlash({
+          tone: 'error',
+          text: error instanceof Error ? error.message : 'Could not download the document',
+        })
       }
     },
     [token],
@@ -140,82 +100,34 @@ export default function PurchasesPage() {
             What you record here shows up as spent on the overview.
           </p>
         </div>
+        <div className="admin-page-actions">
+          <Link to="/admin/purchases/new" className="btn btn-primary">
+            + Add purchase
+          </Link>
+        </div>
       </header>
 
       {loadError !== '' && (
         <p className="form-note is-error">
           {loadError}{' '}
-          <button type="button" className="admin-link-button" onClick={() => setReloadKey((key) => key + 1)}>
+          <button
+            type="button"
+            className="admin-link-button"
+            onClick={() => setReloadKey((key) => key + 1)}
+          >
             Try again
           </button>
         </p>
       )}
 
-      {saved && <p className="form-note is-success">Purchase saved.</p>}
-
-      <section className="admin-panel">
-        <header className="admin-panel-head">
-          <h2>Add a purchase</h2>
-        </header>
-        <form className="admin-form" onSubmit={handleSubmit}>
-          <div className="admin-purchase-form">
-            <label>
-              <span>Date bought</span>
-              <input
-                type="date"
-                value={date}
-                max={todayInput()}
-                onChange={(event) => setDate(event.target.value)}
-                required
-              />
-            </label>
-            <label>
-              <span>Total cost <small className="admin-optional">incl. 21% VAT</small></span>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={cost}
-                onChange={(event) => setCost(event.target.value)}
-                placeholder="e.g. 24,50"
-                required
-              />
-            </label>
-            <label className="is-wide">
-              <span>What we bought</span>
-              <input
-                type="text"
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
-                placeholder="e.g. Soy wax, 5 kg · wick spools · packaging"
-                maxLength={300}
-                required
-              />
-            </label>
-            <label className="is-wide">
-              <span>Document <small className="admin-optional">optional</small></span>
-              <input
-                type="file"
-                accept=".pdf,.png,.jpg,.jpeg,.webp,.heic"
-                onChange={(event) => setDocument(event.target.files?.[0] ?? null)}
-              />
-              <small className="admin-form-hint">
-                {document ? document.name : 'A receipt or delivery note to keep with the purchase.'}
-              </small>
-            </label>
-          </div>
-
-          <div className="admin-form-summary">
-            <VatBreakdown cost={cost} />
-            <div className="admin-form-actions">
-              <LoadingButton type="submit" className="btn btn-primary" loading={submitting}>
-                Save purchase
-              </LoadingButton>
-            </div>
-          </div>
-
-          {formError !== '' && <p className="form-note is-error">{formError}</p>}
-        </form>
-      </section>
+      {flash && (
+        <p className={`admin-flash is-${flash.tone}`} role="status">
+          <span>{flash.text}</span>
+          <button type="button" onClick={() => setFlash(undefined)} aria-label="Dismiss">
+            ×
+          </button>
+        </p>
+      )}
 
       <section className="admin-panel">
         <header className="admin-panel-head">
@@ -251,7 +163,11 @@ export default function PurchasesPage() {
                 <tr>
                   <td colSpan={7}>
                     <p className="admin-empty-inline">
-                      Nothing recorded yet. Add the first purchase above.
+                      Nothing recorded yet.{' '}
+                      <Link to="/admin/purchases/new" className="admin-panel-link">
+                        Add the first purchase
+                      </Link>
+                      .
                     </p>
                   </td>
                 </tr>
@@ -310,29 +226,6 @@ export default function PurchasesPage() {
           </table>
         </div>
       </section>
-    </div>
-  )
-}
-
-// Live preview of how the 21% VAT split of the typed cost will be recorded.
-function VatBreakdown({ cost }: { cost: string }) {
-  const costCents = eurosToCents(cost)
-  const split = costCents === null ? null : splitIncludedVat(costCents)
-
-  return (
-    <div className="admin-vat-breakdown" aria-live="polite">
-      <span>
-        Total
-        <strong>{costCents === null ? '—' : formatEuros(costCents)}</strong>
-      </span>
-      <span>
-        Excl. VAT
-        <strong>{split === null ? '—' : formatEuros(split.netCents)}</strong>
-      </span>
-      <span>
-        VAT (21%)
-        <strong>{split === null ? '—' : formatEuros(split.vatCents)}</strong>
-      </span>
     </div>
   )
 }

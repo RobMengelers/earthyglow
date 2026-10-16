@@ -1,19 +1,25 @@
 import { execFileSync } from 'node:child_process'
-import { collections, products } from '../data/products'
-import { SITE_URL } from '../lib/seo'
+import { collections, heroImage, products } from '../data/products'
+import { SITE_URL, absoluteUrl } from '../lib/seo'
 
 type Page = {
   path: string
   /** Source files whose last commit date reflects when this page last changed. */
   sources: string[]
+  /** Image paths to advertise for this URL via the image sitemap extension. */
+  images?: string[]
 }
 
 const staticPages: Page[] = [
-  { path: '/', sources: ['src/pages/Home/Home.tsx'] },
+  { path: '/', sources: ['src/pages/Home/Home.tsx'], images: [heroImage] },
   { path: '/shop', sources: ['src/pages/Shop/Shop.tsx', 'src/data/products.ts'] },
   { path: '/about', sources: ['src/pages/About/About.tsx'] },
   { path: '/care', sources: ['src/pages/Care/Care.tsx'] },
   { path: '/contact', sources: ['src/pages/Contact/Contact.tsx'] },
+  {
+    path: '/policies',
+    sources: ['src/pages/policies/PoliciesIndex.tsx'],
+  },
   {
     path: '/policies/privacy-policy',
     sources: ['src/pages/policies/PrivacyPolicy.tsx'],
@@ -69,17 +75,29 @@ export function loader() {
     ...products.map((product) => ({
       path: `/product/${product.id}`,
       sources: ['src/data/products.ts'],
+      images: product.images?.length ? product.images : [product.image],
     })),
   ]
 
   const xml =
     '<?xml version="1.0" encoding="UTF-8"?>\n' +
-    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n' +
     pages
-      .map(
-        (page) =>
-          `  <url><loc>${SITE_URL}${page.path}</loc><lastmod>${lastmod(page.sources)}</lastmod></url>`,
-      )
+      .map((page) => {
+        const images = (page.images ?? [])
+          .map(
+            (image) =>
+              `    <image:image><image:loc>${absoluteUrl(image)}</image:loc></image:image>`,
+          )
+          .join('\n')
+        return (
+          `  <url>\n` +
+          `    <loc>${SITE_URL}${page.path}</loc>\n` +
+          `    <lastmod>${lastmod(page.sources)}</lastmod>` +
+          (images ? `\n${images}` : '') +
+          `\n  </url>`
+        )
+      })
       .join('\n') +
     '\n</urlset>\n'
 

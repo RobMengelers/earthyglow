@@ -28,7 +28,7 @@ export function About() {
         <div className="container">
           <Reveal>
             <nav className="breadcrumb" aria-label="Breadcrumb">
-              <Link to="/">Home</Link>
+              <Link to="/" prefetch="intent">Home</Link>
               <span aria-hidden="true">/</span>
               <span aria-current="page">Our Story</span>
             </nav>
@@ -82,7 +82,7 @@ export function About() {
             <p className="quote-thanks">
               With love, Naomi
             </p>
-            <Link to="/shop" className="btn btn-primary">
+            <Link to="/shop" className="btn btn-primary" prefetch="intent">
               Shop the collection
             </Link>
           </Reveal>

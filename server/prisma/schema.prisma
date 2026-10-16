@@ -29,6 +29,7 @@ model Product {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   variants   ProductVariant[]
+  recipes    Recipe[]
 }
 
 model ProductVariant {
@@ -91,7 +92,10 @@ model Order {
 
   items OrderItem[]
 
-  @@index([status])
+  // The admin list and dashboard order by createdAt desc, and the revenue
+  // windows filter on status + paidAt; these cover both.
+  @@index([status, paidAt])
+  @@index([createdAt])
   @@index([customerId])
 }
 
@@ -106,8 +110,67 @@ model OrderItem {
   unitPriceCents Int
   quantity       Int
   lineTotalCents Int
+  // The line's place in the cart. Invoice and admin views sort on this rather
+  // than the random uuid id, so lines always read in the order they were added.
+  position       Int    @default(0)
 
   @@index([orderId])
+}
+
+// A raw material kept in stock for making candles (wax, scent, …). The
+// quantity is stored as a float in `unit` (kg, g, …) and only ever changes
+// through recorded stock additions, so the shop can see what is left.
+model Material {
+  id        String   @id @default(uuid())
+  name      String
+  // The unit quantities are expressed in, e.g. "kg" or "g". Free text so a
+  // new material (wicks, jars) can carry its own unit.
+  unit      String
+  quantity  Float    @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ingredients RecipeIngredient[]
+}
+
+model Recipe {
+  id          String   @id @default(uuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  ingredients RecipeIngredient[]
+  fields      RecipeField[]
+
+  @@index([productId])
+}
+
+// One material + amount per recipe line. The amount is in the material's own
+// unit (kg wax, g scent), so the leftover-stock calculation per product is a
+// simple floor(material.quantity / amount).
+model RecipeIngredient {
+  id         String   @id @default(uuid())
+  recipeId   String
+  recipe     Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  materialId String
+  material   Material @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  amount     Float
+
+  @@index([recipeId])
+  @@index([materialId])
+}
+
+// Free-form key/value extras on a recipe ("Cure time" → "48 hours"), kept as
+// rows so the admin can add as many as they like.
+model RecipeField {
+  id       String @id @default(uuid())
+  recipeId String
+  recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  label    String
+  value    String
+
+  @@index([recipeId])
 }
 
 // A purchase: materials and supplies bought to make the candles. The entered

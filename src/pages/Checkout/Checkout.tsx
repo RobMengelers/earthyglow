@@ -106,10 +106,10 @@ export function Checkout() {
               browser. No payment was taken and no email will be sent.
             </p>
             <div className="hero-actions">
-              <Link to="/shop" className="btn btn-primary">
+              <Link to="/shop" className="btn btn-primary" prefetch="intent">
                 Keep shopping
               </Link>
-              <Link to="/" className="btn btn-ghost">
+              <Link to="/" className="btn btn-ghost" prefetch="intent">
                 Back home
               </Link>
             </div>
@@ -129,7 +129,7 @@ export function Checkout() {
             <p className="checkout-done-lede">
               Add a candle or two before heading to checkout.
             </p>
-            <Link to="/shop" className="btn btn-primary">
+            <Link to="/shop" className="btn btn-primary" prefetch="intent">
               Shop the collection
             </Link>
           </Reveal>
@@ -144,9 +144,9 @@ export function Checkout() {
         <div className="container">
           <Reveal>
             <nav className="breadcrumb" aria-label="Breadcrumb">
-              <Link to="/">Home</Link>
+              <Link to="/" prefetch="intent">Home</Link>
               <span aria-hidden="true">/</span>
-              <Link to="/cart">Cart</Link>
+              <Link to="/cart" prefetch="intent">Cart</Link>
               <span aria-hidden="true">/</span>
               <span aria-current="page">Checkout</span>
             </nav>
@@ -195,8 +195,8 @@ export function Checkout() {
               </LoadingButton>
               <p className="checkout-legal">
                 By placing your order you agree to our{' '}
-                <Link to="/policies/terms-of-service">Terms of Service</Link> and{' '}
-                <Link to="/policies/refund-policy">Refund Policy</Link>.
+                <Link to="/policies/terms-of-service" prefetch="intent">Terms of Service</Link> and{' '}
+                <Link to="/policies/refund-policy" prefetch="intent">Refund Policy</Link>.
               </p>
             </form>
           </Reveal>

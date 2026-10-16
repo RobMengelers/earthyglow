@@ -62,6 +62,7 @@ export function CartDrawer() {
             <Link
               to="/shop"
               className="btn btn-primary"
+              prefetch="intent"
               tabIndex={isDrawerOpen ? 0 : -1}
               onClick={closeDrawer}
             >
@@ -98,6 +99,7 @@ export function CartDrawer() {
               <Link
                 to="/checkout"
                 className="btn btn-primary cart-checkout-btn"
+                prefetch="intent"
                 tabIndex={isDrawerOpen ? 0 : -1}
                 onClick={closeDrawer}
               >
@@ -106,6 +108,7 @@ export function CartDrawer() {
               <Link
                 to="/cart"
                 className="cart-view-link"
+                prefetch="intent"
                 tabIndex={isDrawerOpen ? 0 : -1}
                 onClick={closeDrawer}
               >

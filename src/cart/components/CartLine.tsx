@@ -18,6 +18,7 @@ export function CartLine({ item, compact = false, tabIndex, onNavigate }: CartLi
       <Link
         to={`/product/${item.productId}`}
         className="cart-line-media"
+        prefetch="intent"
         tabIndex={tabIndex}
         onClick={onNavigate}
       >
@@ -30,6 +31,7 @@ export function CartLine({ item, compact = false, tabIndex, onNavigate }: CartLi
           <Link
             to={`/product/${item.productId}`}
             className="cart-line-name"
+            prefetch="intent"
             tabIndex={tabIndex}
             onClick={onNavigate}
           >

@@ -182,14 +182,14 @@ function AdminShell() {
         </Link>
 
         <nav className="admin-nav" aria-label="Admin sections">
-          <NavLink to="/admin/orders/new" className="admin-nav-new">
-            <span aria-hidden="true">+</span> New order
-          </NavLink>
           <NavLink to="/admin/overview" end className="admin-nav-link">
             Overview
           </NavLink>
           <NavLink to="/admin/purchases" end className="admin-nav-link">
             Purchases
+          </NavLink>
+          <NavLink to="/admin/materials" end className="admin-nav-link">
+            Materials &amp; recipes
           </NavLink>
           <NavLink to="/admin/orders" end className="admin-nav-link">
             Orders

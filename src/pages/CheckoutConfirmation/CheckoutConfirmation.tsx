@@ -84,7 +84,7 @@ export function CheckoutConfirmation() {
           The link you followed doesn&rsquo;t include an order number.
         </p>
         <div className="hero-actions">
-          <Link to="/shop" className="btn btn-primary">
+          <Link to="/shop" className="btn btn-primary" prefetch="intent">
             Back to the shop
           </Link>
         </div>
@@ -112,7 +112,7 @@ export function CheckoutConfirmation() {
           order number so I can check it for you.
         </p>
         <div className="hero-actions">
-          <Link to="/contact" className="btn btn-primary">
+          <Link to="/contact" className="btn btn-primary" prefetch="intent">
             Contact us
           </Link>
         </div>
@@ -131,10 +131,10 @@ export function CheckoutConfirmation() {
           and send your tracking details when they’re on their way.
         </p>
         <div className="hero-actions">
-          <Link to="/shop" className="btn btn-primary">
+          <Link to="/shop" className="btn btn-primary" prefetch="intent">
             Keep shopping
           </Link>
-          <Link to="/" className="btn btn-ghost">
+          <Link to="/" className="btn btn-ghost" prefetch="intent">
             Back home
           </Link>
         </div>
@@ -170,10 +170,10 @@ export function CheckoutConfirmation() {
         )}
       </p>
       <div className="hero-actions">
-        <Link to={order.status === 'refunded' ? '/shop' : '/checkout'} className="btn btn-primary">
+        <Link to={order.status === 'refunded' ? '/shop' : '/checkout'} className="btn btn-primary" prefetch="intent">
           {order.status === 'refunded' ? 'Back to the shop' : 'Try payment again'}
         </Link>
-        <Link to="/cart" className="btn btn-ghost">
+        <Link to="/cart" className="btn btn-ghost" prefetch="intent">
           Back to cart
         </Link>
       </div>

@@ -8,7 +8,7 @@ import { products } from '../../data/products'
 import { seasons } from '../../data/seasons'
 import { JsonLd } from '../../components/seo/JsonLd'
 import { imageAttrs, SIZES } from '../../lib/images'
-import { SITE_URL, absoluteUrl, siteMeta } from '../../lib/seo'
+import { SITE_URL, organizationLd, siteMeta } from '../../lib/seo'
 
 const featuredSeasons = seasons
 
@@ -25,19 +25,10 @@ export function Home() {
           '@type': 'WebSite',
           name: 'EarthyGlow',
           url: SITE_URL,
+          inLanguage: 'en',
         }}
       />
-      <JsonLd
-        data={{
-          '@context': 'https://schema.org',
-          '@type': 'Organization',
-          name: 'EarthyGlow',
-          url: SITE_URL,
-          logo: absoluteUrl('/logo.png'),
-          email: 'earthyglowcandles@gmail.com',
-          founder: { '@type': 'Person', name: 'Naomi' },
-        }}
-      />
+      <JsonLd data={organizationLd()} />
       <Hero />
       <Divider />
 
@@ -55,7 +46,7 @@ export function Home() {
               const cover = products.find((product) => product.id === season.coverProductId)
               return (
                 <Reveal key={season.id} delay={i * 90} className="collection-card-wrap">
-                  <Link to={`/shop?season=${season.id}`} className="collection-card">
+                  <Link to={`/shop?season=${season.id}`} className="collection-card" prefetch="intent">
                     <div className="collection-card-media">
                       {cover && (
                         <img
@@ -78,7 +69,7 @@ export function Home() {
             })}
           </div>
           <Reveal className="featured-cta">
-            <Link to="/shop" className="btn btn-ghost">
+            <Link to="/shop" className="btn btn-ghost" prefetch="intent">
               Shop everything
             </Link>
           </Reveal>

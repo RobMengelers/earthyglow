@@ -9,7 +9,7 @@ import { NotFound } from '../NotFound/NotFound'
 import { seasonForProduct } from '../../data/seasons'
 import { JsonLd } from '../../components/seo/JsonLd'
 import { imageAttrs, SIZES } from '../../lib/images'
-import { SITE_URL, absoluteUrl, breadcrumbLd, siteMeta } from '../../lib/seo'
+import { SITE_URL, absoluteUrl, breadcrumbLd, merchantReturnPolicy, offerShippingDetails, siteMeta } from '../../lib/seo'
 import type { Route } from './+types/ProductPage'
 
 const perks = [
@@ -28,6 +28,16 @@ export function loader({ params }: Route.LoaderArgs) {
   return null
 }
 
+// Product data is bundled, so client navigations can validate without a round
+// trip to the server. The server loader still runs for real document requests
+// so unknown products keep returning an HTTP 404 to crawlers.
+export function clientLoader({ params }: Route.ClientLoaderArgs) {
+  if (!getProduct(params.productId)) {
+    throw new Response('Not Found', { status: 404 })
+  }
+  return null
+}
+
 export function meta({ params }: Route.MetaArgs) {
   const product = getProduct(params.productId)
   if (!product) {
@@ -38,7 +48,12 @@ export function meta({ params }: Route.MetaArgs) {
     description: product.description,
     path: `/product/${product.id}`,
     image: product.image,
+    imageAlt: `${product.name} — hand-poured soy wax candle by EarthyGlow`,
     type: 'product',
+    product: {
+      price: (product.priceCents / 100).toFixed(2),
+      availability: product.soldOut ? 'oos' : 'instock',
+    },
   })
 }
 
@@ -49,6 +64,9 @@ export function ProductPage() {
   const [variantId, setVariantId] = useState('')
   const [quantity, setQuantity] = useState(1)
   const [galleryIndex, setGalleryIndex] = useState(0)
+  // Holds the image that is fading out on top of the incoming one so switching
+  // a variant crossfades instead of swapping the hero shot in a single frame.
+  const [fadeImage, setFadeImage] = useState<{ src: string; id: number } | null>(null)
 
   if (!product) {
     return <NotFound />
@@ -66,6 +84,52 @@ export function ProductPage() {
   const galleryImages = variantImage
     ? [variantImage, ...baseGallery.filter((img) => img !== variantImage)]
     : baseGallery
+  const displayedImage = galleryImages[galleryIndex]
+
+  const imageUrls = (product.images?.length ? product.images : [product.image]).map(absoluteUrl)
+  const purchaseUrl = `${SITE_URL}/product/${product.id}`
+  const variantPrices = (product.variants ?? []).map(
+    (variant) => variant.priceCents ?? product.priceCents,
+  )
+  const hasPriceRange =
+    variantPrices.length > 0 &&
+    Math.max(...variantPrices) !== Math.min(...variantPrices)
+  const availability = product.soldOut
+    ? 'https://schema.org/OutOfStock'
+    : 'https://schema.org/InStock'
+  const offerDetails = {
+    url: purchaseUrl,
+    priceCurrency: 'EUR',
+    availability,
+    itemCondition: 'https://schema.org/NewCondition',
+    seller: { '@type': 'Organization', name: 'EarthyGlow' },
+    shippingDetails: offerShippingDetails(),
+    hasMerchantReturnPolicy: merchantReturnPolicy(),
+  }
+  const offers = hasPriceRange
+    ? {
+        '@type': 'AggregateOffer',
+        lowPrice: (Math.min(...variantPrices) / 100).toFixed(2),
+        highPrice: (Math.max(...variantPrices) / 100).toFixed(2),
+        offerCount: variantPrices.length,
+        ...offerDetails,
+      }
+    : {
+        '@type': 'Offer',
+        price: (product.priceCents / 100).toFixed(2),
+        ...offerDetails,
+      }
+
+  const selectVariant = (id: string) => {
+    const nextImage = product.variants?.find((variant) => variant.id === id)?.image
+    // Only crossfade when the hero shot actually changes; a variant that reuses
+    // the current image (or has none) should not flash the overlay.
+    if (nextImage && nextImage !== displayedImage) {
+      setFadeImage((current) => ({ src: displayedImage, id: (current?.id ?? 0) + 1 }))
+    }
+    setVariantId(id)
+    setGalleryIndex(0)
+  }
 
   return (
     <>
@@ -75,19 +139,13 @@ export function ProductPage() {
           '@type': 'Product',
           name: product.name,
           description: product.description,
-          image: absoluteUrl(product.image),
+          image: imageUrls,
           sku: product.id,
+          url: purchaseUrl,
           brand: { '@type': 'Brand', name: 'EarthyGlow' },
-          offers: {
-            '@type': 'Offer',
-            url: `${SITE_URL}/product/${product.id}`,
-            priceCurrency: 'EUR',
-            price: (product.priceCents / 100).toFixed(2),
-            availability: product.soldOut
-              ? 'https://schema.org/OutOfStock'
-              : 'https://schema.org/InStock',
-            itemCondition: 'https://schema.org/NewCondition',
-          },
+          category: collection?.title ?? 'Candles',
+          material: 'Soy wax',
+          offers,
         }}
       />
       <JsonLd
@@ -100,13 +158,13 @@ export function ProductPage() {
       <section className="product-detail">
         <div className="container">
           <nav className="breadcrumb" aria-label="Breadcrumb">
-            <Link to="/">Home</Link>
+            <Link to="/" prefetch="intent">Home</Link>
             <span aria-hidden="true">/</span>
-            <Link to="/shop">Shop</Link>
+            <Link to="/shop" prefetch="intent">Shop</Link>
             {collection && (
               <>
                 <span aria-hidden="true">/</span>
-                <Link to={season ? `/shop?season=${season.id}` : '/shop'}>{season?.label ?? collection.eyebrow}</Link>
+                <Link to={season ? `/shop?season=${season.id}` : '/shop'} prefetch="intent">{season?.label ?? collection.eyebrow}</Link>
               </>
             )}
             <span aria-hidden="true">/</span>
@@ -122,10 +180,28 @@ export function ProductPage() {
                       <img key={image} {...imageAttrs(image, SIZES.gallery)} alt={product.name} />
                     ))}
                   </div>
+                  {fadeImage && (
+                    <img
+                      key={fadeImage.id}
+                      className="product-gallery-fade"
+                      {...imageAttrs(fadeImage.src, SIZES.gallery)}
+                      alt=""
+                      aria-hidden="true"
+                      onAnimationEnd={() => setFadeImage(null)}
+                    />
+                  )}
                   {galleryImages.length > 1 && (
                     <>
-                      <button type="button" className="product-gallery-arrow product-gallery-prev" onClick={() => setGalleryIndex((index) => (index - 1 + galleryImages.length) % galleryImages.length)} aria-label="Previous product image">‹</button>
-                      <button type="button" className="product-gallery-arrow product-gallery-next" onClick={() => setGalleryIndex((index) => (index + 1) % galleryImages.length)} aria-label="Next product image">›</button>
+                      <button type="button" className="product-gallery-arrow product-gallery-prev" onClick={() => setGalleryIndex((index) => (index - 1 + galleryImages.length) % galleryImages.length)} aria-label="Previous product image">
+                        <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                          <path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </button>
+                      <button type="button" className="product-gallery-arrow product-gallery-next" onClick={() => setGalleryIndex((index) => (index + 1) % galleryImages.length)} aria-label="Next product image">
+                        <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                          <path d="m6 3 5 5-5 5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </button>
                       <span className="product-gallery-count" aria-live="polite">{galleryIndex + 1} / {galleryImages.length}</span>
                     </>
                   )}
@@ -170,7 +246,7 @@ export function ProductPage() {
                   <div className="product-option-list">
                     {product.variants.map((variant) => (
                       <label key={variant.id} className={`product-option${variantId === variant.id ? ' is-selected' : ''}`}>
-                        <input type="radio" name="product-variant" value={variant.id} checked={variantId === variant.id} onChange={() => { setVariantId(variant.id); setGalleryIndex(0) }} />
+                        <input type="radio" name="product-variant" value={variant.id} checked={variantId === variant.id} onChange={() => selectVariant(variant.id)} />
                         <span
                           className={variant.swatch ? 'product-option-swatch' : undefined}
                           style={variant.swatch ? { backgroundColor: variant.swatch } : undefined}

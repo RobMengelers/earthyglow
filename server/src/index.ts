@@ -4,6 +4,7 @@ import rateLimit from '@fastify/rate-limit'
 import Fastify, { type FastifyError } from 'fastify'
 import { env } from './env.js'
 import { retryUnsentInvoices } from './email.js'
+import { prisma } from './prisma.js'
 import { catalogRoutes } from './routes/catalog.js'
 import { checkoutRoutes } from './routes/checkout.js'
 import { contactRoutes } from './routes/contact.js'
@@ -17,8 +18,15 @@ import { webhookRoutes } from './routes/webhooks.js'
 // Railway's reverse proxy reports via X-Forwarded-For, rather than proxy IPs.
 const app = Fastify({ logger: true, trustProxy: true })
 
+// Only the storefront (and its deploy previews) may call the API from a
+// browser. FRONTEND_URL accepts a comma-separated list so a single deploy can
+// allow the canonical domain plus previews without opening CORS to everyone.
+const allowedOrigins = env.FRONTEND_URL.split(',')
+  .map((origin) => origin.trim())
+  .filter((origin) => origin.length > 0)
+
 await app.register(cors, {
-  origin: true,
+  origin: allowedOrigins,
   methods: ['GET', 'HEAD', 'POST', 'PATCH', 'DELETE'],
 })
 await app.register(formbody)
@@ -63,7 +71,7 @@ try {
 
 // Guarantee that paid orders always end up with a sent invoice, even if the
 // immediate webhook send failed and Mollie already stopped retrying.
-setInterval(() => {
+const invoiceRetryTimer = setInterval(() => {
   runInvoiceRetry().catch((error) => {
     app.log.error({ err: error }, 'Invoice retry sweep failed')
   })
@@ -71,3 +79,29 @@ setInterval(() => {
 runInvoiceRetry().catch((error) => {
   app.log.error({ err: error }, 'Invoice retry sweep failed')
 })
+
+// Drain in-flight requests and close the DB pool on a deploy/restart signal so
+// Railway's rolling restarts never cut a request off or leak connections.
+let shuttingDown = false
+async function shutdown(signal: string): Promise<void> {
+  if (shuttingDown) return
+  shuttingDown = true
+  app.log.info({ signal }, 'Shutting down')
+  clearInterval(invoiceRetryTimer)
+  try {
+    await app.close()
+  } finally {
+    await prisma.$disconnect()
+  }
+}
+
+for (const signal of ['SIGTERM', 'SIGINT'] as const) {
+  process.on(signal, () => {
+    shutdown(signal)
+      .then(() => process.exit(0))
+      .catch((error) => {
+        app.log.error({ err: error }, 'Error during shutdown')
+        process.exit(1)
+      })
+  })
+}

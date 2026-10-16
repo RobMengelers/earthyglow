@@ -6,7 +6,7 @@ import { SocialLinks } from '../../components/ui/SocialLinks'
 import { API_URL } from '../../cart/catalog'
 import { LoadingButton } from '../../components/ui/LoadingButton'
 import { JsonLd } from '../../components/seo/JsonLd'
-import { SITE_URL, absoluteUrl, breadcrumbLd, siteMeta } from '../../lib/seo'
+import { breadcrumbLd, organizationLd, siteMeta } from '../../lib/seo'
 
 type SendState = 'idle' | 'sending' | 'sent' | 'error'
 
@@ -52,25 +52,12 @@ export function Contact() {
           { name: 'Contact' },
         ])}
       />
-      <JsonLd
-        data={{
-          '@context': 'https://schema.org',
-          '@type': 'Organization',
-          name: 'EarthyGlow',
-          url: SITE_URL,
-          logo: absoluteUrl('/logo.png'),
-          email: 'earthyglowcandles@gmail.com',
-          founder: { '@type': 'Person', name: 'Naomi' },
-          address: { '@type': 'PostalAddress', addressCountry: 'NL' },
-          taxID: 'KvK 42049155',
-          vatID: 'NL005456394B38',
-        }}
-      />
+      <JsonLd data={organizationLd()} />
       <section className="page-hero">
         <div className="container">
           <Reveal>
             <nav className="breadcrumb" aria-label="Breadcrumb">
-              <Link to="/">Home</Link>
+              <Link to="/" prefetch="intent">Home</Link>
               <span aria-hidden="true">/</span>
               <span aria-current="page">Contact</span>
             </nav>

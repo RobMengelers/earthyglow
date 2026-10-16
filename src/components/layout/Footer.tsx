@@ -14,7 +14,7 @@ export function Footer() {
     <footer className="footer">
       <div className="container footer-grid">
         <div className="footer-brand">
-          <Link to="/" className="brand brand-light">
+          <Link to="/" className="brand brand-light" prefetch="intent">
             <img
               src="/logo-mark.png"
               width={280}
@@ -36,10 +36,10 @@ export function Footer() {
         <div className="footer-col">
           <h3>Shop</h3>
           <ul>
-            <li><Link to="/shop">All products</Link></li>
+            <li><Link to="/shop" prefetch="intent">All products</Link></li>
             {seasons.map((season) => (
               <li key={season.id}>
-                <Link to={`/shop?season=${season.id}`}>{season.label}</Link>
+                <Link to={`/shop?season=${season.id}`} prefetch="intent">{season.label}</Link>
               </li>
             ))}
           </ul>
@@ -48,9 +48,9 @@ export function Footer() {
         <div className="footer-col">
           <h3>Explore</h3>
           <ul>
-            <li><Link to="/about">Our story</Link></li>
-            <li><Link to="/care">Candle care</Link></li>
-            <li><Link to="/contact">Contact</Link></li>
+            <li><Link to="/about" prefetch="intent">Our story</Link></li>
+            <li><Link to="/care" prefetch="intent">Candle care</Link></li>
+            <li><Link to="/contact" prefetch="intent">Contact</Link></li>
           </ul>
         </div>
 
@@ -59,7 +59,7 @@ export function Footer() {
           <ul>
             {policies.map((policy) => (
               <li key={policy.label}>
-                <Link to={policy.to}>{policy.label}</Link>
+                <Link to={policy.to} prefetch="intent">{policy.label}</Link>
               </li>
             ))}
           </ul>

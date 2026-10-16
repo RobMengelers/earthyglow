@@ -21,6 +21,7 @@ export function Navbar() {
           to="/"
           className="brand"
           aria-label="EarthyGlow home"
+          prefetch="viewport"
           onClick={() => setOpen(false)}
         >
           <img
@@ -44,6 +45,7 @@ export function Navbar() {
               <NavLink
                 to={link.to}
                 end={link.to === '/'}
+                prefetch="viewport"
                 className={({ isActive }) => (isActive ? 'active' : undefined)}
                 onClick={() => setOpen(false)}
               >

@@ -1,4 +1,4 @@
-import type { OrderStatus } from '@prisma/client'
+import { Prisma, type OrderStatus } from '@prisma/client'
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { z } from 'zod'
 import {
@@ -101,6 +101,98 @@ const purchaseFieldsSchema = z.object({
   description: z.string().trim().min(1, 'Describe what you bought').max(300),
   cost: z.string().regex(/^\d{1,7}([,.]\d{1,2})?$/, 'Enter the total cost in euros, e.g. 24,50'),
 })
+
+// Materials and recipes. Amounts arrive as strings (comma or dot decimal) so
+// the forms can mirror how the shop speaks about them: "2,5 kg wax".
+const materialCreateSchema = z.object({
+  name: z.string().trim().min(1, 'Name the material').max(80),
+  unit: z.string().trim().min(1, 'Give the unit, e.g. kg or g').max(12),
+  quantity: z
+    .string()
+    .trim()
+    .regex(/^\d{1,5}([,.]\d{1,3})?$/, 'Enter the amount on hand, e.g. 5 or 2,5'),
+})
+
+const materialStockSchema = z.object({
+  amount: z
+    .string()
+    .trim()
+    .regex(/^-?\d{1,5}([,.]\d{1,3})?$/, 'Enter the amount to add, e.g. 2,5'),
+})
+
+const recipeCreateSchema = z.object({
+  productId: z.string().trim().min(1, 'Choose the product this recipe makes').max(100),
+  ingredients: z
+    .array(
+      z.object({
+        materialId: z.string().trim().min(1),
+        amount: z.string().trim().regex(/^\d{1,5}([,.]\d{1,3})?$/, 'Enter how much the recipe uses, e.g. 0,05'),
+      }),
+    )
+    .min(1, 'Add at least one material to the recipe')
+    .max(20),
+  fields: z
+    .array(
+      z.object({
+        label: z.string().trim().min(1, 'Name the field').max(60),
+        value: z.string().trim().min(1, 'Fill in the value').max(300),
+      }),
+    )
+    .max(20)
+    .optional()
+    .default([]),
+})
+
+function parseDecimal(value: string): number | null {
+  const parsed = Number.parseFloat(value.replace(',', '.'))
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+// How many recipes' worth of a product the leftover stock can still make for
+// one ingredient. The 1e-9 absorbs the binary float dust a division like
+// 2,5 / 0,05 leaves behind, so "exactly 50" is not cut down to 49.
+function possibleUnits(quantity: number, amount: number): number {
+  if (!(amount > 0)) return 0
+  return Math.max(0, Math.floor((quantity + 1e-9) / amount))
+}
+
+type RecipeWithRelations = {
+  id: string
+  product: { id: string; name: string }
+  ingredients: {
+    materialId: string
+    amount: number
+    material: { id: string; name: string; unit: string; quantity: number }
+  }[]
+  fields: { label: string; value: string }[]
+}
+
+// A recipe is only makeable while every ingredient it uses still has stock;
+// the tightest ingredient decides how many of the product remain possible.
+function serializeRecipe(recipe: RecipeWithRelations) {
+  const ingredients = recipe.ingredients.map((ingredient) => ({
+    materialId: ingredient.materialId,
+    amount: ingredient.amount,
+    material: ingredient.material,
+    possibleUnits: possibleUnits(ingredient.material.quantity, ingredient.amount),
+  }))
+  return {
+    id: recipe.id,
+    product: recipe.product,
+    ingredients,
+    fields: recipe.fields.map((field) => ({ label: field.label, value: field.value })),
+    possibleUnits:
+      ingredients.length === 0
+        ? 0
+        : Math.min(...ingredients.map((ingredient) => ingredient.possibleUnits)),
+  }
+}
+
+const RECIPE_INCLUDE = {
+  product: { select: { id: true, name: true } },
+  ingredients: { include: { material: true } },
+  fields: { orderBy: { id: 'asc' as const } },
+}
 
 const purchaseDocumentSchema = z.object({
   name: z.string().trim().min(1).max(200),
@@ -247,6 +339,7 @@ export async function adminRoutes(app: FastifyInstance) {
         unitPriceCents,
         quantity: item.quantity,
         lineTotalCents: unitPriceCents * item.quantity,
+        position: lines.length,
       })
     }
 
@@ -308,7 +401,7 @@ export async function adminRoutes(app: FastifyInstance) {
         // The PDF is archived after this insert, so `omit` also keeps the
         // response free of the bytea column.
         omit: { invoicePdf: true },
-        include: { customer: true, items: { orderBy: { id: 'asc' } } },
+        include: { customer: true, items: { orderBy: [{ position: 'asc' }, { id: 'asc' }] } },
       })
 
       // Archive before replying so the row is downloadable the moment the admin
@@ -353,37 +446,103 @@ export async function adminRoutes(app: FastifyInstance) {
     }
   })
 
+  // The orders list is keyset-paginated so a shop that has grown past a few
+  // hundred orders still loads a bounded page. Status, fulfilment and the free
+  // text search are all applied in the database (the client only ever holds the
+  // pages it has scrolled to). Ordering by (createdAt, id) is total, so the
+  // opaque `nextCursor` (the last id on the page) always resumes cleanly.
+  const ORDERS_PAGE_SIZE = 50
+  const ORDERS_MAX_PAGE_SIZE = 100
+
   app.get(
     '/api/admin/orders',
     { preHandler: requireAdmin },
     async (request) => {
-      const query = request.query as { status?: string }
-      const where =
-        query.status && (ORDER_STATUSES as string[]).includes(query.status)
-          ? { status: query.status as OrderStatus }
-          : {}
+      const query = request.query as {
+        status?: string
+        q?: string
+        fulfilment?: string
+        cursor?: string
+        limit?: string
+      }
 
-      const [counts, orders, archived] = await Promise.all([
+      const statusFilter =
+        query.status && (ORDER_STATUSES as string[]).includes(query.status)
+          ? (query.status as OrderStatus)
+          : undefined
+      const search = (query.q ?? '').trim()
+      const onlyOpen = query.fulfilment === 'open'
+      const parsedLimit = Number.parseInt(query.limit ?? '', 10)
+      const limit = Number.isFinite(parsedLimit)
+        ? Math.min(Math.max(parsedLimit, 1), ORDERS_MAX_PAGE_SIZE)
+        : ORDERS_PAGE_SIZE
+      const cursor =
+        typeof query.cursor === 'string' && query.cursor.length > 0
+          ? query.cursor
+          : undefined
+
+      const where: Prisma.OrderWhereInput = {}
+      if (statusFilter) where.status = statusFilter
+      if (onlyOpen) where.fulfillmentStatus = 'open'
+      if (search !== '') {
+        where.OR = [
+          { orderNumber: { contains: search, mode: 'insensitive' } },
+          { city: { contains: search, mode: 'insensitive' } },
+          {
+            customer: {
+              is: {
+                OR: [
+                  { firstName: { contains: search, mode: 'insensitive' } },
+                  { lastName: { contains: search, mode: 'insensitive' } },
+                  { email: { contains: search, mode: 'insensitive' } },
+                ],
+              },
+            },
+          },
+        ]
+      }
+
+      const [counts, matched, paid, rows] = await Promise.all([
         prisma.order.groupBy({ by: ['status'], _count: true }),
+        prisma.order.aggregate({ where, _count: true }),
+        // "€X paid" in the header: the paid value of everything matching the
+        // current filters, not just the page that happens to be loaded.
+        prisma.order.aggregate({
+          where: { AND: [where, { status: 'paid' }] },
+          _sum: { totalCents: true },
+        }),
         prisma.order.findMany({
           where,
-          orderBy: { createdAt: 'desc' },
-          take: 300,
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+          // One extra row tells us whether another page exists without a count.
+          take: limit + 1,
+          ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
           omit: { invoicePdf: true },
           include: {
             customer: true,
-            items: { orderBy: { id: 'asc' } },
+            items: { orderBy: [{ position: 'asc' }, { id: 'asc' }] },
           },
-        }),
-        // Ids only: the PDFs themselves are tens of KB each and the list view
-        // must not drag hundreds of them over the wire.
-        prisma.order.findMany({
-          where: { invoicePdf: { not: null } },
-          select: { id: true },
         }),
       ])
 
-      const archivedIds = new Set(archived.map((row) => row.id))
+      const hasMore = rows.length > limit
+      const page = hasMore ? rows.slice(0, limit) : rows
+      const nextCursor = hasMore ? page[page.length - 1]!.id : null
+
+      // Ids only: the PDFs themselves are tens of KB each, so the list view
+      // must not drag them (or the ids of every order ever archived) over the
+      // wire — just the archived flag for the orders on the page.
+      const orderIds = page.map((order) => order.id)
+      const archivedIds = new Set(
+        orderIds.length === 0
+          ? []
+          : (
+              await prisma.order.findMany({
+                where: { id: { in: orderIds }, invoicePdf: { not: null } },
+                select: { id: true },
+              })
+            ).map((row) => row.id),
+      )
 
       const stats: Record<string, number> = {
         pending: 0,
@@ -397,10 +556,13 @@ export async function adminRoutes(app: FastifyInstance) {
 
       return {
         stats,
-        orders: orders.map((order) => ({
+        orders: page.map((order) => ({
           ...order,
           hasInvoicePdf: archivedIds.has(order.id),
         })),
+        nextCursor,
+        total: matched._count,
+        paidTotalCents: paid._sum.totalCents ?? 0,
       }
     },
   )
@@ -452,7 +614,7 @@ export async function adminRoutes(app: FastifyInstance) {
           orderBy: { createdAt: 'desc' },
           take: 6,
           omit: { invoicePdf: true },
-          include: { customer: true, items: { orderBy: { id: 'asc' } } },
+          include: { customer: true, items: { orderBy: [{ position: 'asc' }, { id: 'asc' }] } },
         }),
       ])
 
@@ -673,4 +835,164 @@ export async function adminRoutes(app: FastifyInstance) {
     }
     return updated
   })
+
+  // The materials & recipes tab: stock on hand per material, every recipe
+  // with its product, ingredients and free fields, and — derived live from
+  // the leftover stock — how many of each product can still be made.
+  app.get('/api/admin/materials', { preHandler: requireAdmin }, async () => {
+    const [materials, recipes] = await Promise.all([
+      prisma.material.findMany({ orderBy: { name: 'asc' } }),
+      prisma.recipe.findMany({
+        orderBy: { createdAt: 'desc' },
+        include: RECIPE_INCLUDE,
+      }),
+    ])
+    return { materials, recipes: recipes.map(serializeRecipe) }
+  })
+
+  // Adds a new material type (wax, scent, …) with its starting amount.
+  app.post('/api/admin/materials', { preHandler: requireAdmin }, async (request, reply) => {
+    const parsed = materialCreateSchema.safeParse(request.body)
+    if (!parsed.success) {
+      return reply
+        .code(400)
+        .send({ error: parsed.error.issues[0]?.message ?? 'Invalid material' })
+    }
+    const quantity = parseDecimal(parsed.data.quantity)
+    if (quantity === null || quantity < 0) {
+      return reply.code(400).send({ error: 'Enter the amount on hand, e.g. 5 or 2,5' })
+    }
+
+    const material = await prisma.material.create({
+      data: { name: parsed.data.name, unit: parsed.data.unit, quantity },
+    })
+    return { material }
+  })
+
+  // Tops up (or corrects) the stock of an existing material. A negative
+  // amount is allowed so a spillage or correction can be recorded, but the
+  // stock itself may never end up below zero.
+  app.post(
+    '/api/admin/materials/:id/stock',
+    { preHandler: requireAdmin },
+    async (request, reply) => {
+      const parsed = materialStockSchema.safeParse(request.body)
+      if (!parsed.success) {
+        return reply
+          .code(400)
+          .send({ error: parsed.error.issues[0]?.message ?? 'Invalid amount' })
+      }
+      const amount = parseDecimal(parsed.data.amount)
+      if (amount === null || amount === 0) {
+        return reply.code(400).send({ error: 'Enter the amount to add, e.g. 2,5' })
+      }
+
+      const params = request.params as { id: string }
+      const material = await prisma.material.findUnique({ where: { id: params.id } })
+      if (!material) return reply.code(404).send({ error: 'Material not found' })
+
+      const quantity = material.quantity + amount
+      if (quantity < 0) {
+        return reply
+          .code(400)
+          .send({ error: `That would take the ${material.name.toLowerCase()} below zero (${material.quantity} ${material.unit} on hand)` })
+      }
+
+      const updated = await prisma.material.update({
+        where: { id: material.id },
+        data: { quantity },
+      })
+      return { material: updated }
+    },
+  )
+
+  app.delete(
+    '/api/admin/materials/:id',
+    { preHandler: requireAdmin },
+    async (request, reply) => {
+      const params = request.params as { id: string }
+      try {
+        await prisma.material.delete({ where: { id: params.id } })
+      } catch {
+        // Also hit when the material is still used by a recipe (Restrict).
+        const used = await prisma.recipeIngredient.count({ where: { materialId: params.id } })
+        if (used > 0) {
+          return reply
+            .code(409)
+            .send({ error: 'This material is used in a recipe. Remove it from the recipe first.' })
+        }
+        return reply.code(404).send({ error: 'Material not found' })
+      }
+      return { ok: true }
+    },
+  )
+
+  // A recipe belongs to one catalog product and lists how much of each
+  // material one product consumes, plus any free key/value details.
+  app.post('/api/admin/recipes', { preHandler: requireAdmin }, async (request, reply) => {
+    const parsed = recipeCreateSchema.safeParse(request.body)
+    if (!parsed.success) {
+      return reply
+        .code(400)
+        .send({ error: parsed.error.issues[0]?.message ?? 'Invalid recipe' })
+    }
+
+    const product = await prisma.product.findUnique({
+      where: { id: parsed.data.productId },
+      select: { id: true },
+    })
+    if (!product) {
+      return reply.code(400).send({ error: 'That product no longer exists' })
+    }
+
+    const materials = await prisma.material.findMany({
+      where: { id: { in: parsed.data.ingredients.map((line) => line.materialId) } },
+      select: { id: true, name: true },
+    })
+    const byId = new Map(materials.map((material) => [material.id, material]))
+
+    const ingredients = []
+    for (const line of parsed.data.ingredients) {
+      const material = byId.get(line.materialId)
+      if (!material) {
+        return reply.code(400).send({ error: 'That material no longer exists' })
+      }
+      const amount = parseDecimal(line.amount)
+      if (amount === null || amount <= 0) {
+        return reply
+          .code(400)
+          .send({ error: `Enter how much ${material.name.toLowerCase()} the recipe uses, e.g. 0,05` })
+      }
+      ingredients.push({ materialId: material.id, amount })
+    }
+
+    const recipe = await prisma.recipe.create({
+      data: {
+        productId: product.id,
+        ingredients: { create: ingredients },
+        fields: {
+          create: parsed.data.fields.map((field) => ({
+            label: field.label,
+            value: field.value,
+          })),
+        },
+      },
+      include: RECIPE_INCLUDE,
+    })
+    return { recipe: serializeRecipe(recipe) }
+  })
+
+  app.delete(
+    '/api/admin/recipes/:id',
+    { preHandler: requireAdmin },
+    async (request, reply) => {
+      const params = request.params as { id: string }
+      try {
+        await prisma.recipe.delete({ where: { id: params.id } })
+      } catch {
+        return reply.code(404).send({ error: 'Recipe not found' })
+      }
+      return { ok: true }
+    },
+  )
 }
