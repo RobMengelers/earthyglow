@@ -27,6 +27,19 @@ export function absoluteUrl(pathOrUrl: string): string {
   return `${SITE_URL}${pathOrUrl.startsWith('/') ? '' : '/'}${pathOrUrl}`
 }
 
+/**
+ * Absolute canonical URL for a site path. Netlify serves prerendered pages from
+ * a directory index, so the slashless form 301-redirects to the trailing-slash
+ * URL. Pointing canonicals (and breadcrumbs/sitemap) at the trailing-slash form
+ * keeps them on the URL that returns 200 without redirecting. The root stays a
+ * bare slash. Query strings are dropped, since they never name a canonical page.
+ */
+export function canonicalUrl(path: string): string {
+  const pathname = path.split(/[?#]/)[0]
+  if (pathname === '' || pathname === '/') return `${SITE_URL}/`
+  return absoluteUrl(pathname.endsWith('/') ? pathname : `${pathname}/`)
+}
+
 type SiteMetaOptions = {
   title?: string
   description?: string
@@ -60,15 +73,16 @@ export function siteMeta({
   const resolvedDescription = description ?? DEFAULT_DESCRIPTION
   const resolvedImage = absoluteUrl(image ?? DEFAULT_OG_IMAGE)
   const resolvedImageAlt = imageAlt ?? resolvedTitle
+  const canonical = path ? canonicalUrl(path) : undefined
 
   return [
     { title: resolvedTitle },
     { name: 'description', content: resolvedDescription },
     { name: 'theme-color', content: '#fbf7f0' },
-    ...(path
+    ...(canonical
       ? [
-          { tagName: 'link', rel: 'canonical', href: `${SITE_URL}${path}` },
-          { property: 'og:url', content: `${SITE_URL}${path}` },
+          { tagName: 'link', rel: 'canonical', href: canonical },
+          { property: 'og:url', content: canonical },
         ]
       : []),
     { property: 'og:site_name', content: SITE_NAME },
@@ -106,7 +120,7 @@ export function organizationLd(): Record<string, unknown> {
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name: BUSINESS.name,
-    url: SITE_URL,
+    url: canonicalUrl('/'),
     logo: {
       '@type': 'ImageObject',
       url: absoluteUrl('/logo.png'),
@@ -182,7 +196,7 @@ export function breadcrumbLd(
       '@type': 'ListItem',
       position: index + 1,
       name: item.name,
-      ...(item.path ? { item: absoluteUrl(item.path) } : {}),
+      ...(item.path ? { item: canonicalUrl(item.path) } : {}),
     })),
   }
 }

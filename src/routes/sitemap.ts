@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process'
 import { collections, heroImage, products } from '../data/products'
-import { SITE_URL, absoluteUrl } from '../lib/seo'
+import { absoluteUrl, canonicalUrl } from '../lib/seo'
 
 type Page = {
   path: string
@@ -92,7 +92,7 @@ export function loader() {
           .join('\n')
         return (
           `  <url>\n` +
-          `    <loc>${SITE_URL}${page.path}</loc>\n` +
+          `    <loc>${canonicalUrl(page.path)}</loc>\n` +
           `    <lastmod>${lastmod(page.sources)}</lastmod>` +
           (images ? `\n${images}` : '') +
           `\n  </url>`

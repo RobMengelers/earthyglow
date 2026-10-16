@@ -5,7 +5,7 @@ import { filterProducts, getSeason, seasons, holidays } from '../../data/seasons
 import { ProductCard } from '../../components/catalog/ProductCard'
 import { Reveal } from '../../components/ui/Reveal'
 import { JsonLd } from '../../components/seo/JsonLd'
-import { breadcrumbLd, siteMeta, absoluteUrl } from '../../lib/seo'
+import { breadcrumbLd, canonicalUrl, siteMeta } from '../../lib/seo'
 import type { Route } from './+types/Shop'
 
 export function meta({ params }: Route.MetaArgs) {
@@ -162,7 +162,7 @@ export function Shop() {
               '@type': 'ListItem',
               position: index + 1,
               name: product.name,
-              url: absoluteUrl(`/product/${product.id}`),
+              url: canonicalUrl(`/product/${product.id}`),
             })),
           }}
         />

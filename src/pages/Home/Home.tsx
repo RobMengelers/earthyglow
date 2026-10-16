@@ -8,7 +8,7 @@ import { products } from '../../data/products'
 import { seasons } from '../../data/seasons'
 import { JsonLd } from '../../components/seo/JsonLd'
 import { imageAttrs, SIZES } from '../../lib/images'
-import { SITE_URL, organizationLd, siteMeta } from '../../lib/seo'
+import { canonicalUrl, organizationLd, siteMeta } from '../../lib/seo'
 
 const featuredSeasons = seasons
 
@@ -24,7 +24,7 @@ export function Home() {
           '@context': 'https://schema.org',
           '@type': 'WebSite',
           name: 'EarthyGlow',
-          url: SITE_URL,
+          url: canonicalUrl('/'),
           inLanguage: 'en',
         }}
       />

@@ -9,7 +9,7 @@ import { NotFound } from '../NotFound/NotFound'
 import { seasonForProduct } from '../../data/seasons'
 import { JsonLd } from '../../components/seo/JsonLd'
 import { imageAttrs, SIZES } from '../../lib/images'
-import { SITE_URL, absoluteUrl, breadcrumbLd, merchantReturnPolicy, offerShippingDetails, siteMeta } from '../../lib/seo'
+import { absoluteUrl, breadcrumbLd, canonicalUrl, merchantReturnPolicy, offerShippingDetails, siteMeta } from '../../lib/seo'
 import type { Route } from './+types/ProductPage'
 
 const perks = [
@@ -87,7 +87,7 @@ export function ProductPage() {
   const displayedImage = galleryImages[galleryIndex]
 
   const imageUrls = (product.images?.length ? product.images : [product.image]).map(absoluteUrl)
-  const purchaseUrl = `${SITE_URL}/product/${product.id}`
+  const purchaseUrl = canonicalUrl(`/product/${product.id}`)
   const variantPrices = (product.variants ?? []).map(
     (variant) => variant.priceCents ?? product.priceCents,
   )
