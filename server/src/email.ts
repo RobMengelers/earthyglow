@@ -675,7 +675,7 @@ export async function sendNewOrderNotification(orderNumber: string): Promise<boo
   const lines = order.items.map((item) => `<li>${escapeHtml(item.name)}${item.variantLabel ? ` (${escapeHtml(item.variantLabel)})` : ''} × ${item.quantity}</li>`).join('')
   const { error } = await resend!.emails.send({
     from: env.EMAIL_FROM,
-    to: ['robmengelers@gmail.com'],
+    to: ['earthyglowcandles@gmail.com'],
     subject: 'New EarthyGlow order',
     html: `<div style="font-family:Arial,sans-serif;color:#2e2a25;max-width:620px;padding:28px"><h2 style="font-family:Georgia,serif;color:#5f3b25">A new order has arrived</h2><p>Order <strong>${escapeHtml(order.orderNumber)}</strong> has been paid.</p><p><strong>${escapeHtml(customerDisplayName(order.customer))}</strong><br />${escapeHtml(order.customer.email ?? MISSING_DETAIL)}</p><ul>${lines}</ul><p><strong>Total: ${formatEuro(order.totalCents)}</strong></p></div>`,
   })
