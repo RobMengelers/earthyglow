@@ -77,7 +77,7 @@ const faqs = [
   },
 ]
 
-function FaqItem({ question, answer }: (typeof faqs)[number]) {
+function FaqItem({ question, answer, index }: (typeof faqs)[number] & { index: number }) {
   const [open, setOpen] = useState(false)
   return (
     <div className={`faq-item${open ? ' is-open' : ''}`}>
@@ -87,8 +87,11 @@ function FaqItem({ question, answer }: (typeof faqs)[number]) {
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
       >
-        {question}
-        <span aria-hidden="true">+</span>
+        <span className="faq-index" aria-hidden="true">
+          {String(index + 1).padStart(2, '0')}
+        </span>
+        <span className="faq-question-text">{question}</span>
+        <span className="faq-toggle" aria-hidden="true">+</span>
       </button>
       <div className="faq-answer" aria-hidden={!open}>
         <p>{answer}</p>
@@ -168,8 +171,8 @@ export function Care() {
             <h2>Frequently asked questions</h2>
           </Reveal>
           <Reveal className="faq-list">
-            {faqs.map((faq) => (
-              <FaqItem key={faq.question} {...faq} />
+            {faqs.map((faq, index) => (
+              <FaqItem key={faq.question} index={index} {...faq} />
             ))}
           </Reveal>
         </div>
