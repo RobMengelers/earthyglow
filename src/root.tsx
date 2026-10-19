@@ -39,6 +39,13 @@ export function links() {
       href: '/fonts/fraunces-normal-latin.woff2',
       crossOrigin: 'anonymous',
     },
+    {
+      rel: 'preload',
+      as: 'font',
+      type: 'font/woff2',
+      href: '/fonts/fraunces-italic-latin.woff2',
+      crossOrigin: 'anonymous',
+    },
   ]
 }
 
