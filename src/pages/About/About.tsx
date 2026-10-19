@@ -70,21 +70,23 @@ export function About() {
         </div>
       </section>
 
-      <section className="quote">
+      <section className="note">
         <div className="container">
-          <Reveal className="quote-inner">
-            <p className="eyebrow">A note from Naomi</p>
-            <blockquote>
+          <Reveal className="note-card">
+            <span className="note-mark" aria-hidden="true">&ldquo;</span>
+            <p className="eyebrow note-eyebrow">A note from Naomi</p>
+            <blockquote className="note-message">
               I hope you enjoy having these candles in your home as much as I
               enjoy making them. Whether you choose one for yourself or as a
               gift, it means a lot to have your support.
             </blockquote>
-            <p className="quote-thanks">
-              With love, Naomi
-            </p>
-            <Link to="/shop" className="btn btn-primary" prefetch="intent">
-              Shop the collection
-            </Link>
+            <figure className="note-signoff">
+              <span className="note-seal" aria-hidden="true">N</span>
+              <figcaption>
+                <span className="note-signature">Naomi</span>
+                <span className="note-role">Founder &amp; maker, EarthyGlow</span>
+              </figcaption>
+            </figure>
           </Reveal>
         </div>
       </section>
