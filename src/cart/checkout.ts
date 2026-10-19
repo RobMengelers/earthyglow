@@ -118,7 +118,17 @@ export const FALLBACK_PAYMENT_METHODS: PaymentMethodOption[] = [
     name: 'Credit card',
     icon: 'https://www.mollie.com/external/icons/payment-methods/creditcard.svg',
   },
+  {
+    id: 'klarna',
+    name: 'Klarna',
+    icon: 'https://www.mollie.com/external/icons/payment-methods/klarna.svg',
+  },
 ]
+
+export const KLARNA_COUNTRIES = new Set([
+  'AT', 'BE', 'CZ', 'DE', 'DK', 'ES', 'FI', 'FR', 'GB', 'GR',
+  'HU', 'IE', 'IT', 'NL', 'NO', 'PL', 'PT', 'RO', 'SE', 'SK', 'CH',
+])
 
 export async function fetchPaymentMethods(): Promise<PaymentMethodOption[]> {
   try {

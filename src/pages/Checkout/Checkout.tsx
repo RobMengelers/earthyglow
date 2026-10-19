@@ -4,6 +4,7 @@ import {
   submitOrder,
   fetchPaymentMethods,
   FALLBACK_PAYMENT_METHODS,
+  KLARNA_COUNTRIES,
   type OrderResult,
   type PaymentMethodOption,
 } from '../../cart/checkout'
@@ -22,6 +23,11 @@ export function meta() {
   return siteMeta({ title: 'Checkout · EarthyGlow', robots: 'noindex, nofollow' })
 }
 
+function isMethodAvailable(method: PaymentMethodOption, country: string) {
+  if (method.id !== 'klarna') return true
+  return country === '' || KLARNA_COUNTRIES.has(country)
+}
+
 export function Checkout() {
   const { items, clearCart } = useCart()
   const [order, setOrder] = useState<OrderResult | null>(null)
@@ -32,6 +38,9 @@ export function Checkout() {
     FALLBACK_PAYMENT_METHODS,
   )
   const [paymentMethod, setPaymentMethod] = useState('')
+  const availableMethods = methods.filter((method) =>
+    isMethodAvailable(method, country),
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -44,6 +53,15 @@ export function Checkout() {
       cancelled = true
     }
   }, [])
+
+  function handleCountryChange(nextCountry: string) {
+    setCountry(nextCountry)
+    setPaymentMethod((current) => {
+      const selected = methods.find((method) => method.id === current)
+      if (!selected || isMethodAvailable(selected, nextCountry)) return current
+      return methods.find((method) => isMethodAvailable(method, nextCountry))?.id ?? ''
+    })
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -164,10 +182,10 @@ export function Checkout() {
             <form className="checkout-form" onSubmit={handleSubmit}>
               <ContactFields />
 
-              <ShippingFields country={country} onCountryChange={setCountry} />
+              <ShippingFields country={country} onCountryChange={handleCountryChange} />
 
               <PaymentMethods
-                methods={methods}
+                methods={availableMethods}
                 paymentMethod={paymentMethod}
                 onChange={setPaymentMethod}
               />

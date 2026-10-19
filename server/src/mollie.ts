@@ -1,4 +1,4 @@
-import { createMollieClient, PaymentMethod } from '@mollie/api-client'
+import { createMollieClient, PaymentLineType, PaymentMethod } from '@mollie/api-client'
 import { env } from './env.js'
 
 const client = env.MOLLIE_API_KEY
@@ -23,7 +23,7 @@ export type PaymentMethodOption = {
   icon: string | null
 }
 
-const PREFERRED_METHODS = ['ideal', 'creditcard'] as const
+const PREFERRED_METHODS = ['ideal', 'creditcard', 'klarna'] as const
 
 const MOCK_METHODS: PaymentMethodOption[] = [
   {
@@ -36,7 +36,32 @@ const MOCK_METHODS: PaymentMethodOption[] = [
     name: 'Credit card',
     icon: 'https://www.mollie.com/external/icons/payment-methods/creditcard.svg',
   },
+  {
+    id: 'klarna',
+    name: 'Klarna',
+    icon: 'https://www.mollie.com/external/icons/payment-methods/klarna.svg',
+  },
 ]
+
+export type PaymentLineInput = {
+  type?: PaymentLineType
+  description: string
+  quantity: number
+  unitPrice: { currency: string; value: string }
+  totalAmount: { currency: string; value: string }
+  vatRate?: string
+  vatAmount?: { currency: string; value: string }
+}
+
+export type PaymentAddressInput = {
+  givenName?: string
+  familyName?: string
+  streetAndNumber: string
+  postalCode?: string
+  city: string
+  country: string
+  email?: string
+}
 
 type CreatePaymentInput = {
   orderId: string
@@ -44,6 +69,9 @@ type CreatePaymentInput = {
   totalCents: number
   description: string
   method?: string
+  lines?: PaymentLineInput[]
+  billingAddress?: PaymentAddressInput
+  shippingAddress?: PaymentAddressInput
 }
 
 function buildRedirectUrl(orderNumber: string, mock: boolean): string {
@@ -97,6 +125,9 @@ export async function createPayment(
       orderId: input.orderId,
       orderNumber: input.orderNumber,
     },
+    ...(input.lines ? { lines: input.lines } : {}),
+    ...(input.billingAddress ? { billingAddress: input.billingAddress } : {}),
+    ...(input.shippingAddress ? { shippingAddress: input.shippingAddress } : {}),
   })
 
   return {

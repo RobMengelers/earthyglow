@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify'
+import { PaymentLineType } from '@mollie/api-client'
 import { z } from 'zod'
 import { createPayment } from '../mollie.js'
 import { createOrderNumber } from '../order-number.js'
@@ -8,6 +9,21 @@ const SHIPPING_ZONES = {
   netherlands: { code: 'NL', label: 'Netherlands', rateCents: 699, freeThresholdCents: 2500 },
   international: { code: 'XX', label: 'International', rateCents: 1295, freeThresholdCents: 5000 },
 } as const
+
+const KLARNA_COUNTRIES = new Set([
+  'AT', 'BE', 'CZ', 'DE', 'DK', 'ES', 'FI', 'FR', 'GB', 'GR',
+  'HU', 'IE', 'IT', 'NL', 'NO', 'PL', 'PT', 'RO', 'SE', 'SK', 'CH',
+])
+
+const VAT_RATE = 21
+
+function mollieAmount(cents: number) {
+  return { currency: 'EUR', value: (cents / 100).toFixed(2) }
+}
+
+function vatCentsIncluded(cents: number) {
+  return Math.round((cents * VAT_RATE) / (100 + VAT_RATE))
+}
 
 const bodySchema = z.object({
   items: z
@@ -105,6 +121,67 @@ export async function checkoutRoutes(app: FastifyInstance) {
     const totalCents = subtotalCents + shippingCents
     const orderNumber = createOrderNumber()
 
+    if (paymentMethod === 'klarna' && !KLARNA_COUNTRIES.has(shipping.countryCode)) {
+      return reply.code(400).send({
+        error: 'Klarna is not available for the selected shipping country. Please choose another payment method.',
+      })
+    }
+
+    const paymentLines =
+      paymentMethod === 'klarna'
+        ? [
+            ...lines.map((line) => ({
+              type: PaymentLineType.physical,
+              description: line.variantLabel
+                ? `${line.product.name} (${line.variantLabel})`
+                : line.product.name,
+              quantity: line.quantity,
+              unitPrice: mollieAmount(line.unitPriceCents),
+              totalAmount: mollieAmount(line.lineTotalCents),
+              vatRate: `${VAT_RATE}.00`,
+              vatAmount: mollieAmount(vatCentsIncluded(line.lineTotalCents)),
+            })),
+            ...(shippingCents > 0
+              ? [
+                  {
+                    type: PaymentLineType.shipping_fee,
+                    description: 'Shipping',
+                    quantity: 1,
+                    unitPrice: mollieAmount(shippingCents),
+                    totalAmount: mollieAmount(shippingCents),
+                    vatRate: `${VAT_RATE}.00`,
+                    vatAmount: mollieAmount(vatCentsIncluded(shippingCents)),
+                  },
+                ]
+              : []),
+          ]
+        : undefined
+
+    const billingAddress =
+      paymentMethod === 'klarna'
+        ? {
+            givenName: customer.firstName,
+            familyName: customer.lastName,
+            streetAndNumber: shipping.address,
+            postalCode: shipping.postalCode,
+            city: shipping.city,
+            country: shipping.countryCode,
+            email: customer.email,
+          }
+        : undefined
+
+    const shippingAddress =
+      paymentMethod === 'klarna'
+        ? {
+            givenName: customer.firstName,
+            familyName: customer.lastName,
+            streetAndNumber: shipping.address,
+            postalCode: shipping.postalCode,
+            city: shipping.city,
+            country: shipping.countryCode,
+          }
+        : undefined
+
     try {
       const db = prisma
       const dbCustomer = await db.customer.upsert({
@@ -158,6 +235,9 @@ export async function checkoutRoutes(app: FastifyInstance) {
         totalCents,
         description: `EarthyGlow order ${orderNumber}`,
         method: paymentMethod,
+        lines: paymentLines,
+        billingAddress,
+        shippingAddress,
       })
 
       await db.order.update({
