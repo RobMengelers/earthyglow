@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect, useRef } from 'react'
+import { lockBodyScroll } from '../../../lib/scrollLock'
 
 // One dialog implementation for the whole portal so escape-to-close, the
 // backdrop click and the initial focus behave the same everywhere.
@@ -31,8 +32,7 @@ export function Modal({
       if (event.key === 'Escape') close.current()
     }
     document.addEventListener('keydown', onKeyDown)
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
+    const unlockBodyScroll = lockBodyScroll()
     const body = panel.current
     const focusable =
       body?.querySelector<HTMLElement>('form input, form select, form textarea') ??
@@ -40,7 +40,7 @@ export function Modal({
     focusable?.focus()
     return () => {
       document.removeEventListener('keydown', onKeyDown)
-      document.body.style.overflow = previousOverflow
+      unlockBodyScroll()
     }
   }, [])
 

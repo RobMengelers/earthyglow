@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router'
+import { lockBodyScroll } from '../../lib/scrollLock'
 import { formatPrice } from '../CartContext'
 import { useCart } from '../useCart'
 import { CartLine } from './CartLine'
@@ -19,10 +20,10 @@ export function CartDrawer() {
       if (event.key === 'Escape') closeDrawer()
     }
     document.addEventListener('keydown', onKeyDown)
-    document.body.style.overflow = 'hidden'
+    const unlockBodyScroll = lockBodyScroll()
     return () => {
       document.removeEventListener('keydown', onKeyDown)
-      document.body.style.overflow = ''
+      unlockBodyScroll()
     }
   }, [isDrawerOpen, closeDrawer])
 

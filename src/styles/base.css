@@ -6,15 +6,24 @@
 
 html {
   scroll-behavior: smooth;
-  /* Full-bleed decorations (hero-bg etc.) extend past the viewport. `clip`
-     isn't supported in older mobile engines and lets the page scroll
-     sideways, pushing the centred layout off to the left. `hidden` is
-     universally supported and keeps position: sticky intact here. */
-  overflow-x: hidden;
 }
 
 body {
   margin: 0;
+}
+
+/* Full-bleed decorations (hero-bg etc.) extend past the viewport. Clipping the
+   page content — rather than html/body — keeps the horizontal scrollbar away
+   without turning an ancestor of the sticky navbar into a scroll container,
+   which breaks `position: sticky` in Safari. */
+.site-main {
+  overflow-x: clip;
+}
+
+@supports not (overflow: clip) {
+  .site-main {
+    overflow-x: hidden;
+  }
 }
 
 img {
@@ -51,11 +60,6 @@ ul {
   margin: 0;
   padding: 0;
   list-style: none;
-}
-
-#root {
-  overflow-x: hidden;
-  overflow-x: clip;
 }
 
 .container {
