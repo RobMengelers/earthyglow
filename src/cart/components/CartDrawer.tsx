@@ -10,6 +10,8 @@ export function CartDrawer() {
     items,
     itemCount,
     subtotalCents,
+    discountCents,
+    coupon,
     isDrawerOpen,
     closeDrawer,
   } = useCart()
@@ -93,6 +95,17 @@ export function CartDrawer() {
                 <span>Shipping</span>
                 <span className="cart-totals-muted">At checkout</span>
               </div>
+              {coupon && (
+                <div className="cart-totals-row">
+                  <span>Coupon</span>
+                  <span>
+                    {coupon.code} —{' '}
+                    {discountCents > 0
+                      ? `-${formatPrice(discountCents)}`
+                      : coupon.summary}
+                  </span>
+                </div>
+              )}
               <div className="cart-totals-row cart-totals-total">
                 <span>Total</span>
                 <span className="cart-totals-muted">At checkout</span>

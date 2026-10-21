@@ -7,6 +7,7 @@ export type CatalogProductPrice = {
   name: string
   priceCents: number
   variants?: { id: string; label: string; priceCents: number }[]
+  colors?: { id: string; label: string }[]
 }
 
 export function reconcileCatalogItems(items: CartItem[], catalog: CatalogProductPrice[]): CartItem[] {
@@ -20,9 +21,18 @@ export function reconcileCatalogItems(items: CartItem[], catalog: CatalogProduct
     // are rejected by checkout; an older API may not expose variants yet.
     const priceCents = item.variantId ? variant?.priceCents ?? item.priceCents : product.priceCents
     const variantLabel = variant?.label ?? item.variantLabel
-    if (priceCents === item.priceCents && product.name === item.name && variantLabel === item.variantLabel) return item
+    const color = product.colors?.find((option) => option.id === item.colorId)
+    const colorLabel = color?.label ?? item.colorLabel
+    if (
+      priceCents === item.priceCents &&
+      product.name === item.name &&
+      variantLabel === item.variantLabel &&
+      colorLabel === item.colorLabel
+    ) {
+      return item
+    }
     changed = true
-    return { ...item, name: product.name, priceCents, variantLabel }
+    return { ...item, name: product.name, priceCents, variantLabel, colorLabel }
   })
   return changed ? next : items
 }

@@ -71,6 +71,7 @@ const manualOrderSchema = z.object({
       z.object({
         productId: z.string().trim().min(1).max(100),
         variantId: z.string().trim().min(1).max(80).optional(),
+        colorId: z.string().trim().min(1).max(80).optional(),
         unitPriceCents: z.number().int().min(0).max(1_000_000),
         quantity: z.number().int().min(1).max(99),
       }),
@@ -100,6 +101,19 @@ const purchaseFieldsSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Choose the date it was bought'),
   description: z.string().trim().min(1, 'Describe what you bought').max(300),
   cost: z.string().regex(/^\d{1,7}([,.]\d{1,2})?$/, 'Enter the total cost in euros, e.g. 24,50'),
+})
+
+// A coupon code the shop hands out. The type decides what it does: free
+// shipping, a percentage off the subtotal or a fixed amount off. `maxUses`
+// makes it a one-time code and `expiresAt` gives it an end date.
+const couponSchema = z.object({
+  code: z.string().trim().min(1, 'Enter the code').max(40),
+  description: z.string().trim().max(200).optional(),
+  type: z.enum(['free_shipping', 'percent', 'fixed_amount']),
+  percentOff: z.number().int().min(1).max(100).optional(),
+  amountOffCents: z.number().int().min(1).optional(),
+  maxUses: z.number().int().min(1).max(100000).optional(),
+  expiresAt: z.string().trim().max(40).optional(),
 })
 
 // Materials and recipes. Amounts arrive as strings (comma or dot decimal) so
@@ -305,7 +319,7 @@ export async function adminRoutes(app: FastifyInstance) {
           id: true,
           name: true,
           active: true,
-          _count: { select: { variants: true } },
+          _count: { select: { variants: true, colors: true } },
         },
       })
       if (!product || !product.active) {
@@ -328,14 +342,33 @@ export async function adminRoutes(app: FastifyInstance) {
           .code(400)
           .send({ error: `Variant for "${product.name}" is not available` })
       }
-      // The admin's price wins (market/trade discount), but the name and
-      // variant are always the database's so the invoice stays truthful.
+      // The colour tells the shop what to pour, so it is recorded just like the
+      // variant — and it comes from the database, never from the form.
+      if (product._count.colors > 0 && !item.colorId) {
+        return reply
+          .code(400)
+          .send({ error: `Please choose a colour for "${product.name}"` })
+      }
+      const color = item.colorId
+        ? await prisma.productColor.findFirst({
+            where: { id: item.colorId, productId: product.id, active: true },
+          })
+        : null
+      if (item.colorId && !color) {
+        return reply
+          .code(400)
+          .send({ error: `Colour for "${product.name}" is not available` })
+      }
+      // The admin's price wins (market/trade discount), but the name, variant
+      // and colour are always the database's so the invoice stays truthful.
       const unitPriceCents = item.unitPriceCents
       lines.push({
         productId: product.id,
         name: product.name,
         variantId: item.variantId ?? null,
         variantLabel: variant?.label ?? null,
+        colorId: item.colorId ?? null,
+        colorLabel: color?.label ?? null,
         unitPriceCents,
         quantity: item.quantity,
         lineTotalCents: unitPriceCents * item.quantity,
@@ -770,6 +803,86 @@ export async function adminRoutes(app: FastifyInstance) {
         .send(Buffer.from(purchase.documentBytes))
     },
   )
+
+  // ---- Coupon codes ----
+
+  // Every coupon with how often it was used, so the shop can see which codes
+  // are running and which ones are used up.
+  app.get('/api/admin/coupons', { preHandler: requireAdmin }, async () => {
+    const coupons = await prisma.coupon.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: { _count: { select: { redemptions: true } } },
+    })
+    return {
+      coupons: coupons.map((coupon) => {
+        const { _count, ...rest } = coupon
+        return {
+          ...rest,
+          // How many orders used the code. The counter on the row is what the
+          // one-time limit is checked against.
+          redemptions: _count.redemptions,
+        }
+      }),
+    }
+  })
+
+  // Creates a coupon. The type decides what the code does, so a Christmas
+  // percentage code or a one-time offer is a row, not a new kind of code.
+  app.post('/api/admin/coupons', { preHandler: requireAdmin }, async (request, reply) => {
+    const parsed = couponSchema.safeParse(request.body)
+    if (!parsed.success) {
+      return reply
+        .code(400)
+        .send({ error: parsed.error.issues[0]?.message ?? 'Invalid coupon' })
+    }
+    const data = parsed.data
+    const code = data.code.toUpperCase()
+
+    const existing = await prisma.coupon.findUnique({ where: { code } })
+    if (existing) {
+      return reply.code(400).send({ error: `The code ${code} already exists` })
+    }
+
+    if (data.type === 'percent' && !data.percentOff) {
+      return reply.code(400).send({ error: 'Enter the percentage to take off' })
+    }
+    if (data.type === 'fixed_amount' && !data.amountOffCents) {
+      return reply.code(400).send({ error: 'Enter the amount to take off' })
+    }
+
+    const coupon = await prisma.coupon.create({
+      data: {
+        code,
+        description: data.description || null,
+        type: data.type,
+        percentOff: data.type === 'percent' ? data.percentOff ?? null : null,
+        amountOffCents:
+          data.type === 'fixed_amount' ? data.amountOffCents ?? null : null,
+        maxUses: data.maxUses ?? null,
+        expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
+      },
+    })
+    return { coupon: { ...coupon, usedCount: 0 } }
+  })
+
+  // Switches a code on or off, which is how a code is retired without
+  // deleting the orders that used it.
+  app.patch('/api/admin/coupons/:id', { preHandler: requireAdmin }, async (request, reply) => {
+    const params = request.params as { id: string }
+    const body = request.body as { active?: unknown }
+    if (typeof body.active !== 'boolean') {
+      return reply.code(400).send({ error: 'Invalid coupon' })
+    }
+    try {
+      const coupon = await prisma.coupon.update({
+        where: { id: params.id },
+        data: { active: body.active },
+      })
+      return { coupon }
+    } catch {
+      return reply.code(404).send({ error: 'Coupon not found' })
+    }
+  })
 
   app.patch('/api/admin/orders/:id/fulfillment', { preHandler: requireAdmin }, async (request, reply) => {
     const body = request.body as { status?: unknown; carrier?: unknown; trackingCode?: unknown }

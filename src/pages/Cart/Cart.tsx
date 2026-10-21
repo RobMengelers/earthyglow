@@ -15,6 +15,8 @@ export function Cart() {
     items,
     itemCount,
     subtotalCents,
+    discountCents,
+    coupon,
     clearCart,
   } = useCart()
 
@@ -77,6 +79,17 @@ export function Cart() {
                     <span>Subtotal</span>
                     <span>{formatPrice(subtotalCents)}</span>
                   </div>
+                  {coupon && (
+                    <div className="cart-totals-row">
+                      <span>Coupon</span>
+                      <span>
+                        {coupon.code} —{' '}
+                        {discountCents > 0
+                          ? `-${formatPrice(discountCents)}`
+                          : coupon.summary}
+                      </span>
+                    </div>
+                  )}
                   <div className="cart-totals-row">
                     <span>Shipping</span>
                     <span className="cart-totals-muted">At checkout</span>

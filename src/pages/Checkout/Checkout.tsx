@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import {
   submitOrder,
   fetchPaymentMethods,
+  CheckoutError,
   FALLBACK_PAYMENT_METHODS,
   KLARNA_COUNTRIES,
   type OrderResult,
@@ -29,7 +30,7 @@ function isMethodAvailable(method: PaymentMethodOption, country: string) {
 }
 
 export function Checkout() {
-  const { items, clearCart } = useCart()
+  const { items, clearCart, coupon, removeCoupon } = useCart()
   const [order, setOrder] = useState<OrderResult | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -90,6 +91,7 @@ export function Checkout() {
           notes: String(data.get('notes') ?? ''),
         },
         items,
+        ...(coupon ? { couponCode: coupon.code } : {}),
       })
 
       if (result.checkoutUrl) {
@@ -100,8 +102,14 @@ export function Checkout() {
 
       setOrder(result)
       clearCart()
+      removeCoupon()
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } catch (submitError) {
+      if (submitError instanceof CheckoutError && submitError.couponInvalid) {
+        // The code ran out or expired between applying and paying; drop it so
+        // the customer can pay without it.
+        removeCoupon()
+      }
       setError(
         submitError instanceof Error
           ? submitError.message

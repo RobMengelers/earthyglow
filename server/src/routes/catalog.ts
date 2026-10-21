@@ -14,6 +14,10 @@ export async function catalogRoutes(app: FastifyInstance) {
           where: { active: true },
           select: { id: true, label: true, priceCents: true },
         },
+        colors: {
+          where: { active: true },
+          select: { id: true, label: true },
+        },
       },
     })
 

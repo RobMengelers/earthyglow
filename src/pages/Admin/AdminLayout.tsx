@@ -191,6 +191,9 @@ function AdminShell() {
           <NavLink to="/admin/materials" end className="admin-nav-link">
             Materials &amp; recipes
           </NavLink>
+          <NavLink to="/admin/coupons" end className="admin-nav-link">
+            Coupons
+          </NavLink>
           <NavLink to="/admin/orders" end className="admin-nav-link">
             Orders
             {toFulfil > 0 && (

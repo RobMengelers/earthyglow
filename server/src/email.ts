@@ -10,6 +10,7 @@ import {
   type RGB,
 } from 'pdf-lib'
 import { env } from './env.js'
+import { describeLine } from './order-line.js'
 import { prisma } from './prisma.js'
 
 const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null
@@ -150,6 +151,10 @@ type InvoiceData = {
   subtotalCents: number
   shippingCents: number
   totalCents: number
+  // The coupon that was applied, if any.
+  discountCents: number
+  couponCode: string | null
+  couponType: string | null
   lines: InvoiceLine[]
 }
 
@@ -167,10 +172,15 @@ type InvoiceOrder = {
   subtotalCents: number
   shippingCents: number
   totalCents: number
+  // The coupon that was applied, if any.
+  discountCents?: number
+  couponCode?: string | null
+  couponType?: string | null
   customer: { firstName: string; lastName: string; email: string | null }
   items: {
     name: string
     variantLabel: string | null
+    colorLabel: string | null
     quantity: number
     unitPriceCents: number
     lineTotalCents: number
@@ -415,7 +425,27 @@ async function generateInvoicePdf(
   y -= 20
   drawRight('Shipping', labelRight, y, 10, BODY, fonts.body)
   drawRight(formatEuro(data.shippingCents), amountRight, y, 10, INK, fonts.body)
-  y -= 30
+  y -= 20
+  if (data.discountCents > 0) {
+    drawRight(
+      `Discount (${data.couponCode ?? 'coupon'})`,
+      labelRight,
+      y,
+      10,
+      BODY,
+      fonts.body,
+    )
+    drawRight(
+      `-${formatEuro(data.discountCents)}`,
+      amountRight,
+      y,
+      10,
+      INK,
+      fonts.body,
+    )
+    y -= 20
+  }
+  y -= 10
   rule(y + 18, 0.8)
   drawRight('Total', labelRight, y, 14, INK, fonts.displaySemibold)
   drawRight(formatEuro(data.totalCents), amountRight, y, 14, CLAY, fonts.displaySemibold)
@@ -428,6 +458,19 @@ async function generateInvoicePdf(
     BODY,
     fonts.body,
   )
+  // A free-shipping coupon takes nothing off the subtotal, so it is mentioned
+  // under the totals instead of as a row.
+  if (data.couponCode && data.discountCents === 0) {
+    y -= 14
+    drawRight(
+      `Coupon ${data.couponCode} applied — free shipping`,
+      amountRight,
+      y,
+      8.5,
+      BODY,
+      fonts.body,
+    )
+  }
 
   // ---- Footer: ornament + thank-you, centred ----
   const ornamentY = 84
@@ -528,8 +571,11 @@ function buildInvoiceData(order: InvoiceOrder): InvoiceData {
     subtotalCents: order.subtotalCents,
     shippingCents: order.shippingCents,
     totalCents: order.totalCents,
+    discountCents: order.discountCents ?? 0,
+    couponCode: order.couponCode ?? null,
+    couponType: order.couponType ?? null,
     lines: order.items.map((item) => ({
-      name: item.variantLabel ? `${item.name} (${item.variantLabel})` : item.name,
+      name: describeLine(item.name, item.variantLabel, item.colorLabel),
       quantity: item.quantity,
       unitPriceCents: item.unitPriceCents,
       lineTotalCents: item.lineTotalCents,
@@ -609,13 +655,19 @@ export async function sendOrderInvoice(
     .map(
       (item) =>
         `<tr>
-          <td style="padding:11px 16px; color:#2e2a25;">${escapeHtml(item.variantLabel ? `${item.name} (${item.variantLabel})` : item.name)}</td>
+          <td style="padding:11px 16px; color:#2e2a25;">${escapeHtml(describeLine(item.name, item.variantLabel, item.colorLabel))}</td>
           <td style="padding:11px 16px; text-align:right; color:#6b6157; white-space:nowrap;">${item.quantity}</td>
           <td style="padding:11px 16px; text-align:right; color:#6b6157; white-space:nowrap;">${formatEuro(item.unitPriceCents)}</td>
           <td style="padding:11px 16px; text-align:right; color:#5f3b25; font-weight:bold; white-space:nowrap;">${formatEuro(item.lineTotalCents)}</td>
         </tr>`,
     )
     .join('')
+
+  // The coupon is mentioned in the email too, so the customer can see what
+  // their code did.
+  const couponRow = order.couponCode
+    ? `<tr><td style="padding:12px 16px; color:#6b6157;">Coupon</td><td style="padding:12px 16px; text-align:right;">${escapeHtml(order.couponCode)} — ${order.discountCents > 0 ? `${formatEuro(order.discountCents)} off` : 'free shipping'}</td></tr>`
+    : ''
 
   const html = renderCustomerEmail(`
           <div style="padding:34px 0 12px;">
@@ -638,6 +690,7 @@ export async function sendOrderInvoice(
           <table style="border-collapse:collapse; width:100%; margin:16px 0 24px; background:#fffdf8; border:1px solid #e3d8c8; border-radius:12px;">
             <tr><td style="padding:12px 16px; color:#6b6157;">Order</td><td style="padding:12px 16px; text-align:right;"><strong>${order.orderNumber}</strong></td></tr>
             <tr><td style="padding:12px 16px; color:#6b6157;">Invoice date</td><td style="padding:12px 16px; text-align:right;">${formatDate(paidAt)}</td></tr>
+            ${couponRow}
             <tr><td style="padding:12px 16px; color:#6b6157;">Total paid</td><td style="padding:12px 16px; text-align:right; color:#5f3b25;"><strong>${formatEuro(order.totalCents)}</strong><br /><small style="color:#6b6157;">incl. 21% VAT (${formatEuro(includedVatCents(order.totalCents))})</small></td></tr>
           </table>
           <p style="color:#6b6157; line-height:1.6;">Your invoice PDF is attached for your records.</p>
@@ -672,7 +725,7 @@ export async function sendNewOrderNotification(orderNumber: string): Promise<boo
     include: { customer: true, items: { orderBy: [{ position: 'asc' }, { id: 'asc' }] } },
   })
   if (!order) return false
-  const lines = order.items.map((item) => `<li>${escapeHtml(item.name)}${item.variantLabel ? ` (${escapeHtml(item.variantLabel)})` : ''} × ${item.quantity}</li>`).join('')
+  const lines = order.items.map((item) => `<li>${escapeHtml(describeLine(item.name, item.variantLabel, item.colorLabel))} × ${item.quantity}</li>`).join('')
   const { error } = await resend!.emails.send({
     from: env.EMAIL_FROM,
     to: ['earthyglowcandles@gmail.com'],

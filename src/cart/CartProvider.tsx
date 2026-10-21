@@ -5,16 +5,19 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { getProduct, type Product, type ProductVariant } from '../data/products'
+import { getProduct, type Product, type ProductColor, type ProductVariant } from '../data/products'
 import { fetchCatalog, reconcileCatalogItems } from './catalog'
+import { validateCoupon } from './coupons'
 import {
   CartContext,
   calcTotals,
+  type AppliedCoupon,
   type CartContextValue,
   type CartItem,
 } from './CartContext'
 
 const STORAGE_KEY = 'earthyglow-cart-v1'
+const COUPON_STORAGE_KEY = 'earthyglow-coupon-v1'
 
 function isCartItem(value: unknown): value is CartItem {
   if (typeof value !== 'object' || value === null) return false
@@ -29,7 +32,9 @@ function isCartItem(value: unknown): value is CartItem {
     (item.image === undefined || typeof item.image === 'string') &&
     typeof item.collectionTitle === 'string' &&
     typeof item.quantity === 'number' &&
-    item.quantity > 0
+    item.quantity > 0 &&
+    (item.colorId === undefined || typeof item.colorId === 'string') &&
+    (item.colorLabel === undefined || typeof item.colorLabel === 'string')
   )
 }
 
@@ -54,6 +59,32 @@ function loadItems(): CartItem[] {
   }
 }
 
+// The coupon is remembered so a customer who typed a code does not have to
+// type it again after a reload. It is only a convenience: the checkout sends
+// the code along and the server checks it again.
+function loadCoupon(): AppliedCoupon | null {
+  try {
+    const raw = localStorage.getItem(COUPON_STORAGE_KEY)
+    if (!raw) return null
+    const parsed: unknown = JSON.parse(raw)
+    if (typeof parsed !== 'object' || parsed === null) return null
+    const coupon = parsed as Partial<AppliedCoupon>
+    if (typeof coupon.code !== 'string' || typeof coupon.type !== 'string') {
+      return null
+    }
+    return {
+      code: coupon.code,
+      type: coupon.type as AppliedCoupon['type'],
+      percentOff: coupon.percentOff ?? null,
+      amountOffCents: coupon.amountOffCents ?? null,
+      summary: coupon.summary ?? '',
+      description: coupon.description ?? null,
+    }
+  } catch {
+    return null
+  }
+}
+
 export function CartProvider({ children }: { children: ReactNode }) {
   // Cart contents live in localStorage, which does not exist on the server.
   // Start empty on both server and client, then hydrate after mount so the
@@ -61,12 +92,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([])
   const [hydrated, setHydrated] = useState(false)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const [coupon, setCoupon] = useState<AppliedCoupon | null>(null)
+  const [couponError, setCouponError] = useState<string | null>(null)
+  const [couponPending, setCouponPending] = useState(false)
 
   useEffect(() => {
     // Storage can only be read after mount: the server render and the first
     // client render both start empty so hydration matches.
     // eslint-disable-next-line react-hooks/set-state-in-effect -- post-mount hydration from localStorage
     setItems(loadItems())
+    setCoupon(loadCoupon())
     setHydrated(true)
   }, [])
 
@@ -78,6 +113,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
       // Storage can be unavailable (private mode); the cart still works in memory.
     }
   }, [items, hydrated])
+
+  useEffect(() => {
+    if (!hydrated) return
+    try {
+      if (coupon) {
+        localStorage.setItem(COUPON_STORAGE_KEY, JSON.stringify(coupon))
+      } else {
+        localStorage.removeItem(COUPON_STORAGE_KEY)
+      }
+    } catch {
+      // Storage can be unavailable (private mode); the coupon still works.
+    }
+  }, [coupon, hydrated])
 
   // Reconcile line-item prices against the server catalog. Prices may have
   // changed since the item was added (or the client was tampered with); the
@@ -99,8 +147,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const closeDrawer = useCallback(() => setIsDrawerOpen(false), [])
 
   const addItem = useCallback(
-    (product: Product, collectionTitle: string, quantity = 1, variant?: ProductVariant) => {
-      const lineId = `${product.id}:${variant?.id ?? 'default'}`
+    (
+      product: Product,
+      collectionTitle: string,
+      quantity = 1,
+      variant?: ProductVariant,
+      color?: ProductColor,
+    ) => {
+      // Every combination of options is its own line: a small blush column is
+      // not the same candle as a small natural column.
+      const lineId = `${product.id}:${variant?.id ?? 'default'}:${color?.id ?? 'default'}`
       setItems((current) => {
         const existing = current.find((item) => item.id === lineId)
         if (existing) {
@@ -122,6 +178,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
             quantity,
             variantId: variant?.id,
             variantLabel: variant?.label,
+            colorId: color?.id,
+            colorLabel: color?.label,
           },
         ]
       })
@@ -148,11 +206,38 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = useCallback(() => setItems([]), [])
 
+  // Applying a code asks the API first: only the API knows whether a code is
+  // expired, used up or not active at all.
+  const applyCoupon = useCallback(async (code: string) => {
+    setCouponPending(true)
+    setCouponError(null)
+    try {
+      const validated = await validateCoupon(code)
+      setCoupon(validated)
+      return true
+    } catch (error) {
+      setCoupon(null)
+      setCouponError(
+        error instanceof Error
+          ? error.message
+          : 'That coupon code is not valid.',
+      )
+      return false
+    } finally {
+      setCouponPending(false)
+    }
+  }, [])
+
+  const removeCoupon = useCallback(() => {
+    setCoupon(null)
+    setCouponError(null)
+  }, [])
+
   const value = useMemo<CartContextValue>(() => {
     return {
       items,
       itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
-      ...calcTotals(items),
+      ...calcTotals(items, undefined, coupon),
       isDrawerOpen,
       openDrawer,
       closeDrawer,
@@ -160,9 +245,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
       removeItem,
       updateQuantity,
       clearCart,
+      coupon,
+      couponError,
+      couponPending,
+      applyCoupon,
+      removeCoupon,
     }
   }, [
     items,
+    coupon,
+    couponError,
+    couponPending,
     isDrawerOpen,
     openDrawer,
     closeDrawer,
@@ -170,6 +263,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     removeItem,
     updateQuantity,
     clearCart,
+    applyCoupon,
+    removeCoupon,
   ])
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>

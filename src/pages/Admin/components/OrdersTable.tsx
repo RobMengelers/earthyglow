@@ -234,6 +234,9 @@ function OrderDetail({ order }: { order: AdminOrder }) {
                   {item.variantLabel && (
                     <small className="admin-order-variant">{item.variantLabel}</small>
                   )}
+                  {item.colorLabel && (
+                    <small className="admin-order-variant">{item.colorLabel}</small>
+                  )}
                   <small className="admin-muted">
                     {formatEuros(item.unitPriceCents)} × {item.quantity}
                   </small>

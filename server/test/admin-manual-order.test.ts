@@ -22,6 +22,11 @@ const CANDLE = {
 
 const VARIANT = { id: 'sea-star', label: 'Sea star', priceCents: 1795 }
 
+const COLORS = [
+  { id: 'pink', label: 'Pink' },
+  { id: 'brown', label: 'Brown' },
+]
+
 async function authedApp() {
   const app = Fastify()
   await app.register(adminRoutes)
@@ -72,7 +77,7 @@ type Flow = {
 // the route tried to persist.
 function stubFlow(
   t: { after: (fn: () => void) => void },
-  options: { variantMissing?: boolean } = {},
+  options: { variantMissing?: boolean; withColors?: boolean; colorMissing?: boolean } = {},
 ): Flow {
   const restore: (() => void)[] = []
   const stub = (target: object, key: string, impl: unknown) => {
@@ -86,9 +91,15 @@ function stubFlow(
   const customerUpserts: Record<string, unknown>[] = []
   const customerCreates: Record<string, unknown>[] = []
 
-  stub(prisma.product, 'findUnique', async () => CANDLE)
+  stub(prisma.product, 'findUnique', async () => ({
+    ...CANDLE,
+    _count: { variants: CANDLE._count.variants, colors: options.withColors ? COLORS.length : 0 },
+  }))
   stub(prisma.productVariant, 'findFirst', async () =>
     options.variantMissing ? null : VARIANT,
+  )
+  stub(prisma.productColor, 'findFirst', async () =>
+    options.colorMissing ? null : COLORS[0],
   )
   stub(prisma.customer, 'upsert', async (args: Record<string, unknown>) => {
     customerUpserts.push(args)
@@ -424,6 +435,66 @@ test('manual order rejects a variant that does not belong to the product', async
 
   assert.equal(response.statusCode, 400)
   assert.match(response.json().error, /not available/)
+})
+
+test('manual order requires a colour when the product comes in colours', async (t) => {
+  const flow = stubFlow(t, { withColors: true })
+  const { app, token } = await authedApp()
+
+  const response = await app.inject({
+    method: 'POST',
+    url: '/api/admin/orders',
+    headers: { authorization: `Bearer ${token}` },
+    payload: {
+      customer: FULL_CUSTOMER,
+      shipping: FULL_SHIPPING,
+      items: [{ productId: 'coconut-beach', variantId: 'sea-star', unitPriceCents: 1795, quantity: 1 }],
+    },
+  })
+
+  assert.equal(response.statusCode, 400)
+  assert.match(response.json().error, /choose a colour/)
+  assert.equal(flow.created.length, 0)
+})
+
+test('manual order rejects a colour that does not belong to the product', async (t) => {
+  stubFlow(t, { withColors: true, colorMissing: true })
+  const { app, token } = await authedApp()
+
+  const response = await app.inject({
+    method: 'POST',
+    url: '/api/admin/orders',
+    headers: { authorization: `Bearer ${token}` },
+    payload: {
+      customer: FULL_CUSTOMER,
+      shipping: FULL_SHIPPING,
+      items: [{ productId: 'coconut-beach', variantId: 'sea-star', colorId: 'ghost', unitPriceCents: 1795, quantity: 1 }],
+    },
+  })
+
+  assert.equal(response.statusCode, 400)
+  assert.match(response.json().error, /not available/)
+})
+
+test('manual order stores the colour from the database, not from the form', async (t) => {
+  const flow = stubFlow(t, { withColors: true })
+  const { app, token } = await authedApp()
+
+  const response = await app.inject({
+    method: 'POST',
+    url: '/api/admin/orders',
+    headers: { authorization: `Bearer ${token}` },
+    payload: {
+      customer: FULL_CUSTOMER,
+      shipping: FULL_SHIPPING,
+      items: [{ productId: 'coconut-beach', variantId: 'sea-star', colorId: 'pink', unitPriceCents: 1795, quantity: 1 }],
+    },
+  })
+
+  assert.equal(response.statusCode, 200)
+  const items = (flow.lastOrderData!.items as { create: Record<string, unknown>[] }).create
+  assert.equal(items[0].colorId, 'pink')
+  assert.equal(items[0].colorLabel, 'Pink')
 })
 
 test('manual order create response never carries the pdf bytes', async (t) => {

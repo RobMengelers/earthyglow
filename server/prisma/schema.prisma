@@ -21,14 +21,24 @@ enum FulfillmentStatus {
   processed
 }
 
+// What a coupon code does. The type decides the effect, so a new kind of
+// discount (a Christmas percentage code, a one-time offer) only needs a new
+// row, not new code.
+enum CouponType {
+  free_shipping
+  percent
+  fixed_amount
+}
+
 model Product {
-  id         String   @id
+  id         String           @id
   name       String
   priceCents Int
-  active     Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  active     Boolean          @default(true)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
   variants   ProductVariant[]
+  colors     ProductColor[]
   recipes    Recipe[]
 }
 
@@ -43,6 +53,62 @@ model ProductVariant {
   updatedAt  DateTime @updatedAt
 
   @@index([productId])
+}
+
+// A colour is the second option dimension of a product: the variant decides
+// the size (and the price), the colour decides what gets poured. Colours are
+// shared between products, so the same id can exist for several products —
+// hence the composite key instead of a single global id.
+model ProductColor {
+  id        String
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  label     String
+  // The hex the storefront shows in the swatch.
+  swatch    String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([productId, id])
+}
+
+// A coupon code a customer can enter at checkout. The code is stored
+// uppercase; the type decides what it does.
+model Coupon {
+  id             String     @id @default(uuid())
+  code           String     @unique
+  description    String?
+  type           CouponType
+  // Percent off the subtotal (20 = 20%). Only used by `percent` coupons.
+  percentOff     Int?
+  // Money off the subtotal in cents. Only used by `fixed_amount` coupons.
+  amountOffCents Int?
+  // A code can be handed out a limited number of times (one-time codes) and
+  // can expire. Both are optional: a permanent code like GLOWFAM has neither.
+  maxUses        Int?
+  usedCount      Int        @default(0)
+  startsAt       DateTime?
+  expiresAt      DateTime?
+  active         Boolean    @default(true)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  redemptions CouponRedemption[]
+}
+
+// Which orders used which coupon. One row per order that used a code, so a
+// one-time code can be spent exactly once and the shop can see what a code
+// brought in.
+model CouponRedemption {
+  id        String   @id @default(uuid())
+  couponId  String
+  coupon    Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  orderId   String   @unique
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([couponId, orderId])
 }
 
 model Customer {
@@ -60,37 +126,47 @@ model Customer {
 }
 
 model Order {
-  id              String      @id @default(uuid())
-  orderNumber     String      @unique
-  customerId      String
-  customer        Customer    @relation(fields: [customerId], references: [id])
-  status          OrderStatus @default(pending)
-  subtotalCents   Int
-  shippingCents   Int
-  totalCents      Int
-  currency        String      @default("EUR")
-  paymentMethod   String?
-  molliePaymentId String?     @unique
-  address         String
-  postalCode      String
-  city            String
-  country         String
-  notes           String?
-  paidAt          DateTime?
-  invoiceSentAt   DateTime?
+  id                     String            @id @default(uuid())
+  orderNumber            String            @unique
+  customerId             String
+  customer               Customer          @relation(fields: [customerId], references: [id])
+  status                 OrderStatus       @default(pending)
+  subtotalCents          Int
+  shippingCents          Int
+  totalCents             Int
+  // The coupon that was applied, if any. A free-shipping coupon leaves
+  // discountCents at 0 and takes the shipping to 0 instead; a percentage or
+  // amount coupon takes the money off the subtotal. Either way the total is
+  // subtotal - discount + shipping.
+  couponCode             String?
+  couponType             CouponType?
+  discountCents          Int               @default(0)
+  currency               String            @default("EUR")
+  paymentMethod          String?
+  molliePaymentId        String?           @unique
+  address                String
+  postalCode             String
+  city                   String
+  country                String
+  notes                  String?
+  paidAt                 DateTime?
+  invoiceSentAt          DateTime?
   // The exact bytes of the PDF that was emailed, archived so the invoice can be
   // re-downloaded verbatim. Null for orders invoiced before this column existed.
-  invoicePdf      Bytes?
-  newOrderEmailSentAt DateTime?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  fulfillmentStatus FulfillmentStatus @default(open)
-  carrier         String?
-  trackingCode    String?
-  fulfilledAt     DateTime?
+  invoicePdf             Bytes?
+  newOrderEmailSentAt    DateTime?
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
+  fulfillmentStatus      FulfillmentStatus @default(open)
+  carrier                String?
+  trackingCode           String?
+  fulfilledAt            DateTime?
   fulfillmentEmailSentAt DateTime?
 
   items OrderItem[]
+
+  // The coupon this order used, if any.
+  couponRedemption CouponRedemption?
 
   // The admin list and dashboard order by createdAt desc, and the revenue
   // windows filter on status + paidAt; these cover both.
@@ -100,19 +176,22 @@ model Order {
 }
 
 model OrderItem {
-  id             String @id @default(uuid())
+  id             String  @id @default(uuid())
   orderId        String
-  order          Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order          Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   productId      String
   name           String
   variantId      String?
   variantLabel   String?
+  // The colour the customer picked, when the product offers one.
+  colorId        String?
+  colorLabel     String?
   unitPriceCents Int
   quantity       Int
   lineTotalCents Int
   // The line's place in the cart. Invoice and admin views sort on this rather
   // than the random uuid id, so lines always read in the order they were added.
-  position       Int    @default(0)
+  position       Int     @default(0)
 
   @@index([orderId])
 }
@@ -134,11 +213,11 @@ model Material {
 }
 
 model Recipe {
-  id          String   @id @default(uuid())
-  productId   String
-  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(uuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   ingredients RecipeIngredient[]
   fields      RecipeField[]

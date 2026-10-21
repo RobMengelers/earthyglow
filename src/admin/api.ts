@@ -51,6 +51,8 @@ type AdminOrderItem = {
   name: string
   variantId?: string | null
   variantLabel?: string | null
+  colorId?: string | null
+  colorLabel?: string | null
   quantity: number
   unitPriceCents: number
   lineTotalCents: number
@@ -132,11 +134,18 @@ type AdminCatalogVariant = {
   priceCents?: number
 }
 
+type AdminCatalogColor = {
+  id: string
+  label: string
+}
+
 export type AdminCatalogProduct = {
   id: string
   name: string
   priceCents: number
   variants: AdminCatalogVariant[]
+  // Absent on an older API that does not know about colours yet.
+  colors?: AdminCatalogColor[]
 }
 
 // Prices shown in the manual order form come from the public catalog endpoint;
@@ -151,6 +160,8 @@ export async function fetchAdminCatalog(): Promise<AdminCatalogProduct[]> {
 type ManualOrderItemInput = {
   productId: string
   variantId?: string
+  // The colour that was poured, for products that come in colours.
+  colorId?: string
   // The admin may override the catalog price for a market or trade sale.
   unitPriceCents: number
   quantity: number
@@ -642,4 +653,93 @@ export function formatRelativeTime(value: string): string {
 export function displayText(value: string | null | undefined): string {
   const trimmed = value?.trim()
   return trimmed && trimmed !== '-' ? trimmed : '—'
+}
+
+// ---- Coupon codes ----
+
+export type AdminCouponType = 'free_shipping' | 'percent' | 'fixed_amount'
+
+export type AdminCoupon = {
+  id: string
+  code: string
+  description: string | null
+  type: AdminCouponType
+  percentOff: number | null
+  amountOffCents: number | null
+  /** How often the code may be used. Null means as often as the customer likes. */
+  maxUses: number | null
+  /** How many orders used the code. */
+  redemptions: number
+  startsAt: string | null
+  expiresAt: string | null
+  active: boolean
+  createdAt: string
+}
+
+export type AdminCouponsResponse = {
+  coupons: AdminCoupon[]
+}
+
+export async function fetchAdminCoupons(token: string): Promise<AdminCouponsResponse> {
+  const response = await fetch(`${API_URL}/api/admin/coupons`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!response.ok) {
+    if (response.status === 401) throw new Error('Session expired')
+    throw new Error(`Failed to load coupons (${response.status})`)
+  }
+  return (await response.json()) as AdminCouponsResponse
+}
+
+export type AdminCouponInput = {
+  code: string
+  description?: string
+  type: AdminCouponType
+  /** For a percentage code: how many percent to take off. */
+  percentOff?: number
+  /** For a fixed amount code: the amount in cents. */
+  amountOffCents?: number
+  /** How often the code may be used. Leave empty for a permanent code. */
+  maxUses?: number
+  /** The day the code stops working (YYYY-MM-DD). */
+  expiresAt?: string
+}
+
+export async function createAdminCoupon(
+  token: string,
+  input: AdminCouponInput,
+): Promise<AdminCoupon> {
+  const response = await fetch(`${API_URL}/api/admin/coupons`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  const body = (await response.json().catch(() => null)) as
+    | { coupon?: AdminCoupon; error?: string }
+    | null
+  if (!response.ok || !body?.coupon) {
+    throw new Error(body?.error ?? 'Could not save the coupon')
+  }
+  return body.coupon
+}
+
+// Switches a code on or off, which retires a code without touching the orders
+// that used it.
+export async function setAdminCouponActive(
+  token: string,
+  id: string,
+  active: boolean,
+): Promise<AdminCoupon> {
+  const response = await fetch(`${API_URL}/api/admin/coupons/${id}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ active }),
+  })
+  const body = (await response.json().catch(() => null)) as
+    | { coupon?: AdminCoupon; error?: string }
+    | null
+  if (!response.ok || !body?.coupon) {
+    throw new Error(body?.error ?? 'Could not update the coupon')
+  }
+  return body.coupon
 }

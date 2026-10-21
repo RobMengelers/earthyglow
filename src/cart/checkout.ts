@@ -18,6 +18,8 @@ export type OrderPayload = {
   details: CheckoutDetails
   items: CartItem[]
   paymentMethod?: string
+  // The coupon code the customer entered. The API checks it again.
+  couponCode?: string
 }
 
 export type PaymentMethodOption = {
@@ -31,8 +33,23 @@ export type OrderResult = {
   status: string
   subtotalCents?: number
   shippingCents?: number
+  discountCents?: number
+  couponCode?: string | null
   totalCents?: number
   checkoutUrl?: string | null
+}
+
+// An error from the API. `couponInvalid` says the code the customer used is
+// no longer good, so the storefront can drop it and let them try again
+// without it.
+export class CheckoutError extends Error {
+  couponInvalid: boolean
+
+  constructor(message: string, couponInvalid = false) {
+    super(message)
+    this.name = 'CheckoutError'
+    this.couponInvalid = couponInvalid
+  }
 }
 
 const ORDERS_KEY = 'earthyglow-orders-v1'
@@ -49,6 +66,8 @@ async function postToApi(payload: OrderPayload): Promise<OrderResult> {
         quantity: item.quantity,
         variantId: item.variantId,
         variantLabel: item.variantLabel,
+        colorId: item.colorId,
+        colorLabel: item.colorLabel,
       })),
       customer: {
         firstName: details.firstName,
@@ -65,14 +84,19 @@ async function postToApi(payload: OrderPayload): Promise<OrderResult> {
       },
       notes: details.notes,
       paymentMethod: payload.paymentMethod,
+      ...(payload.couponCode ? { couponCode: payload.couponCode } : {}),
     }),
   })
 
   if (!response.ok) {
     const body = (await response.json().catch(() => null)) as {
       error?: string
+      couponInvalid?: boolean
     } | null
-    throw new Error(body?.error ?? 'We could not start your payment.')
+    throw new CheckoutError(
+      body?.error ?? 'We could not start your payment.',
+      Boolean(body?.couponInvalid),
+    )
   }
 
   return (await response.json()) as OrderResult

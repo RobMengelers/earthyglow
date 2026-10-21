@@ -1273,7 +1273,7 @@
 
 .admin-manual-line {
   display: grid;
-  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1.2fr) 6.5rem 4.5rem 6rem 2rem;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.1fr) minmax(0, 1fr) 6.5rem 4.5rem 6rem 2rem;
   align-items: end;
   gap: 0.5rem;
   padding: 0.6rem;
@@ -1917,4 +1917,23 @@
   .admin-toolbar-right {
     width: 100%;
   }
+}
+
+/* Coupon codes: the create form and the table of codes. */
+.admin-form-grid .field {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--body);
+}
+
+.admin-form-grid select {
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  font: inherit;
+  font-weight: 400;
+  color: var(--ink);
 }

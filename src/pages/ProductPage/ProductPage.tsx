@@ -1,6 +1,6 @@
 import { Link, useParams } from 'react-router'
 import { useState } from 'react'
-import { getCollection, getProduct, getRelated } from '../../data/products'
+import { getCollection, getProduct, getRelated, type ProductColor, type ProductVariant } from '../../data/products'
 import { ProductCard } from '../../components/catalog/ProductCard'
 import { Reveal } from '../../components/ui/Reveal'
 import { useCart } from '../../cart/useCart'
@@ -62,6 +62,7 @@ export function ProductPage() {
   const { addItem } = useCart()
   const product = getProduct(productId)
   const [variantId, setVariantId] = useState('')
+  const [colorId, setColorId] = useState('')
   const [quantity, setQuantity] = useState(1)
   const [galleryIndex, setGalleryIndex] = useState(0)
   // Holds the image that is fading out on top of the incoming one so switching
@@ -78,12 +79,19 @@ export function ProductPage() {
   const collectionTitle = collection?.title ?? 'EarthyGlow'
   const season = seasonForProduct(product.id)
   const selectedVariant = product.variants?.find((variant) => variant.id === variantId)
+  const selectedColor = product.colors?.find((color) => color.id === colorId)
+
+  // A colour's own photography (if it has any) wins over the size image.
+  const heroFor = (variant?: ProductVariant, color?: ProductColor) =>
+    color?.images?.[0] ?? color?.image ?? variant?.image
 
   const baseGallery = product.images?.length ? product.images : [product.image]
-  const variantImage = selectedVariant?.image
-  const galleryImages = variantImage
-    ? [variantImage, ...baseGallery.filter((img) => img !== variantImage)]
-    : baseGallery
+  const heroImage = heroFor(selectedVariant, selectedColor)
+  const galleryImages = selectedColor?.images?.length
+    ? selectedColor.images
+    : heroImage
+      ? [heroImage, ...baseGallery.filter((img) => img !== heroImage)]
+      : baseGallery
   const displayedImage = galleryImages[galleryIndex]
 
   const imageUrls = (product.images?.length ? product.images : [product.image]).map(absoluteUrl)
@@ -120,16 +128,35 @@ export function ProductPage() {
         ...offerDetails,
       }
 
-  const selectVariant = (id: string) => {
-    const nextImage = product.variants?.find((variant) => variant.id === id)?.image
-    // Only crossfade when the hero shot actually changes; a variant that reuses
-    // the current image (or has none) should not flash the overlay.
+  // Only crossfade when the hero shot actually changes; an option that reuses
+  // the current image (or has none) should not flash the overlay.
+  const crossfadeTo = (nextImage: string | undefined) => {
     if (nextImage && nextImage !== displayedImage) {
       setFadeImage((current) => ({ src: displayedImage, id: (current?.id ?? 0) + 1 }))
     }
+  }
+
+  const selectVariant = (id: string) => {
+    const nextVariant = product.variants?.find((variant) => variant.id === id)
+    crossfadeTo(heroFor(nextVariant, selectedColor))
     setVariantId(id)
     setGalleryIndex(0)
   }
+
+  const selectColor = (id: string) => {
+    const nextColor = product.colors?.find((color) => color.id === id)
+    crossfadeTo(heroFor(selectedVariant, nextColor))
+    setColorId(id)
+    setGalleryIndex(0)
+  }
+
+  // The pickers are shown colour first, size second, so the button asks for
+  // the same choice in the same order.
+  const missingOption = product.colors && !selectedColor
+    ? 'Choose a colour'
+    : product.variants && !selectedVariant
+      ? 'Choose an option'
+      : null
 
   return (
     <>
@@ -240,6 +267,29 @@ export function ProductPage() {
               <p className="product-detail-price">{selectedVariant?.priceCents ? formatPrice(selectedVariant.priceCents) : product.price}</p>
               <p className="product-detail-desc">{product.description}</p>
 
+              {product.colors && (
+                <fieldset className="product-options">
+                  <legend>Choose your {product.colorLabel ?? 'colour'}</legend>
+                  <div className="product-option-list">
+                    {product.colors.map((color) => (
+                      <label key={color.id} className={`product-option${colorId === color.id ? ' is-selected' : ''}`}>
+                        <input type="radio" name="product-color" value={color.id} checked={colorId === color.id} onChange={() => selectColor(color.id)} />
+                        <span
+                          className="product-option-swatch"
+                          style={color.swatch ? { backgroundColor: color.swatch } : undefined}
+                          title={color.label}
+                        >
+                          <span className="visually-hidden">{color.label}</span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                  {selectedColor && (
+                    <p className="product-option-value">{selectedColor.label}</p>
+                  )}
+                </fieldset>
+              )}
+
               {product.variants && (
                 <fieldset className="product-options">
                   <legend>Choose your {product.variantLabel ?? (product.variants.some((variant) => variant.swatch) ? 'colour' : 'shape')}</legend>
@@ -301,10 +351,10 @@ export function ProductPage() {
                   <button
                     type="button"
                     className="btn btn-primary"
-                    onClick={() => addItem(product, collectionTitle, quantity, selectedVariant)}
-                    disabled={Boolean(product.variants && !selectedVariant)}
+                    onClick={() => addItem(product, collectionTitle, quantity, selectedVariant, selectedColor)}
+                    disabled={Boolean(missingOption)}
                   >
-                    {product.variants && !selectedVariant ? 'Choose an option' : 'Add to cart'}
+                    {missingOption ?? 'Add to cart'}
                   </button>
                 </div>
               )}

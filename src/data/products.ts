@@ -11,6 +11,8 @@ export type Product = {
   care?: string
   variantLabel?: string
   variants?: ProductVariant[]
+  colorLabel?: string
+  colors?: ProductColor[]
 }
 
 export type ProductVariant = {
@@ -21,6 +23,17 @@ export type ProductVariant = {
   image?: string
 }
 
+// A colour is a second, independent choice next to the size/shape variants.
+// It never changes the price — the size stays the only priced option — but it
+// can bring its own photography, like the floral-box swatches do.
+export type ProductColor = {
+  id: string
+  label: string
+  swatch?: string
+  image?: string
+  images?: string[]
+}
+
 export type Collection = {
   id: string
   eyebrow: string
@@ -28,6 +41,14 @@ export type Collection = {
   blurb: string
   products: Product[]
 }
+
+// The Natural Glow candles all share one colour range.
+const naturalGlowColors: ProductColor[] = [
+  { id: 'pink', label: 'Pink', swatch: '#e8a1b5' },
+  { id: 'purple', label: 'Purple', swatch: '#9b72c4' },
+  { id: 'brown', label: 'Brown', swatch: '#8a6a52' },
+  { id: 'baby-blue', label: 'Baby blue', swatch: '#9fc9e8' },
+]
 
 export const collections: Collection[] = [
   {
@@ -128,6 +149,18 @@ export const collections: Collection[] = [
         description:
           'A candle inspired by a favourite autumn drink, with whipped wax and handmade seasonal details. Poured with soy wax and scented with Pumpkin Spice. For your shelf, not your coffee cup.',
       },
+      {
+        // A test product that costs 50 cents, used to try the checkout and the
+        // coupon codes end to end. Remove it when the testing is done.
+        id: 'test-candle',
+        name: 'Test candle',
+        price: '€0,50',
+        priceCents: 50,
+        image: '/images/hero-candles.webp',
+        collectionId: 'scented-glow',
+        description:
+          'A test candle that costs 50 cents. It is here to try the checkout and coupon codes with, and should be taken off the shop again afterwards.',
+      },
     ],
   },
   {
@@ -213,10 +246,12 @@ export const collections: Collection[] = [
         description:
           'Straight, ribbed lines and a simple column shape, poured by hand with 100% soy wax. Fragrance-free, so you can enjoy the candlelight without an added scent.',
         variantLabel: 'size or bundle',
+        colorLabel: 'colour',
+        colors: naturalGlowColors,
         variants: [
           { id: 'column-small', label: 'Small', priceCents: 995, image: '/images/products/column/image-3.webp' },
           { id: 'column-large', label: 'Large', priceCents: 1295, image: '/images/products/column/image-2.webp' },
-          { id: 'column-bundle', label: 'Bundle', priceCents: 1995, image: '/images/products/column/image-3.webp' },
+          { id: 'column-bundle', label: 'Bundle', priceCents: 1995, image: '/images/products/column/image-1.webp' },
         ],
       },
       {
@@ -230,11 +265,13 @@ export const collections: Collection[] = [
         description:
           'A ribbed pillar candle for a table or a favourite corner of your home. I pour it by hand with 100% soy wax and leave it fragrance-free.',
         variantLabel: 'size or bundle',
+        colorLabel: 'colour',
+        colors: naturalGlowColors,
         variants: [
-          { id: 'pillar-small', label: 'Small', priceCents: 695, image: '/images/products/pillar/image-3.webp' },
-          { id: 'pillar-medium', label: 'Medium', priceCents: 995, image: '/images/products/pillar/image-2.webp' },
-          { id: 'pillar-large', label: 'Large', priceCents: 1295, image: '/images/products/pillar/image-1.webp' },
-          { id: 'pillar-bundle', label: 'Bundle', priceCents: 2495, image: '/images/products/pillar/image-3.webp' },
+          { id: 'pillar-small', label: 'Small', priceCents: 695, image: '/images/products/pillar/image-5.webp' },
+          { id: 'pillar-medium', label: 'Medium', priceCents: 995, image: '/images/products/pillar/image-4.webp' },
+          { id: 'pillar-large', label: 'Large', priceCents: 1295, image: '/images/products/pillar/image-3.webp' },
+          { id: 'pillar-bundle', label: 'Bundle', priceCents: 2495, image: '/images/products/pillar/image-2.webp' },
         ],
       },
       {
@@ -248,11 +285,13 @@ export const collections: Collection[] = [
         description:
           'Soft twists and rounded lines give this candle its shape. Poured by hand with 100% soy wax, with no added fragrance.',
         variantLabel: 'size or bundle',
+        colorLabel: 'colour',
+        colors: naturalGlowColors,
         variants: [
-          { id: 'spiral-small', label: 'Small', priceCents: 695, image: '/images/products/spiral/image-3.webp' },
-          { id: 'spiral-medium', label: 'Medium', priceCents: 995, image: '/images/products/spiral/image-2.webp' },
-          { id: 'spiral-large', label: 'Large', priceCents: 1295, image: '/images/products/spiral/image-1.webp' },
-          { id: 'spiral-bundle', label: 'Bundle', priceCents: 2495, image: '/images/products/spiral/image-3.webp' },
+          { id: 'spiral-small', label: 'Small', priceCents: 695, image: '/images/products/spiral/image-5.webp' },
+          { id: 'spiral-medium', label: 'Medium', priceCents: 995, image: '/images/products/spiral/image-4.webp' },
+          { id: 'spiral-large', label: 'Large', priceCents: 1295, image: '/images/products/spiral/image-3.webp' },
+          { id: 'spiral-bundle', label: 'Bundle', priceCents: 2495, image: '/images/products/spiral/image-2.webp' },
         ],
       },
       {
@@ -266,6 +305,8 @@ export const collections: Collection[] = [
         description:
           'A small reminder of the seaside, with curved lines inspired by a shell. Poured by hand with 100% soy wax and no added fragrance.',
         variantLabel: 'size or bundle',
+        colorLabel: 'colour',
+        colors: naturalGlowColors,
         variants: [
           { id: 'shell-small', label: 'Small', priceCents: 495, image: '/images/products/shell/image-3.webp' },
           { id: 'shell-large', label: 'Large', priceCents: 895, image: '/images/products/shell/image-2.webp' },
@@ -283,11 +324,13 @@ export const collections: Collection[] = [
         description:
           'A simple arch shape that looks lovely on its own or beside your favourite objects. Made by hand with 100% soy wax and no added fragrance.',
         variantLabel: 'size or bundle',
+        colorLabel: 'colour',
+        colors: naturalGlowColors,
         variants: [
-          { id: 'arch-small', label: 'Small', priceCents: 495, image: '/images/products/arch/image-3.webp' },
-          { id: 'arch-medium', label: 'Medium', priceCents: 695, image: '/images/products/arch/image-2.webp' },
-          { id: 'arch-large', label: 'Large', priceCents: 895, image: '/images/products/arch/image-1.webp' },
-          { id: 'arch-bundle', label: 'Bundle', priceCents: 1595, image: '/images/products/arch/image-3.webp' },
+          { id: 'arch-small', label: 'Small', priceCents: 495, image: '/images/products/arch/image-4.webp' },
+          { id: 'arch-medium', label: 'Medium', priceCents: 695, image: '/images/products/arch/image-3.webp' },
+          { id: 'arch-large', label: 'Large', priceCents: 895, image: '/images/products/arch/image-2.webp' },
+          { id: 'arch-bundle', label: 'Bundle', priceCents: 1595, image: '/images/products/arch/image-1.webp' },
         ],
       },
       {
@@ -301,11 +344,13 @@ export const collections: Collection[] = [
         description:
           'Rounded, playful bubbles in a candle you can tuck into a favourite corner. I pour it by hand with 100% soy wax and leave it fragrance-free.',
         variantLabel: 'size or bundle',
+        colorLabel: 'colour',
+        colors: naturalGlowColors,
         variants: [
-          { id: 'bubble-small', label: 'Small', priceCents: 495, image: '/images/products/bubble/image-3.webp' },
-          { id: 'bubble-medium', label: 'Medium', priceCents: 695, image: '/images/products/bubble/image-2.webp' },
-          { id: 'bubble-large', label: 'Large', priceCents: 895, image: '/images/products/bubble/image-1.webp' },
-          { id: 'bubble-bundle', label: 'Bundle', priceCents: 1595, image: '/images/products/bubble/image-3.webp' },
+          { id: 'bubble-small', label: 'Small', priceCents: 495, image: '/images/products/bubble/image-2.webp' },
+          { id: 'bubble-medium', label: 'Medium', priceCents: 695, image: '/images/products/bubble/image-3.webp' },
+          { id: 'bubble-large', label: 'Large', priceCents: 895, image: '/images/products/bubble/image-4.webp' },
+          { id: 'bubble-bundle', label: 'Bundle', priceCents: 1595, image: '/images/products/bubble/image-1.webp' },
         ],
       },
     ],

@@ -16,6 +16,7 @@ export default [
     route('materials/new', './pages/Admin/NewMaterialPage.tsx'),
     route('recipes/new', './pages/Admin/NewRecipePage.tsx'),
     route('orders', './pages/Admin/OrdersPage.tsx'),
+    route('coupons', './pages/Admin/CouponsPage.tsx'),
     route('orders/new', './pages/Admin/NewOrderPage.tsx'),
   ]),
   layout('./components/layout/Layout.tsx', [

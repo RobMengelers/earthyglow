@@ -37,6 +37,7 @@ export function CartLine({ item, compact = false, tabIndex, onNavigate }: CartLi
           >
             {item.name}
             {item.variantLabel && <small className="cart-line-variant">{item.variantLabel}</small>}
+            {item.colorLabel && <small className="cart-line-variant">{item.colorLabel}</small>}
           </Link>
           <button
             type="button"

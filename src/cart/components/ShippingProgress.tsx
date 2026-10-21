@@ -11,17 +11,37 @@ type ShippingProgressProps = {
 }
 
 export function ShippingProgress({ className, zone }: ShippingProgressProps) {
-  const { subtotalCents } = useCart()
+  const { subtotalCents, discountCents, coupon } = useCart()
   const activeZone = zone ?? DEFAULT_ZONE
-  const hasFreeShipping = subtotalCents >= activeZone.freeThresholdCents
+  const freeShippingByCoupon = coupon?.type === 'free_shipping'
+  // The threshold is judged on what the customer pays for the products, so a
+  // percentage code that drops the order below the threshold still costs
+  // shipping.
+  const shippingBaseCents = Math.max(0, subtotalCents - discountCents)
+  const hasFreeShipping = shippingBaseCents >= activeZone.freeThresholdCents
   const shippingRemainingCents = Math.max(
-    activeZone.freeThresholdCents - subtotalCents,
+    activeZone.freeThresholdCents - shippingBaseCents,
     0,
   )
   const progress = Math.min(
-    (subtotalCents / activeZone.freeThresholdCents) * 100,
+    (shippingBaseCents / activeZone.freeThresholdCents) * 100,
     100,
   )
+
+  if (freeShippingByCoupon) {
+    // The coupon already covers the shipping, so the progress towards the
+    // free-shipping threshold would only confuse.
+    return (
+      <div className={className ? `shipping-progress ${className}` : 'shipping-progress'}>
+        <p className="shipping-progress-text">
+          <strong>Free shipping</strong> with {coupon.code}
+        </p>
+        <p className="shipping-progress-note">
+          No shipping cost on this order
+        </p>
+      </div>
+    )
+  }
 
   return (
     <div className={className ? `shipping-progress ${className}` : 'shipping-progress'}>

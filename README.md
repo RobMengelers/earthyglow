@@ -14,10 +14,25 @@ with a separate backend in `server/`.
   `src/data/imageMeta.ts` after adding or replacing photos in `public/images`.
 
 See `server/package.json` for backend commands and `.env.example` for configuration.
-Run `npm --prefix server test` for catalog, variant-pricing and checkout regression checks.
+Run `npm --prefix server test` for catalog, variant/colour-pricing, coupon and
+checkout regression checks.
 These tests mock database access and payments; they do not create real orders.
 Apply catalog migrations with `npm --prefix server run prisma:deploy` before releasing
 storefront changes that add products or options.
+
+## Coupon codes
+
+Coupon codes live in the `Coupon` table; the admin portal has a **Coupons** page
+to create and retire them. Every code has a type, so a new kind of offer is a new
+row rather than new code:
+
+- `free_shipping` — the shipping cost is taken off (the code `GLOWFAM`).
+- `percent` — `percentOff` percent comes off the subtotal.
+- `fixed_amount` — `amountOffCents` comes off the subtotal.
+
+A code can also carry `maxUses` (a one-time code) and `expiresAt` (a code that
+stops working on a date). The storefront checks a code before it is used and the
+checkout checks it again, so a code that ran out is never honoured.
 
 ## Frontend structure
 

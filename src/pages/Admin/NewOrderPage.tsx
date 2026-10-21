@@ -15,6 +15,8 @@ type ManualLine = {
   key: number
   productId: string
   variantId: string
+  // The colour that was poured, for products that come in colours.
+  colorId: string
   // Editable on purpose: a market or trade price is a legitimate thing to
   // record. Seeded from the catalog whenever the product or variant changes.
   price: string
@@ -22,7 +24,7 @@ type ManualLine = {
 }
 
 function emptyLine(key: number): ManualLine {
-  return { key, productId: '', variantId: '', price: '', quantity: 1 }
+  return { key, productId: '', variantId: '', colorId: '', price: '', quantity: 1 }
 }
 
 // Prices are entered in euros because that is how the shop thinks about them;
@@ -105,6 +107,7 @@ export default function NewOrderPage() {
     updateLine(key, {
       productId,
       variantId: '',
+      colorId: '',
       price: centsToInput(catalogPriceCents(productId, '', catalog)),
     })
   }
@@ -148,6 +151,7 @@ export default function NewOrderPage() {
       items: lines.map((line) => ({
         productId: line.productId,
         variantId: line.variantId || undefined,
+        colorId: line.colorId || undefined,
         unitPriceCents: eurosToCents(line.price),
         quantity: line.quantity,
       })),
@@ -249,6 +253,26 @@ export default function NewOrderPage() {
                     <span className="admin-manual-listprice">
                       {product ? `List ${formatEuros(listPrice)}` : 'Line ' + (index + 1)}
                     </span>
+                  )}
+
+                  {product && product.colors && product.colors.length > 0 ? (
+                    <label className="admin-manual-color">
+                      <span>Colour</span>
+                      <select
+                        value={line.colorId}
+                        onChange={(event) =>
+                          updateLine(line.key, { colorId: event.target.value })
+                        }
+                        required
+                      >
+                        <option value="">Choose…</option>
+                        {product.colors.map((color) => (
+                          <option key={color.id} value={color.id}>{color.label}</option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : (
+                    <span />
                   )}
 
                   <label className="admin-manual-price">

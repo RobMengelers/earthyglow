@@ -50,13 +50,37 @@ test('base products still reconcile their prices', () => {
   assert.equal(reconcileCatalogItems([item], [{ id: 'column', name: 'Column candle', priceCents: 995 }])[0].priceCents, 995)
 })
 
+test('the cart refreshes a colour label from the catalog', () => {
+  const item: CartItem = { ...bundle, colorId: 'pink', colorLabel: 'Roze' }
+  const catalog = [{ id: 'column', name: 'Column candle', priceCents: 995,
+    colors: [{ id: 'pink', label: 'Pink' }] }]
+  assert.equal(reconcileCatalogItems([item], catalog)[0].colorLabel, 'Pink')
+})
+
 function mockCatalog() {
   stub(prisma.product, 'findUnique', async ({ where }: { where: { id: string } }) => {
     const product = products.find((p) => p.id === where.id)
-    return product ? { ...product, active: !product.soldOut, _count: { variants: product.variants?.length ?? 0 } } : null
+    return product
+      ? {
+          ...product,
+          active: !product.soldOut,
+          _count: {
+            variants: product.variants?.length ?? 0,
+            colors: product.colors?.length ?? 0,
+          },
+        }
+      : null
   })
   stub(prisma.productVariant, 'findFirst', async ({ where }: { where: { id: string; productId: string } }) =>
     products.find((p) => p.id === where.productId)?.variants?.find((v) => v.id === where.id) ?? null)
+  stub(prisma.productColor, 'findFirst', async ({ where }: { where: { id: string; productId: string } }) =>
+    products.find((p) => p.id === where.productId)?.colors?.find((c) => c.id === where.id) ?? null)
+}
+
+// The checkout writes the order inside a transaction; the tests run it
+// straight against the stubs.
+function mockOrderWrites() {
+  stub(prisma, '$transaction', async (fn: (tx: typeof prisma) => unknown) => fn(prisma))
 }
 
 function checkout(items: object[]) {
@@ -80,17 +104,32 @@ test('checkout rejects missing, mismatched and unknown variants before creating 
   }
 })
 
+test('checkout rejects a missing, unknown or mismatched colour before creating an order', async () => {
+  mockCatalog()
+  for (const item of [
+    { id: 'column', quantity: 1, variantId: 'column-small' },
+    { id: 'column', quantity: 1, variantId: 'column-small', colorId: 'does-not-exist' },
+    { id: 'column', quantity: 1, variantId: 'column-small', colorId: 'pink', colorLabel: 'Purple' },
+    // A colour of another product is not a colour of this one.
+    { id: 'pumpkin-boo', quantity: 1, colorId: 'pink' },
+  ]) {
+    const response = await checkout([item])
+    assert.equal(response.statusCode, 400, response.body)
+  }
+})
+
 test('checkout saves server-priced bundle and Halloween lines', async () => {
   mockCatalog()
+  mockOrderWrites()
   stub(prisma.customer, 'upsert', async () => ({ id: 'test-customer' }))
-  let saved: { items: { create: { variantLabel?: string; unitPriceCents: number; lineTotalCents: number }[] } } | undefined
+  let saved: { items: { create: { variantLabel?: string; colorLabel?: string; unitPriceCents: number; lineTotalCents: number }[] } } | undefined
   stub(prisma.order, 'create', async ({ data }: { data: NonNullable<typeof saved> }) => {
     saved = data
     return { id: 'test-order', status: 'pending' }
   })
   stub(prisma.order, 'update', async () => ({}))
   const response = await checkout([
-    { id: 'column', quantity: 2, variantId: 'column-bundle', variantLabel: 'Bundle', priceCents: 1 },
+    { id: 'column', quantity: 2, variantId: 'column-bundle', variantLabel: 'Bundle', colorId: 'pink', priceCents: 1 },
     { id: 'pumpkin-boo', quantity: 1, priceCents: 1 },
     { id: 'pumpkin-spice-wax-melts', quantity: 1 },
   ])
@@ -98,8 +137,28 @@ test('checkout saves server-priced bundle and Halloween lines', async () => {
   assert.equal(response.json().subtotalCents, 5380)
   assert.equal(response.json().shippingCents, 0)
   assert.equal(response.json().totalCents, 5380)
-  assert.deepEqual(saved?.items.create.map((line) => [line.variantLabel, line.unitPriceCents, line.lineTotalCents]), [
-    ['Bundle', 1995, 3990], [undefined, 895, 895], [undefined, 495, 495],
+  assert.deepEqual(saved?.items.create.map((line) => [line.variantLabel, line.colorLabel, line.unitPriceCents, line.lineTotalCents]), [
+    ['Bundle', 'Pink', 1995, 3990], [undefined, undefined, 895, 895], [undefined, undefined, 495, 495],
+  ])
+})
+
+test('the colour never changes the price', async () => {
+  mockCatalog()
+  mockOrderWrites()
+  stub(prisma.customer, 'upsert', async () => ({ id: 'test-customer' }))
+  let saved: { items: { create: { colorLabel?: string; unitPriceCents: number }[] } } | undefined
+  stub(prisma.order, 'create', async ({ data }: { data: NonNullable<typeof saved> }) => {
+    saved = data
+    return { id: 'test-order', status: 'pending' }
+  })
+  stub(prisma.order, 'update', async () => ({}))
+  const response = await checkout([
+    { id: 'column', quantity: 1, variantId: 'column-small', colorId: 'brown' },
+    { id: 'column', quantity: 1, variantId: 'column-small', colorId: 'pink' },
+  ])
+  assert.equal(response.statusCode, 200, response.body)
+  assert.deepEqual(saved?.items.create.map((line) => [line.colorLabel, line.unitPriceCents]), [
+    ['Brown', 995], ['Pink', 995],
   ])
 })
 
@@ -112,4 +171,13 @@ test('catalog exposes active variant prices for cart reconciliation', async () =
   const response = await app.inject('/api/catalog')
   assert.equal(response.statusCode, 200)
   assert.equal(response.json().products[0].variants[0].priceCents, 1995)
+})
+
+test('catalog exposes the colours of a product', async () => {
+  stub(prisma.product, 'findMany', async () => [
+    { id: 'column', name: 'Column candle', priceCents: 995, variants: [], colors: [{ id: 'pink', label: 'Pink' }] },
+  ])
+  const response = await app.inject('/api/catalog')
+  assert.equal(response.statusCode, 200)
+  assert.equal(response.json().products[0].colors[0].label, 'Pink')
 })
