@@ -32,6 +32,9 @@ export type ProductColor = {
   swatch?: string
   image?: string
   images?: string[]
+  // The basic colour of a product: it keeps the product's own pictures, where
+  // the picture of the chosen size leads.
+  base?: boolean
 }
 
 export type Collection = {
@@ -42,13 +45,31 @@ export type Collection = {
   products: Product[]
 }
 
-// The Natural Glow candles all share one colour range.
-const naturalGlowColors: ProductColor[] = [
+// The Natural Glow candles all share one colour range. White is the basic
+// candle: it keeps the neutral photography, every other colour brings its own
+// pictures.
+const naturalGlowPalette: Omit<ProductColor, 'images'>[] = [
+  { id: 'white', label: 'White', swatch: '#f0ebe1', base: true },
   { id: 'pink', label: 'Pink', swatch: '#e8a1b5' },
   { id: 'purple', label: 'Purple', swatch: '#9b72c4' },
   { id: 'brown', label: 'Brown', swatch: '#8a6a52' },
   { id: 'baby-blue', label: 'Baby blue', swatch: '#9fc9e8' },
 ]
+
+// The pictures of one colour of one shape live in their own folder, so the
+// gallery of a colour is replaced by the pictures of that colour.
+function naturalGlowColors(
+  shape: string,
+  pictureCounts: Record<string, number>,
+): ProductColor[] {
+  return naturalGlowPalette.map((colour) => ({
+    ...colour,
+    images: Array.from(
+      { length: pictureCounts[colour.id] ?? 0 },
+      (_, index) => `/images/products/${shape}/${colour.id}/image-${index + 1}.webp`,
+    ),
+  }))
+}
 
 export const collections: Collection[] = [
   {
@@ -241,17 +262,17 @@ export const collections: Collection[] = [
         price: 'From €9,95',
         priceCents: 995,
         image: '/images/column.webp',
-        images: ['/images/products/column/image-1.webp', '/images/products/column/image-2.webp', '/images/products/column/image-3.webp'],
+        images: ['/images/products/column/white/image-1.webp', '/images/products/column/white/image-2.webp', '/images/products/column/white/image-3.webp'],
         collectionId: 'natural-glow',
         description:
           'Straight, ribbed lines and a simple column shape, poured by hand with 100% soy wax. Fragrance-free, so you can enjoy the candlelight without an added scent.',
         variantLabel: 'size or bundle',
         colorLabel: 'colour',
-        colors: naturalGlowColors,
+        colors: naturalGlowColors('column', { 'white': 3, 'pink': 1, 'purple': 1, 'brown': 1, 'baby-blue': 1 }),
         variants: [
-          { id: 'column-small', label: 'Small', priceCents: 995, image: '/images/products/column/image-3.webp' },
-          { id: 'column-large', label: 'Large', priceCents: 1295, image: '/images/products/column/image-2.webp' },
-          { id: 'column-bundle', label: 'Bundle', priceCents: 1995, image: '/images/products/column/image-1.webp' },
+          { id: 'column-small', label: 'Small', priceCents: 995, image: '/images/products/column/white/image-3.webp' },
+          { id: 'column-large', label: 'Large', priceCents: 1295, image: '/images/products/column/white/image-2.webp' },
+          { id: 'column-bundle', label: 'Bundle', priceCents: 1995, image: '/images/products/column/white/image-1.webp' },
         ],
       },
       {
@@ -260,18 +281,18 @@ export const collections: Collection[] = [
         price: 'From €6,95',
         priceCents: 695,
         image: '/images/pillar.webp',
-        images: Array.from({ length: 5 }, (_, index) => `/images/products/pillar/image-${index + 1}.webp`),
+        images: Array.from({ length: 5 }, (_, index) => `/images/products/pillar/white/image-${index + 1}.webp`),
         collectionId: 'natural-glow',
         description:
           'A ribbed pillar candle for a table or a favourite corner of your home. I pour it by hand with 100% soy wax and leave it fragrance-free.',
         variantLabel: 'size or bundle',
         colorLabel: 'colour',
-        colors: naturalGlowColors,
+        colors: naturalGlowColors('pillar', { 'white': 5, 'pink': 1, 'purple': 1, 'brown': 1, 'baby-blue': 1 }),
         variants: [
-          { id: 'pillar-small', label: 'Small', priceCents: 695, image: '/images/products/pillar/image-5.webp' },
-          { id: 'pillar-medium', label: 'Medium', priceCents: 995, image: '/images/products/pillar/image-4.webp' },
-          { id: 'pillar-large', label: 'Large', priceCents: 1295, image: '/images/products/pillar/image-3.webp' },
-          { id: 'pillar-bundle', label: 'Bundle', priceCents: 2495, image: '/images/products/pillar/image-2.webp' },
+          { id: 'pillar-small', label: 'Small', priceCents: 695, image: '/images/products/pillar/white/image-5.webp' },
+          { id: 'pillar-medium', label: 'Medium', priceCents: 995, image: '/images/products/pillar/white/image-4.webp' },
+          { id: 'pillar-large', label: 'Large', priceCents: 1295, image: '/images/products/pillar/white/image-3.webp' },
+          { id: 'pillar-bundle', label: 'Bundle', priceCents: 2495, image: '/images/products/pillar/white/image-2.webp' },
         ],
       },
       {
@@ -280,18 +301,18 @@ export const collections: Collection[] = [
         price: 'From €6,95',
         priceCents: 695,
         image: '/images/spiral.webp',
-        images: Array.from({ length: 5 }, (_, index) => `/images/products/spiral/image-${index + 1}.webp`),
+        images: Array.from({ length: 5 }, (_, index) => `/images/products/spiral/white/image-${index + 1}.webp`),
         collectionId: 'natural-glow',
         description:
           'Soft twists and rounded lines give this candle its shape. Poured by hand with 100% soy wax, with no added fragrance.',
         variantLabel: 'size or bundle',
         colorLabel: 'colour',
-        colors: naturalGlowColors,
+        colors: naturalGlowColors('spiral', { 'white': 5, 'pink': 1, 'purple': 1, 'brown': 1, 'baby-blue': 1 }),
         variants: [
-          { id: 'spiral-small', label: 'Small', priceCents: 695, image: '/images/products/spiral/image-5.webp' },
-          { id: 'spiral-medium', label: 'Medium', priceCents: 995, image: '/images/products/spiral/image-4.webp' },
-          { id: 'spiral-large', label: 'Large', priceCents: 1295, image: '/images/products/spiral/image-3.webp' },
-          { id: 'spiral-bundle', label: 'Bundle', priceCents: 2495, image: '/images/products/spiral/image-2.webp' },
+          { id: 'spiral-small', label: 'Small', priceCents: 695, image: '/images/products/spiral/white/image-5.webp' },
+          { id: 'spiral-medium', label: 'Medium', priceCents: 995, image: '/images/products/spiral/white/image-4.webp' },
+          { id: 'spiral-large', label: 'Large', priceCents: 1295, image: '/images/products/spiral/white/image-3.webp' },
+          { id: 'spiral-bundle', label: 'Bundle', priceCents: 2495, image: '/images/products/spiral/white/image-2.webp' },
         ],
       },
       {
@@ -300,17 +321,17 @@ export const collections: Collection[] = [
         price: 'From €4,95',
         priceCents: 495,
         image: '/images/shell.webp',
-        images: Array.from({ length: 3 }, (_, index) => `/images/products/shell/image-${index + 1}.webp`),
+        images: Array.from({ length: 3 }, (_, index) => `/images/products/shell/white/image-${index + 1}.webp`),
         collectionId: 'natural-glow',
         description:
           'A small reminder of the seaside, with curved lines inspired by a shell. Poured by hand with 100% soy wax and no added fragrance.',
         variantLabel: 'size or bundle',
         colorLabel: 'colour',
-        colors: naturalGlowColors,
+        colors: naturalGlowColors('shell', { 'white': 3, 'pink': 1, 'purple': 1, 'brown': 1, 'baby-blue': 1 }),
         variants: [
-          { id: 'shell-small', label: 'Small', priceCents: 495, image: '/images/products/shell/image-3.webp' },
-          { id: 'shell-large', label: 'Large', priceCents: 895, image: '/images/products/shell/image-2.webp' },
-          { id: 'shell-bundle', label: 'Bundle', priceCents: 1195, image: '/images/products/shell/image-1.webp' },
+          { id: 'shell-small', label: 'Small', priceCents: 495, image: '/images/products/shell/white/image-3.webp' },
+          { id: 'shell-large', label: 'Large', priceCents: 895, image: '/images/products/shell/white/image-2.webp' },
+          { id: 'shell-bundle', label: 'Bundle', priceCents: 1195, image: '/images/products/shell/white/image-1.webp' },
         ],
       },
       {
@@ -319,18 +340,18 @@ export const collections: Collection[] = [
         price: 'From €4,95',
         priceCents: 495,
         image: '/images/arch.webp',
-        images: ['/images/products/arch/image-1.webp', '/images/products/arch/image-2.webp', '/images/products/arch/image-3.webp', '/images/products/arch/image-4.webp'],
+        images: ['/images/products/arch/white/image-1.webp', '/images/products/arch/white/image-2.webp', '/images/products/arch/white/image-3.webp', '/images/products/arch/white/image-4.webp'],
         collectionId: 'natural-glow',
         description:
           'A simple arch shape that looks lovely on its own or beside your favourite objects. Made by hand with 100% soy wax and no added fragrance.',
         variantLabel: 'size or bundle',
         colorLabel: 'colour',
-        colors: naturalGlowColors,
+        colors: naturalGlowColors('arch', { 'white': 4, 'pink': 1, 'purple': 1, 'brown': 1, 'baby-blue': 1 }),
         variants: [
-          { id: 'arch-small', label: 'Small', priceCents: 495, image: '/images/products/arch/image-4.webp' },
-          { id: 'arch-medium', label: 'Medium', priceCents: 695, image: '/images/products/arch/image-3.webp' },
-          { id: 'arch-large', label: 'Large', priceCents: 895, image: '/images/products/arch/image-2.webp' },
-          { id: 'arch-bundle', label: 'Bundle', priceCents: 1595, image: '/images/products/arch/image-1.webp' },
+          { id: 'arch-small', label: 'Small', priceCents: 495, image: '/images/products/arch/white/image-4.webp' },
+          { id: 'arch-medium', label: 'Medium', priceCents: 695, image: '/images/products/arch/white/image-3.webp' },
+          { id: 'arch-large', label: 'Large', priceCents: 895, image: '/images/products/arch/white/image-2.webp' },
+          { id: 'arch-bundle', label: 'Bundle', priceCents: 1595, image: '/images/products/arch/white/image-1.webp' },
         ],
       },
       {
@@ -339,18 +360,18 @@ export const collections: Collection[] = [
         price: 'From €4,95',
         priceCents: 495,
         image: '/images/bubble.webp',
-        images: Array.from({ length: 4 }, (_, index) => `/images/products/bubble/image-${index + 1}.webp`),
+        images: Array.from({ length: 4 }, (_, index) => `/images/products/bubble/white/image-${index + 1}.webp`),
         collectionId: 'natural-glow',
         description:
           'Rounded, playful bubbles in a candle you can tuck into a favourite corner. I pour it by hand with 100% soy wax and leave it fragrance-free.',
         variantLabel: 'size or bundle',
         colorLabel: 'colour',
-        colors: naturalGlowColors,
+        colors: naturalGlowColors('bubble', { 'white': 4, 'pink': 1, 'purple': 1, 'brown': 1, 'baby-blue': 1 }),
         variants: [
-          { id: 'bubble-small', label: 'Small', priceCents: 495, image: '/images/products/bubble/image-2.webp' },
-          { id: 'bubble-medium', label: 'Medium', priceCents: 695, image: '/images/products/bubble/image-3.webp' },
-          { id: 'bubble-large', label: 'Large', priceCents: 895, image: '/images/products/bubble/image-4.webp' },
-          { id: 'bubble-bundle', label: 'Bundle', priceCents: 1595, image: '/images/products/bubble/image-1.webp' },
+          { id: 'bubble-small', label: 'Small', priceCents: 495, image: '/images/products/bubble/white/image-2.webp' },
+          { id: 'bubble-medium', label: 'Medium', priceCents: 695, image: '/images/products/bubble/white/image-3.webp' },
+          { id: 'bubble-large', label: 'Large', priceCents: 895, image: '/images/products/bubble/white/image-4.webp' },
+          { id: 'bubble-bundle', label: 'Bundle', priceCents: 1595, image: '/images/products/bubble/white/image-1.webp' },
         ],
       },
     ],

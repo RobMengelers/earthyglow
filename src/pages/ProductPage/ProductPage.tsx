@@ -81,17 +81,24 @@ export function ProductPage() {
   const selectedVariant = product.variants?.find((variant) => variant.id === variantId)
   const selectedColor = product.colors?.find((color) => color.id === colorId)
 
-  // A colour's own photography (if it has any) wins over the size image.
+  // The gallery belongs to the chosen colour. A colour with its own
+  // photography replaces the product's pictures entirely; the basic colour
+  // (white) keeps them, with the picture of the chosen size leading.
   const heroFor = (variant?: ProductVariant, color?: ProductColor) =>
-    color?.images?.[0] ?? color?.image ?? variant?.image
+    color?.images?.length
+      ? color.base
+        ? variant?.image ?? color.images[0]
+        : color.images[0]
+      : variant?.image
 
   const baseGallery = product.images?.length ? product.images : [product.image]
-  const heroImage = heroFor(selectedVariant, selectedColor)
-  const galleryImages = selectedColor?.images?.length
-    ? selectedColor.images
-    : heroImage
-      ? [heroImage, ...baseGallery.filter((img) => img !== heroImage)]
-      : baseGallery
+  const colorGallery = selectedColor?.images ?? []
+  const heroImage = heroFor(selectedVariant, selectedColor) ?? baseGallery[0]
+  const galleryImages = colorGallery.length
+    ? selectedColor?.base
+      ? [heroImage, ...colorGallery.filter((img) => img !== heroImage)]
+      : colorGallery
+    : [heroImage, ...baseGallery.filter((img) => img !== heroImage)]
   const displayedImage = galleryImages[galleryIndex]
 
   const imageUrls = (product.images?.length ? product.images : [product.image]).map(absoluteUrl)
