@@ -34,6 +34,19 @@ A code can also carry `maxUses` (a one-time code) and `expiresAt` (a code that
 stops working on a date). The storefront checks a code before it is used and the
 checkout checks it again, so a code that ran out is never honoured.
 
+## Product colours
+
+The Natural Glow candles come in five colours. A colour never changes the price;
+it only changes the pictures. White is the basic candle: it keeps the neutral
+photography, where the picture of the chosen size leads the gallery. Every other
+colour brings its own pictures and replaces the gallery with them.
+
+The pictures live per shape and per colour in `public/images/products/<shape>/<colour>/`
+(`image-1.webp`, `image-2.webp`, …), and the neutral pictures of a shape live in
+its `white/` folder. `src/data/products.ts` holds the palette and points every
+colour at its pictures; the backend mirrors the palette in the `ProductColor`
+table, so add a colour there with a migration as well.
+
 ## Frontend structure
 
 ```text
