@@ -231,6 +231,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const removeCoupon = useCallback(() => {
     setCoupon(null)
     setCouponError(null)
+    try {
+      localStorage.removeItem(COUPON_STORAGE_KEY)
+    } catch {
+      // ignore storage failures
+    }
   }, [])
 
   const value = useMemo<CartContextValue>(() => {

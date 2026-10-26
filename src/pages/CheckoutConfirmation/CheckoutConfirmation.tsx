@@ -32,7 +32,7 @@ export function CheckoutConfirmation() {
   const [params] = useSearchParams()
   const orderNumber = params.get('order')
   const isMock = params.get('mock') === '1'
-  const { clearCart } = useCart()
+  const { clearCart, removeCoupon } = useCart()
   const [order, setOrder] = useState<OrderStatusResponse | null>(null)
   const [failed, setFailed] = useState(false)
   const clearedRef = useRef(false)
@@ -63,6 +63,7 @@ export function CheckoutConfirmation() {
         } else if (data.status === 'paid' && !clearedRef.current) {
           clearedRef.current = true
           clearCart()
+          removeCoupon()
         }
       } catch {
         if (!cancelled) setFailed(true)
@@ -74,7 +75,7 @@ export function CheckoutConfirmation() {
       cancelled = true
       if (timer) window.clearTimeout(timer)
     }
-  }, [orderNumber, clearCart])
+  }, [orderNumber, clearCart, removeCoupon])
 
   if (!orderNumber) {
     return (
