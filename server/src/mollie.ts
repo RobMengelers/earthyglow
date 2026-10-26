@@ -75,7 +75,9 @@ type CreatePaymentInput = {
 }
 
 function buildRedirectUrl(orderNumber: string, mock: boolean): string {
-  const url = `${env.FRONTEND_URL}/checkout/confirmation?order=${encodeURIComponent(orderNumber)}`
+  const origins = env.FRONTEND_URL.split(',').map((o) => o.trim()).filter(Boolean)
+  const frontendBase = origins.find((o) => o.includes('www.')) ?? origins[0] ?? ''
+  const url = `${frontendBase}/checkout/confirmation?order=${encodeURIComponent(orderNumber)}`
   return mock ? `${url}&mock=1` : url
 }
 

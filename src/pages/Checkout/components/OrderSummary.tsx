@@ -4,6 +4,7 @@ import { calcTotals, formatPrice, shippingZoneForCountry } from '../../../cart/C
 import { ShippingProgress } from '../../../cart/components/ShippingProgress'
 import { useCart } from '../../../cart/useCart'
 import { Reveal } from '../../../components/ui/Reveal'
+import { LoadingButton } from '../../../components/ui/LoadingButton'
 import { imageAttrs, SIZES } from '../../../lib/images'
 
 export function OrderSummary({ country }: { country: string }) {
@@ -86,13 +87,14 @@ export function OrderSummary({ country }: { country: string }) {
               autoComplete="off"
               spellCheck={false}
             />
-            <button
+            <LoadingButton
               type="submit"
               className="checkout-coupon-apply"
-              disabled={couponPending || code.trim() === ''}
+              disabled={code.trim() === ''}
+              loading={couponPending}
             >
-              {couponPending ? 'Checking…' : 'Apply'}
-            </button>
+              Apply
+            </LoadingButton>
           </div>
           {couponError && (
             <p className="checkout-coupon-error" role="alert">

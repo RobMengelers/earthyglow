@@ -646,9 +646,6 @@ export async function sendOrderInvoice(
     return false
   }
 
-  const invoice = buildInvoiceData(order)
-  const paidAt = invoice.paidAt
-
   const pdf = await archiveInvoicePdf(order)
 
   const productRows = order.items
@@ -662,12 +659,6 @@ export async function sendOrderInvoice(
         </tr>`,
     )
     .join('')
-
-  // The coupon is mentioned in the email too, so the customer can see what
-  // their code did.
-  const couponRow = order.couponCode
-    ? `<tr><td style="padding:12px 16px; color:#6b6157;">Coupon</td><td style="padding:12px 16px; text-align:right;">${escapeHtml(order.couponCode)} — ${order.discountCents > 0 ? `${formatEuro(order.discountCents)} off` : 'free shipping'}</td></tr>`
-    : ''
 
   const html = renderCustomerEmail(`
           <div style="padding:34px 0 12px;">
@@ -687,13 +678,7 @@ export async function sendOrderInvoice(
             </thead>
             <tbody>${productRows}</tbody>
           </table>
-          <table style="border-collapse:collapse; width:100%; margin:16px 0 24px; background:#fffdf8; border:1px solid #e3d8c8; border-radius:12px;">
-            <tr><td style="padding:12px 16px; color:#6b6157;">Order</td><td style="padding:12px 16px; text-align:right;"><strong>${order.orderNumber}</strong></td></tr>
-            <tr><td style="padding:12px 16px; color:#6b6157;">Invoice date</td><td style="padding:12px 16px; text-align:right;">${formatDate(paidAt)}</td></tr>
-            ${couponRow}
-            <tr><td style="padding:12px 16px; color:#6b6157;">Total paid</td><td style="padding:12px 16px; text-align:right; color:#5f3b25;"><strong>${formatEuro(order.totalCents)}</strong><br /><small style="color:#6b6157;">incl. 21% VAT (${formatEuro(includedVatCents(order.totalCents))})</small></td></tr>
-          </table>
-          <p style="color:#6b6157; line-height:1.6;">Your invoice PDF is attached for your records.</p>
+          <p style="color:#6b6157; line-height:1.6;">Your invoice PDF is attached.</p>
   `)
 
   const { error } = await resend!.emails.send({

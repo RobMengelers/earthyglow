@@ -98,6 +98,10 @@
 }
 
 .checkout-coupon-apply {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-family: var(--font-body);
   font-size: 0.85rem;
   font-weight: 600;
@@ -108,6 +112,7 @@
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 0 1.1rem;
+  min-width: 5.5rem;
   cursor: pointer;
   transition:
     border-color 0.25s ease,
@@ -122,6 +127,26 @@
 .checkout-coupon-apply:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.checkout-coupon-apply.is-loading {
+  pointer-events: none;
+}
+
+.checkout-coupon-apply.is-loading .btn-label {
+  opacity: 0;
+}
+
+.checkout-coupon-apply .btn-spinner {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 1em;
+  height: 1em;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  animation: btn-spin 0.7s linear infinite;
 }
 
 .checkout-coupon-error {
