@@ -800,9 +800,22 @@ export async function sendFulfillmentEmail(order: {
 }
 
 export async function sendRefundEmail(order: { orderNumber: string; totalCents: number; customer: { firstName: string; email: string | null } }): Promise<boolean> {
-  if (!resend) return false
+  if (!resend || !emailEnabled) return false
   if (!order.customer.email) return false
-  const { error } = await resend.emails.send({ from: env.EMAIL_FROM, to: [order.customer.email], subject: 'Your EarthyGlow refund', html: `<div style="font-family:Arial,sans-serif;color:#2e2a25;max-width:620px;padding:28px"><h2 style="font-family:Georgia,serif;color:#5f3b25">Your refund has been arranged</h2><p>Hi ${escapeHtml(order.customer.firstName)},</p><p>We’ve sent a full refund of <strong>${formatEuro(order.totalCents)}</strong> for order <strong>${escapeHtml(order.orderNumber)}</strong> to Mollie. The time it takes to appear depends on your bank or payment provider.</p><p>With love,<br /><strong>Naomi</strong><br /><small>Founder of EarthyGlow</small></p></div>` })
+  const { error } = await resend.emails.send({
+    from: env.EMAIL_FROM,
+    to: [order.customer.email],
+    subject: 'Your EarthyGlow refund',
+    html: renderCustomerEmail(`
+          <div style="padding:34px 0 12px;">
+            <p style="margin:0 0 10px; color:#5f3b25; font-size:12px; font-weight:bold; letter-spacing:2px; text-transform:uppercase;">A little note from EarthyGlow</p>
+            <h2 style="margin:0 0 18px; font-family:Georgia,serif; font-size:30px; font-weight:normal; color:#2e2a25;">Your refund has been arranged.</h2>
+            <p style="color:#6b6157; line-height:1.7;">Hi ${escapeHtml(order.customer.firstName)},</p>
+            <p style="color:#6b6157; line-height:1.7;">We’ve sent a full refund of <strong>${formatEuro(order.totalCents)}</strong> for order <strong>${escapeHtml(order.orderNumber)}</strong> to Mollie. The time it takes to appear depends on your bank or payment provider.</p>
+          </div>
+          <p style="color:#6b6157; line-height:1.6;">With love,<br /><strong>Naomi</strong><br /><small>Founder of EarthyGlow</small></p>
+    `),
+  })
   if (error) throw new Error(`Resend rejected refund email: ${error.message}`)
   return true
 }
