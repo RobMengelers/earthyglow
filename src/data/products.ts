@@ -170,18 +170,6 @@ export const collections: Collection[] = [
         description:
           'A candle inspired by a favourite autumn drink, with whipped wax and handmade seasonal details. Poured with soy wax and scented with Pumpkin Spice. For your shelf, not your coffee cup.',
       },
-      {
-        // A test product that costs 50 cents, used to try the checkout and the
-        // coupon codes end to end. Remove it when the testing is done.
-        id: 'test-candle',
-        name: 'Test candle',
-        price: '€0,50',
-        priceCents: 50,
-        image: '/images/hero-candles.webp',
-        collectionId: 'scented-glow',
-        description:
-          'A test candle that costs 50 cents. It is here to try the checkout and coupon codes with, and should be taken off the shop again afterwards.',
-      },
     ],
   },
   {
