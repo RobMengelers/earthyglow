@@ -1,7 +1,7 @@
 import type { MetaDescriptor } from 'react-router'
 import { socials } from '../data/socials'
 
-export const SITE_URL = 'https://earthyglow.nl'
+export const SITE_URL = 'https://www.earthyglow.nl'
 const SITE_NAME = 'EarthyGlow'
 const DEFAULT_TITLE = 'EarthyGlow · Hand-poured Soy Candles'
 const DEFAULT_DESCRIPTION =

@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /admin/
 
-Sitemap: https://earthyglow.nl/sitemap.xml
+Sitemap: https://www.earthyglow.nl/sitemap.xml
