@@ -11,9 +11,14 @@
 
 .checkout-summary-line {
   display: grid;
-  grid-template-columns: 54px 1fr auto;
+  grid-template-columns: 54px minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.85rem;
+}
+
+.checkout-summary-name {
+  min-width: 0;
+  word-break: break-word;
 }
 
 .checkout-summary-media {
@@ -72,10 +77,11 @@
 .checkout-coupon-row {
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .checkout-coupon-input {
-  flex: 1;
+  flex: 1 1 120px;
   min-width: 0;
   font-family: var(--font-body);
   font-size: 0.95rem;
@@ -86,6 +92,7 @@
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 0.65rem 0.9rem;
+  box-sizing: border-box;
   transition:
     border-color 0.25s ease,
     box-shadow 0.25s ease;

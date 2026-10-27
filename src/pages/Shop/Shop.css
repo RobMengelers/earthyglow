@@ -148,21 +148,45 @@
   }
 
   .season-nav {
-    gap: 26px;
+    gap: 22px;
+    overflow-x: auto;
     overflow-y: visible;
-    padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+    scrollbar-gutter: stable;
+    padding: 0 4px 8px;
+    /* hint that content scrolls horizontally */
+    mask-image: linear-gradient(to right, transparent 0, black 12px, black calc(100% - 24px), transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, transparent 0, black 12px, black calc(100% - 24px), transparent 100%);
   }
 
-  .season-link {
+  .season-nav::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .season-nav::-webkit-scrollbar-track {
+    background: rgba(95, 59, 37, 0.08);
+    border-radius: 999px;
+  }
+
+  .season-nav::-webkit-scrollbar-thumb {
+    background: rgba(95, 59, 37, 0.4);
+    border-radius: 999px;
+  }
+
+  .season-nav::-webkit-scrollbar-thumb:hover {
+    background: rgba(95, 59, 37, 0.55);
+  }
+
+  .season-link,
+  .season-dropdown-trigger {
+    scroll-snap-align: start;
     padding-bottom: 16px;
   }
 
   .season-divider {
     margin-block: 12px 14px;
-  }
-
-  .season-dropdown-trigger {
-    padding-bottom: 16px;
   }
 
 }

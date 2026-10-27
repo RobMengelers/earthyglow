@@ -1,6 +1,7 @@
 .field {
   display: grid;
   gap: 0.35rem;
+  min-width: 0;
 }
 
 .field > span {
@@ -20,6 +21,9 @@
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 0.8rem 1rem;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   transition:
     border-color 0.25s ease,
     box-shadow 0.25s ease;
@@ -49,7 +53,7 @@
 
 .field-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 1rem;
 }
 

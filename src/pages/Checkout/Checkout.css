@@ -10,6 +10,11 @@
   align-items: start;
 }
 
+.checkout-form-wrap,
+.checkout-summary {
+  min-width: 0;
+}
+
 .checkout-form {
   display: grid;
   gap: 1.8rem;
@@ -50,13 +55,20 @@
 @media (max-width: 960px) {
   .checkout-grid {
     grid-template-columns: 1fr;
-    gap: 36px;
+    gap: 32px;
+  }
+
+  .checkout-summary {
+    order: -1;
   }
 }
 
 @media (max-width: 640px) {
-
   .checkout-body {
-    padding: 36px 0 72px;
+    padding: 28px 0 64px;
+  }
+
+  .checkout-grid {
+    gap: 24px;
   }
 }
