@@ -36,6 +36,7 @@
   font-size: 1.08rem;
   max-width: 54ch;
   margin-bottom: 1.8rem;
+  white-space: pre-line;
 }
 
 .product-options {

@@ -88,7 +88,7 @@ export const collections: Collection[] = [
         images: Array.from({ length: 10 }, (_, index) => `/images/products/floral-box/image-${index + 1}.webp`),
         collectionId: 'little-glow',
         description:
-          'Nine individually poured flower candles, arranged in a gift box and scented with Bluebell. I make these with approximately 220g of soy wax. Choose pink, baby blue or purple for someone you love, or for yourself.',
+          'A beautiful collection of nine individually hand-poured flower candles, carefully arranged in an elegant gift box and delicately scented with Bluebell. \n\n Made with approximately 220g of 100% natural soy wax, each flower is poured by hand, making every box unique. \n\n The Bluebell fragrance is fresh, floral and elegant, opening with notes of bluebell and hyacinth, followed by a soft floral heart of lavender, galbanum, rose and jasmine, and finished with a warm touch of musk. \n\n Choose from soft pink, baby blue or purple and give someone special a gift that looks almost too beautiful to burn or simply treat yourself. ♡',
         variants: [
           { id: 'pink', label: 'Pink', swatch: '#e8a1b5', priceCents: 1495, image: '/images/products/floral-box/image-4.webp' },
           { id: 'baby-blue', label: 'Baby blue', swatch: '#9fc9e8', priceCents: 1495, image: '/images/products/floral-box/image-5.webp' },
@@ -104,7 +104,7 @@ export const collections: Collection[] = [
         images: Array.from({ length: 5 }, (_, index) => `/images/products/floral-basket/image-${index + 1}.webp`),
         collectionId: 'little-glow',
         description:
-          'A basket of individually poured flower candles with an English Rose scent. Made with approximately 150g of soy wax and available in pink or red. A little bouquet you can enjoy at home or give as a gift.',
+          'A charming basket filled with eight individually hand-poured flower candles, carefully arranged and delicately scented with English Rose. \n\n Made with approximately 150g of 100% natural soy wax, each flower is poured by hand, making every basket unique. \n\n The English Rose fragrance is soft, warm and elegant, opening with sweet notes of vanilla and citrus, followed by a green, fruity and slightly spicy heart, and finished with a warm base of musk, woody notes and balsamic tones. \n\n Available in pink or red, this little floral bouquet is perfect to enjoy at home or to give as a thoughtful gift. ♡',
         variants: [
           { id: 'floral-basket-pink', label: 'Pink', priceCents: 1295, swatch: '#e8a1b5', image: '/images/products/floral-basket/image-1.webp' },
           { id: 'floral-basket-red', label: 'Red', priceCents: 1295, swatch: '#c94c55', image: '/images/products/floral-basket/image-3.webp' },
@@ -145,7 +145,7 @@ export const collections: Collection[] = [
         images: ['/images/products/autumn-ember/image-1.webp', '/images/products/autumn-ember/image-2.webp'],
         collectionId: 'scented-glow',
         description:
-          'I decorate this soy wax candle with autumn-inspired wax details. Its Vanilla & Cinders fragrance brings together smoky vanilla, clove, cedarwood, amber and musk for an evening at home.',
+          'A cozy autumn candle finished with delicate, hand-poured wax details inspired by the season. Its Vanilla & Cinders fragrance combines smoky vanilla, clove, cedarwood, amber and musk, creating a warm and inviting scent for slow evenings at home.',
       },
       {
         id: 'pumpkin-spice',
@@ -199,7 +199,7 @@ export const collections: Collection[] = [
         images: ['/images/products/pumpkin-boo/image-1.webp', '/images/products/pumpkin-boo/image-2.webp'],
         collectionId: 'halloween',
         description:
-          'A little ghost and pumpkin, finished by hand in soy wax. Pumpkin Boo has a warm Pumpkin Spice fragrance for autumn evenings at home.',
+          'A playful autumn candle featuring a little ghost and pumpkin, carefully finished by hand in soy wax. Scented with warm Pumpkin Spice, Pumpkin Boo brings a cozy seasonal feel to your home and is perfect for crisp autumn evenings.',
       },
       {
         id: 'boo-boo',
@@ -221,7 +221,7 @@ export const collections: Collection[] = [
         images: ['/images/products/scary-boo/image-1.webp', '/images/products/scary-boo/image-2.webp'],
         collectionId: 'halloween',
         description:
-          'A spooky little addition to your autumn shelf, decorated by hand with a ghost-inspired wax detail. Made with soy wax and scented with Vanilla & Cinders.',
+          'A playful autumn candle with a hand-finished ghost-inspired wax detail, perfect for adding a subtle spooky touch to your home. \n\n Made with soy wax and scented with Vanilla & Cinders, a warm and comforting fragrance with smoky vanilla, soft clove, cedarwood, glowing amber and musk. Rich, cozy and slightly mysterious, it feels like a crisp autumn evening by the fire.',
       },
       {
         id: 'pumpkin-spice-wax-melts',

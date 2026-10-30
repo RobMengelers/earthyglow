@@ -296,11 +296,7 @@ export function Shop() {
           ) : (
             <div className="shop-empty">
               <p className="eyebrow">A different little glow</p>
-              <h2>No candles in this combination just yet</h2>
-              <p>Explore all the pieces for this season, or browse all seasons.</p>
-              <Link className="btn btn-primary" to={filterUrl(activeSeason?.id)} prefetch="intent">
-                {activeSeason ? `Explore ${activeSeason.label.toLowerCase()}` : 'Explore all products'}
-              </Link>
+              <h2>No candles in this season just yet, check back in after november 1st</h2>
             </div>
           )}
         </div>
