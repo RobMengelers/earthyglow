@@ -158,5 +158,6 @@
 
   .hero-frame {
     width: min(340px, 100%);
+    margin-inline: auto;
   }
 }
