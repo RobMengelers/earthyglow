@@ -36,9 +36,10 @@ export function Home() {
         <div className="container">
           <Reveal className="section-head">
             <p className="eyebrow">Shop by season</p>
-            <h2>Find your season</h2>
+            <h2>Make room for a winter glow</h2>
             <p className="section-lede">
-              Flower candles and seasonal scents, all poured by hand.
+              Cosy winter favourites and thoughtful gifts, alongside a little glow
+              for every season. All poured by hand.
             </p>
           </Reveal>
           <div className="collection-card-grid">

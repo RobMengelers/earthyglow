@@ -380,7 +380,7 @@ export const collections: Collection[] = [
       {
         id: 'christmas-bubble-candle',
         name: 'Christmas Bubble Candle',
-        priceCents: 295,
+        priceCents: 695,
         image: '/images/christmas-bubble-candle.webp',
         images: ['/images/products/christmas-bubble-candle/image-1.webp'],
         collectionId: 'natural-glow',
@@ -475,5 +475,5 @@ export function getRelated(product: Product, count = 3): Product[] {
     .slice(0, count) ?? products.filter((p) => p.id !== product.id).slice(0, count)
 }
 
-export const heroImage = '/images/hero-candles.webp'
+export const heroImage = '/images/hero-winter.webp'
 export const aboutImage = '/images/about-candles.webp'

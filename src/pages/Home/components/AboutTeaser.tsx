@@ -16,16 +16,17 @@ export function AboutTeaser() {
         </Reveal>
         <Reveal delay={100} className="about-copy">
           <p className="eyebrow">Our story</p>
-          <h2>Made by hand, made for home</h2>
+          <h2>A little warmth, made by hand</h2>
           <p>
             I’m Naomi, and I make EarthyGlow candles here in the Netherlands.
             My work in social care reminds me how much small moments of comfort
-            matter. Making candles is another way I bring that feeling home.
+            matter, especially on cold, dark days. Making candles is my way of
+            bringing a little warmth and light to winter evenings at home.
           </p>
           <p>
-            Flowers, shells and earthy colours inspire what I make. I hope you
-            find something here that feels at home with you, or makes a thoughtful
-            gift for someone close to you.
+            This season, I’m drawn to frosty woodland walks, warm winter scents
+            and the quiet glow of candlelight. I hope you find something for your
+            cosiest corner, or a thoughtful gift for someone close to you.
           </p>
           <ul className="about-list">
             <li>100% soy wax</li>

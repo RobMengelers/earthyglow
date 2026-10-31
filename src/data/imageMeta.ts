@@ -14,6 +14,7 @@ export const imageMeta: Record<string, ImageMeta> = {
   '/images/floral-box.webp': { width: 900, height: 1125, variants: [400, 800] },
   '/images/ghostlight-dinner-candle.webp': { width: 1000, height: 1250, variants: [400, 800] },
   '/images/hero-candles.webp': { width: 1177, height: 941, variants: [400, 800] },
+  '/images/hero-winter.webp': { width: 1122, height: 1402, variants: [400, 800] },
   '/images/pillar.webp': { width: 900, height: 900, variants: [400, 800] },
   '/images/pumpkin-boo.webp': { width: 1000, height: 1331, variants: [400, 800] },
   '/images/pumpkin-spice-latte.webp': { width: 900, height: 1125, variants: [400, 800] },

@@ -161,3 +161,94 @@
     margin-inline: auto;
   }
 }
+
+/* Snowflakes float around the red edge, leaving the label clear. */
+.hero .btn-winter {
+  background: linear-gradient(135deg, #a12432, #7d1522);
+  color: #fff;
+  border-color: #b13e4a;
+  box-shadow: inset 0 1px 0 #ffffff30, 0 14px 26px -14px #68121e80;
+  padding-inline: 2rem;
+}
+
+.hero .btn-winter:hover {
+  background: linear-gradient(135deg, #8c1c29, #68101c);
+  transform: translateY(-2px);
+  box-shadow: inset 0 1px 0 #ffffff40, 0 18px 30px -14px #68121e90;
+}
+
+.hero .btn-winter:focus-visible {
+  outline: 3px solid #8f1826;
+  outline-offset: 5px;
+}
+
+.winter-snowflakes {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.winter-snowflake {
+  --float-y: -1;
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  color: #fffaf3;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 1px 1px #68121e90);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .winter-snowflake {
+    animation: winterSnowflakeDrift 4.8s ease-in-out infinite;
+    animation-delay: -0.8s;
+  }
+
+  .winter-snowflake:nth-child(2n) {
+    animation-duration: 6.2s;
+    animation-delay: -2.1s;
+    animation-direction: reverse;
+  }
+
+  .winter-snowflake:nth-child(3n) {
+    animation-duration: 5.4s;
+    animation-delay: -3.4s;
+  }
+}
+
+@keyframes winterSnowflakeDrift {
+  0%, 100% {
+    translate: -5px 0;
+    rotate: -20deg;
+    opacity: 0.85;
+  }
+  25% {
+    translate: 1px calc(var(--float-y) * 7px);
+    rotate: 5deg;
+    opacity: 1;
+  }
+  50% {
+    translate: 7px calc(var(--float-y) * 3px);
+    rotate: 30deg;
+    opacity: 1;
+  }
+  75% {
+    translate: 0 calc(var(--float-y) * 10px);
+    rotate: 0deg;
+    opacity: 0.9;
+  }
+}
+
+.winter-snowflake:nth-child(n + 4) {
+  --float-y: 1;
+}
+
+.winter-snowflake:nth-child(1) { left: 15px; top: 3px; width: 18px; height: 18px; transform: rotate(12deg); }
+.winter-snowflake:nth-child(2) { left: 39%; top: 2px; width: 11px; height: 11px; }
+.winter-snowflake:nth-child(3) { right: 13px; top: 4px; transform: rotate(20deg); }
+.winter-snowflake:nth-child(4) { left: 13px; bottom: 5px; width: 10px; height: 10px; }
+.winter-snowflake:nth-child(5) { left: 61%; bottom: 2px; transform: rotate(15deg); }
+.winter-snowflake:nth-child(6) { right: 16px; bottom: 3px; width: 17px; height: 17px; transform: rotate(-12deg); }
