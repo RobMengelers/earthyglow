@@ -8,7 +8,6 @@ export type Product = {
   soldOut?: boolean
   description: string
   collectionId: string
-  care?: string
   variantLabel?: string
   variants?: ProductVariant[]
   colorLabel?: string
@@ -188,7 +187,6 @@ export const collections: Collection[] = [
         collectionId: 'halloween',
         description:
           'A twisted dinner candle with a little ghost face, poured by hand with 100% soy wax. A playful addition to your Halloween table or a small gift for someone who loves the season.',
-        care: 'Use a suitable candle holder on a stable, heat-resistant surface. Never leave a burning candle unattended.',
       },
       {
         id: 'pumpkin-boo',
@@ -233,7 +231,6 @@ export const collections: Collection[] = [
         collectionId: 'halloween',
         description:
           'Little pumpkin-shaped wax melts with a warm Pumpkin Spice fragrance. I pour them by hand with soy wax and pack approximately 70g in each bag. Use them in a suitable wax warmer.',
-        care: 'Place one or two melts in a suitable wax warmer. Never add water or light the melts directly. Follow your warmer’s instructions and never leave it unattended.',
       },
     ],
   },
