@@ -1,6 +1,6 @@
 import { Link, useParams } from 'react-router'
 import { useState } from 'react'
-import { getCollection, getProduct, getRelated, type ProductColor, type ProductVariant } from '../../data/products'
+import { getCollection, getProduct, getRelated, productPriceLabel, type ProductColor, type ProductVariant } from '../../data/products'
 import { ProductCard } from '../../components/catalog/ProductCard'
 import { Reveal } from '../../components/ui/Reveal'
 import { useCart } from '../../cart/useCart'
@@ -271,7 +271,7 @@ export function ProductPage() {
                 </Link>
               )}
               <h1>{product.name}</h1>
-              <p className="product-detail-price">{selectedVariant?.priceCents ? formatPrice(selectedVariant.priceCents) : product.price}</p>
+              <p className="product-detail-price">{selectedVariant?.priceCents ? formatPrice(selectedVariant.priceCents) : productPriceLabel(product)}</p>
               <p className="product-detail-desc">{product.description}</p>
 
               {product.colors && (
@@ -291,9 +291,6 @@ export function ProductPage() {
                       </label>
                     ))}
                   </div>
-                  {selectedColor && (
-                    <p className="product-option-value">{selectedColor.label}</p>
-                  )}
                 </fieldset>
               )}
 

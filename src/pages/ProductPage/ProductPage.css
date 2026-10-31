@@ -61,7 +61,6 @@
 .product-option-swatch { width: 2.45rem; height: 2.45rem; padding: 0 !important; border-radius: 50% !important; border: 2px solid transparent !important; box-shadow: 0 0 0 1px var(--line); }
 .product-option-swatch:hover { transform: scale(1.08); }
 .product-option.is-selected .product-option-swatch { border-color: var(--surface) !important; box-shadow: 0 0 0 2px var(--clay), 0 0 0 4px var(--surface); }
-.product-option-value { margin: 0.65rem 0 0; font-size: 0.85rem; color: var(--body); }
 
 .product-detail-perks {
   display: flex;

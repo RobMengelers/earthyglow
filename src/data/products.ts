@@ -1,7 +1,8 @@
+import { formatPrice } from '../lib/price.ts'
+
 export type Product = {
   id: string
   name: string
-  price: string
   priceCents: number
   image: string
   images?: string[]
@@ -44,6 +45,18 @@ export type Collection = {
   products: Product[]
 }
 
+export function productPriceLabel(product: Product): string {
+  const prices = [
+    product.priceCents,
+    ...(product.variants ?? []).map(
+      (variant) => variant.priceCents ?? product.priceCents,
+    ),
+  ]
+  const hasPriceRange = new Set(prices).size > 1
+
+  return `${hasPriceRange ? 'From ' : ''}${formatPrice(Math.min(...prices))}`
+}
+
 // The Natural Glow candles all share one colour range. White is the basic
 // candle: it keeps the neutral photography, every other colour brings its own
 // pictures.
@@ -81,7 +94,6 @@ export const collections: Collection[] = [
       {
         id: 'floral-box',
         name: 'The Floral Box',
-        price: '€14,95',
         priceCents: 1495,
         image: '/images/floral-box.webp',
         images: Array.from({ length: 10 }, (_, index) => `/images/products/floral-box/image-${index + 1}.webp`),
@@ -97,7 +109,6 @@ export const collections: Collection[] = [
       {
         id: 'floral-basket',
         name: 'The Floral Basket',
-        price: '€12,95',
         priceCents: 1295,
         image: '/images/floral-basket.webp',
         images: Array.from({ length: 5 }, (_, index) => `/images/products/floral-basket/image-${index + 1}.webp`),
@@ -108,6 +119,16 @@ export const collections: Collection[] = [
           { id: 'floral-basket-pink', label: 'Pink', priceCents: 1295, swatch: '#e8a1b5', image: '/images/products/floral-basket/image-1.webp' },
           { id: 'floral-basket-red', label: 'Red', priceCents: 1295, swatch: '#c94c55', image: '/images/products/floral-basket/image-3.webp' },
         ],
+      },
+      {
+        id: 'festive-glow-box',
+        name: 'The Festive Glow Box',
+        priceCents: 1495,
+        image: '/images/festive-glow-box.webp',
+        images: Array.from({ length: 2 }, (_, index) => `/images/products/festive-glow-box/image-${index + 1}.webp`),
+        collectionId: 'little-glow',
+        description:
+          'Bring the warmth of Christmas into your home with our Festive Glow Box. The box contains 9 handmade flower candles, scented with Mulled Wine. \n\n The fragrance is warm, rich and festive, with the cozy character of spiced wine, sweet fruit and warming Christmas spices. It creates that familiar winter feeling of a steaming glass of mulled wine on a cold December evening. \n\n The candles are made with approximately 170 g of wax in total and the box is approximately 20 cm high. \n\n Important: Always remove the candles from the box before lighting. The decorative materials inside the box are flammable and must never come into contact with an open flame. \n\n 9 candles | Approx. 170 g wax | Approx. 20 cm high | Mulled Wine fragrance',
       },
     ],
   },
@@ -121,10 +142,9 @@ export const collections: Collection[] = [
       {
         id: 'coconut-beach',
         name: 'Coconut Beach',
-        price: 'From €14,95',
         priceCents: 1495,
         image: '/images/coconut-beach.webp',
-        images: ['/images/products/coconut-beach/image-1.webp', '/images/products/coconut-beach/image-2.webp', '/images/products/coconut-beach/image-3.webp', '/images/products/coconut-beach/image-4.webp', '/images/products/coconut-beach/image-5.webp'],
+        images: Array.from({ length: 5 }, (_, index) => `/images/products/coconut-beach/image-${index + 1}.webp`),
         collectionId: 'scented-glow',
         description:
           'A little beach scene, poured by hand with soy wax and scented with Coconut Island. Pineapple and orange meet creamy coconut, almond and peach. Choose your favourite of the four seaside shapes.',
@@ -138,10 +158,9 @@ export const collections: Collection[] = [
       {
         id: 'autumn-ember',
         name: 'Autumn Ember',
-        price: '€14,95',
         priceCents: 1495,
         image: '/images/autumn-ember.webp',
-        images: ['/images/products/autumn-ember/image-1.webp', '/images/products/autumn-ember/image-2.webp'],
+        images: Array.from({ length: 2 }, (_, index) => `/images/products/autumn-ember/image-${index + 1}.webp`),
         collectionId: 'scented-glow',
         description:
           'A cozy autumn candle finished with delicate, hand-poured wax details inspired by the season. Its Vanilla & Cinders fragrance combines smoky vanilla, clove, cedarwood, amber and musk, creating a warm and inviting scent for slow evenings at home.',
@@ -149,10 +168,9 @@ export const collections: Collection[] = [
       {
         id: 'pumpkin-spice',
         name: 'Pumpkin Spice',
-        price: '€14,95',
         priceCents: 1495,
         image: '/images/pumpkin-spice.webp',
-        images: ['/images/products/pumpkin-spice/image-1.webp', '/images/products/pumpkin-spice/image-2.webp'],
+        images: Array.from({ length: 2 }, (_, index) => `/images/products/pumpkin-spice/image-${index + 1}.webp`),
         collectionId: 'scented-glow',
         soldOut: true,
         description:
@@ -161,76 +179,72 @@ export const collections: Collection[] = [
       {
         id: 'pumpkin-spice-latte',
         name: 'Pumpkin Spice Latte',
-        price: '€9,95',
         priceCents: 995,
         image: '/images/pumpkin-spice-latte.webp',
-        images: ['/images/products/pumpkin-spice-latte/image-1.webp', '/images/products/pumpkin-spice-latte/image-2.webp'],
+        images: Array.from({ length: 2 }, (_, index) => `/images/products/pumpkin-spice-latte/image-${index + 1}.webp`),
         collectionId: 'scented-glow',
         description:
           'A candle inspired by a favourite autumn drink, with whipped wax and handmade seasonal details. Poured with soy wax and scented with Pumpkin Spice. For your shelf, not your coffee cup.',
       },
-    ],
-  },
-  {
-    id: 'halloween',
-    eyebrow: 'Ghosts & pumpkins',
-    title: 'Halloween candles',
-    blurb: 'Little ghosts, pumpkin shapes and autumn scents. A few playful things I’ve made for the season.',
-    products: [
-      {
-        id: 'ghostlight-dinner-candle',
-        name: 'Ghostlight Dinner Candle',
-        price: '€2,95',
-        priceCents: 295,
-        image: '/images/ghostlight-dinner-candle.webp',
-        images: ['/images/products/ghostlight-dinner-candle/image-1.webp'],
-        collectionId: 'halloween',
-        description:
-          'A twisted dinner candle with a little ghost face, poured by hand with 100% soy wax. A playful addition to your Halloween table or a small gift for someone who loves the season.',
-      },
       {
         id: 'pumpkin-boo',
         name: 'Pumpkin Boo',
-        price: '€8,95',
         priceCents: 895,
         image: '/images/pumpkin-boo.webp',
-        images: ['/images/products/pumpkin-boo/image-1.webp', '/images/products/pumpkin-boo/image-2.webp'],
-        collectionId: 'halloween',
+        images: Array.from({ length: 2 }, (_, index) => `/images/products/pumpkin-boo/image-${index + 1}.webp`),
+        collectionId: 'scented-glow',
         description:
           'A playful autumn candle featuring a little ghost and pumpkin, carefully finished by hand in soy wax. Scented with warm Pumpkin Spice, Pumpkin Boo brings a cozy seasonal feel to your home and is perfect for crisp autumn evenings.',
       },
       {
         id: 'boo-boo',
         name: 'Boo Boo',
-        price: '€8,95',
         priceCents: 895,
         image: '/images/boo-boo.webp',
-        images: ['/images/products/boo-boo/image-1.webp', '/images/products/boo-boo/image-2.webp'],
-        collectionId: 'halloween',
+        images: Array.from({ length: 2 }, (_, index) => `/images/products/boo-boo/image-${index + 1}.webp`),
+        collectionId: 'scented-glow',
         description:
           'A handmade ghost detail sits on this soy wax candle. Scented with Vanilla & Cinders, with smoky vanilla, clove, cedarwood, amber and musk.',
       },
       {
         id: 'scary-boo',
         name: 'Scary Boo',
-        price: '€8,95',
         priceCents: 895,
         image: '/images/scary-boo.webp',
-        images: ['/images/products/scary-boo/image-1.webp', '/images/products/scary-boo/image-2.webp'],
-        collectionId: 'halloween',
+        images: Array.from({ length: 2 }, (_, index) => `/images/products/scary-boo/image-${index + 1}.webp`),
+        collectionId: 'scented-glow',
         description:
           'A playful autumn candle with a hand-finished ghost-inspired wax detail, perfect for adding a subtle spooky touch to your home. \n\n Made with soy wax and scented with Vanilla & Cinders, a warm and comforting fragrance with smoky vanilla, soft clove, cedarwood, glowing amber and musk. Rich, cozy and slightly mysterious, it feels like a crisp autumn evening by the fire.',
       },
       {
-        id: 'pumpkin-spice-wax-melts',
-        name: 'Pumpkin Spice Wax Melts',
-        price: '€4,95',
-        priceCents: 495,
-        image: '/images/pumpkin-spice-wax-melts.webp',
-        images: ['/images/products/pumpkin-spice-wax-melts/image-1.webp', '/images/products/pumpkin-spice-wax-melts/image-2.webp'],
-        collectionId: 'halloween',
+        id: 'hot-cocoa',
+        name: 'Hot Cocoa',
+        priceCents: 995,
+        image: '/images/hot-cocoa.webp',
+        images: Array.from({ length: 2 }, (_, index) => `/images/products/hot-cocoa/image-${index + 1}.webp`),
+        collectionId: 'scented-glow',
         description:
-          'Little pumpkin-shaped wax melts with a warm Pumpkin Spice fragrance. I pour them by hand with soy wax and pack approximately 70g in each bag. Use them in a suitable wax warmer.',
+          'Bring a little extra coziness into your home with our Hot Cocoa Candle. Scented with Pain au Chocolat, this warm and indulgent fragrance fills your space with the comforting aroma of rich chocolate and freshly baked pastry. \n\n Handmade with approximately 150 g of wax in a glass jar measuring around 9 cm high, making it the perfect cozy candle for the colder months. \n\n Approx. 150 g wax | Approx. 9 cm high | Pain au Chocolat fragrance',
+      },
+      {
+        id: 'gluhwein',
+        name: 'Gluhwein',
+        priceCents: 995,
+        image: '/images/gluhwein.webp',
+        images: Array.from({ length: 2 }, (_, index) => `/images/products/gluhwein/image-${index + 1}.webp`),
+        collectionId: 'scented-glow',
+        description:
+          'Bring the warm and festive feeling of Christmas into your home with our Glühwein Candle. Scented with Mulled Wine, this cozy fragrance combines warm spices with a rich, fruity character, inspired by a classic cup of glühwein. \n\n Handmade with approximately 150 g of wax in a glass jar measuring around 9 cm high, making it a perfect candle for cozy winter evenings and the holiday season. \n\n Approx. 150 g wax | Approx. 9 cm high | Mulled Wine fragrance',
+      },
+      {
+        id: 'winter-wonderland-candle',
+        name: 'Winter Wonderland Candle',
+        priceCents: 1495,
+        image: '/images/winter-wonderland-candle.webp',
+        images: Array.from({ length: 2 }, (_, index) => `/images/products/winter-wonderland-candle/image-${index + 1}.webp`),
+        collectionId: 'scented-glow',
+        description:
+          'Bring the fresh feeling of a winter forest into your home with our Winter Wonderland Candle. The fragrance opens with crisp notes of pine needles, cypress, eucalyptus and peppermint, followed by a warm heart of fir balsam. Cedarwood and resinous base notes give the scent a deep, woody and comforting finish. \n\n The candle is handmade with approximately 245 g of wax and comes in a low glass jar measuring around 7 cm high with a diameter of approximately 12 cm. \n\n Approx. 245 g wax | Approx. 7 cm high | Approx. 12 cm diameter | Nordic Cedar fragrance',
       },
     ],
   },
@@ -244,10 +258,9 @@ export const collections: Collection[] = [
       {
         id: 'column',
         name: 'Column candle',
-        price: 'From €9,95',
         priceCents: 995,
         image: '/images/column.webp',
-        images: ['/images/products/column/white/image-1.webp', '/images/products/column/white/image-2.webp', '/images/products/column/white/image-3.webp'],
+        images: Array.from({ length: 3 }, (_, index) => `/images/products/column/white/image-${index + 1}.webp`),
         collectionId: 'natural-glow',
         description:
           'Straight, ribbed lines and a simple column shape, poured by hand with 100% soy wax. Fragrance-free, so you can enjoy the candlelight without an added scent.',
@@ -263,7 +276,6 @@ export const collections: Collection[] = [
       {
         id: 'pillar',
         name: 'Pillar candle',
-        price: 'From €6,95',
         priceCents: 695,
         image: '/images/pillar.webp',
         images: Array.from({ length: 5 }, (_, index) => `/images/products/pillar/white/image-${index + 1}.webp`),
@@ -283,7 +295,6 @@ export const collections: Collection[] = [
       {
         id: 'spiral',
         name: 'Spiral candle',
-        price: 'From €6,95',
         priceCents: 695,
         image: '/images/spiral.webp',
         images: Array.from({ length: 5 }, (_, index) => `/images/products/spiral/white/image-${index + 1}.webp`),
@@ -303,7 +314,6 @@ export const collections: Collection[] = [
       {
         id: 'shell',
         name: 'Shell candle',
-        price: 'From €4,95',
         priceCents: 495,
         image: '/images/shell.webp',
         images: Array.from({ length: 3 }, (_, index) => `/images/products/shell/white/image-${index + 1}.webp`),
@@ -322,10 +332,9 @@ export const collections: Collection[] = [
       {
         id: 'arch',
         name: 'Arch candle',
-        price: 'From €4,95',
         priceCents: 495,
         image: '/images/arch.webp',
-        images: ['/images/products/arch/white/image-1.webp', '/images/products/arch/white/image-2.webp', '/images/products/arch/white/image-3.webp', '/images/products/arch/white/image-4.webp'],
+        images: Array.from({ length: 4 }, (_, index) => `/images/products/arch/white/image-${index + 1}.webp`),
         collectionId: 'natural-glow',
         description:
           'A simple arch shape that looks lovely on its own or beside your favourite objects. Made by hand with 100% soy wax and no added fragrance.',
@@ -342,7 +351,6 @@ export const collections: Collection[] = [
       {
         id: 'bubble',
         name: 'Bubble candle',
-        price: 'From €4,95',
         priceCents: 495,
         image: '/images/bubble.webp',
         images: Array.from({ length: 4 }, (_, index) => `/images/products/bubble/white/image-${index + 1}.webp`),
@@ -358,6 +366,90 @@ export const collections: Collection[] = [
           { id: 'bubble-large', label: 'Large', priceCents: 895, image: '/images/products/bubble/white/image-4.webp' },
           { id: 'bubble-bundle', label: 'Bundle', priceCents: 1595, image: '/images/products/bubble/white/image-1.webp' },
         ],
+      },
+      {
+        id: 'ghostlight-dinner-candle',
+        name: 'Ghostlight Dinner Candle',
+        priceCents: 295,
+        image: '/images/ghostlight-dinner-candle.webp',
+        images: ['/images/products/ghostlight-dinner-candle/image-1.webp'],
+        collectionId: 'natural-glow',
+        description:
+          'A twisted dinner candle with a little ghost face, poured by hand with 100% soy wax. A playful addition to your Halloween table or a small gift for someone who loves the season.',
+      },
+      {
+        id: 'christmas-bubble-candle',
+        name: 'Christmas Bubble Candle',
+        priceCents: 295,
+        image: '/images/christmas-bubble-candle.webp',
+        images: ['/images/products/christmas-bubble-candle/image-1.webp'],
+        collectionId: 'natural-glow',
+        description:
+          'Add a festive touch to your home with our handmade Christmas Bubble Candle. This unscented decorative candle is made with 100% natural soy wax, a cotton wick and mica powder, finished with beautiful Christmas-inspired details. \n\n With its playful bubble shape and festive colours, it is perfect as a small Christmas decoration or seasonal gift. \n\n Approx. 50 g wax | Approx. 6 cm high | Unscented | 100% natural soy wax',
+      },
+      {
+        id: 'christmas-tree-dinner-candle',
+        name: 'Christmas Tree Dinner Candle',
+        priceCents: 295,
+        image: '/images/christmas-tree-dinner-candle.webp',
+        images: ['/images/products/christmas-tree-dinner-candle/image-1.webp'],
+        collectionId: 'natural-glow',
+        description:
+          'Bring a festive touch to your Christmas table with our handmade Christmas Tree Dinner Candle. Its elegant tree-inspired shape makes it perfect for a cozy Christmas dinner, festive table setting or seasonal decoration. \n\n The candle is unscented and made with 100% natural soy wax, mica powder and a cotton wick. Each candle is handmade, making every piece slightly unique. \n\n Approx. 20 cm high | Unscented | 100% natural soy wax',
+      },
+      {
+        id: 'twisted-tree-candle',
+        name: 'Twisted Tree Candle',
+        priceCents: 1295,
+        image: '/images/twisted-tree-candle.webp',
+        images: ['/images/products/twisted-tree-candle/white/image-1.webp'],
+        collectionId: 'natural-glow',
+        description:
+          'Our handmade Twisted Tree Candle combines a soft, elegant shape with a festive and timeless look. The flowing, twisted design gives the candle a beautiful sculptural finish while keeping the overall style simple and natural. \n\n The candle is unscented and made with 100% natural soy wax, mica powder and a cotton wick. \n\n Approx. 70 g wax | Approx. 12 cm high | Unscented',
+        colorLabel: 'colour',
+        colors: [
+          { id: 'white', label: 'White', swatch: '#f0ebe1', base: true, images: ['/images/products/twisted-tree-candle/white/image-1.webp'] },
+          { id: 'pink', label: 'Pink', swatch: '#e8a1b5', images: ['/images/products/twisted-tree-candle/pink/image-1.webp'] },
+          { id: 'red', label: 'Red', swatch: '#c94c55', images: ['/images/products/twisted-tree-candle/red/image-1.webp'] },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'wax-melts',
+    eyebrow: 'Scented soy melts',
+    title: 'Wax Melts',
+    blurb: 'Little seasonal shapes for your warmer, poured by hand in soy wax and made to fill the room with a warm, comforting fragrance.',
+    products: [
+      {
+        id: 'pumpkin-spice-wax-melts',
+        name: 'Pumpkin Spice Wax Melts',
+        priceCents: 495,
+        image: '/images/pumpkin-spice-wax-melts.webp',
+        images: Array.from({ length: 2 }, (_, index) => `/images/products/pumpkin-spice-wax-melts/image-${index + 1}.webp`),
+        collectionId: 'wax-melts',
+        description:
+          'Little pumpkin-shaped wax melts with a warm Pumpkin Spice fragrance. I pour them by hand with soy wax and pack approximately 70g in each bag. Use them in a suitable wax warmer.',
+      },
+      {
+        id: 'sweet-christmas-wax-melts',
+        name: 'Sweet Christmas Wax Melts',
+        priceCents: 295,
+        image: '/images/sweet-christmas-wax-melts.webp',
+        images: Array.from({ length: 2 }, (_, index) => `/images/products/sweet-christmas-wax-melts/image-${index + 1}.webp`),
+        collectionId: 'wax-melts',
+        description:
+          'Fill your home with the warm and comforting scent of our Sweet Christmas Wax Melts. Scented with Pain au Chocolat, this cozy fragrance has a rich chocolate aroma with the sweet, bakery-like character of freshly baked pastries. \n\n Each 7 x 7 cm box contains 8 handmade Christmas-shaped wax melts, with approximately 45 g of wax in total. \n\n 8 wax melts | Approx. 45 g wax | Box size 7 x 7 cm | Pain au Chocolat fragrance',
+      },
+      {
+        id: 'white-christmas-wax-melts',
+        name: 'White Christmas Wax Melts',
+        priceCents: 295,
+        image: '/images/white-christmas-wax-melts.webp',
+        images: ['/images/products/white-christmas-wax-melts/image-1.webp'],
+        collectionId: 'wax-melts',
+        description:
+          'Fill your home with the fresh and festive scent of our White Christmas Wax Melts. This Christmas fragrance opens with notes of raspberry, green leaf and orange, followed by warm clove, pine and herbal notes, with a soft base of caramel and woody accords. \n\n Each 7 x 7 cm box contains 1 large snowflake and 6 small Christmas tree wax melts, with approximately 35 g of wax in total. \n\n 7 wax melts | Approx. 35 g wax | Box size 7 x 7 cm | White Christmas fragrance',
       },
     ],
   },

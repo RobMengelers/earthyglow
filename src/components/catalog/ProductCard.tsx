@@ -1,6 +1,6 @@
 import { Link } from 'react-router'
 import type { Product } from '../../data/products'
-import { getCollection } from '../../data/products'
+import { getCollection, productPriceLabel } from '../../data/products'
 import { imageAttrs, SIZES } from '../../lib/images'
 import { Reveal } from '../ui/Reveal'
 
@@ -28,7 +28,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
         <div className="product-body">
           {collection && <span className="product-collection">{collection.title}</span>}
           <h3>{product.name}</h3>
-          <span className="product-price">{product.price}</span>
+          <span className="product-price">{productPriceLabel(product)}</span>
         </div>
         <span className="product-cta">
           View product

@@ -31,8 +31,8 @@ export const seasons = [
     id: 'winter',
     label: 'Winter',
     description: 'Cosy candles to brighten the darkest days of the year.',
-    productIds: [],
-    coverProductId: 'autumn-ember',
+    productIds: ['festive-glow-box', 'hot-cocoa', 'gluhwein', 'winter-wonderland-candle', 'christmas-bubble-candle', 'christmas-tree-dinner-candle', 'twisted-tree-candle', 'sweet-christmas-wax-melts', 'white-christmas-wax-melts'],
+    coverProductId: 'festive-glow-box',
   },
 ]
 
@@ -47,7 +47,7 @@ export const holidays = [
     id: 'christmas',
     label: 'Christmas',
     description: 'Cosy festive candles - coming soon.',
-    productIds: [],
+    productIds: ['festive-glow-box', 'hot-cocoa', 'gluhwein', 'winter-wonderland-candle', 'christmas-bubble-candle', 'christmas-tree-dinner-candle', 'twisted-tree-candle', 'sweet-christmas-wax-melts', 'white-christmas-wax-melts'],
   },
 ]
 

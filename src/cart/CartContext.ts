@@ -1,6 +1,8 @@
 import { createContext } from 'react'
 import type { Product } from '../data/products'
 
+export { formatPrice } from '../lib/price'
+
 export type CartItem = {
   id: string
   productId: string
@@ -83,10 +85,6 @@ const SHIPPING_ZONES: Record<'netherlands' | 'international', ShippingZone> =
   }
 
 export const DEFAULT_ZONE: ShippingZone = SHIPPING_ZONES.netherlands
-
-export function formatPrice(cents: number): string {
-  return `€${(cents / 100).toFixed(2).replace('.', ',')}`
-}
 
 export function shippingZoneForCountry(countryCode: string): ShippingZone {
   return countryCode.toUpperCase() === 'NL'
