@@ -199,6 +199,12 @@ export default function PurchasesPage() {
                     </td>
                     <td>
                       <div className="admin-row-actions">
+                        <Link
+                          to={`/admin/purchases/${purchase.id}/edit`}
+                          className="admin-row-action is-quiet"
+                        >
+                          Edit
+                        </Link>
                         <button
                           type="button"
                           className="admin-row-action is-quiet"

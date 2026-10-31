@@ -1,9 +1,11 @@
 import { type FormEvent, useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link, useNavigate, useParams } from 'react-router'
 import {
   createAdminRecipe,
   fetchAdminCatalog,
   fetchAdminMaterials,
+  formatAmount,
+  updateAdminRecipe,
   type AdminCatalogProduct,
   type AdminMaterial,
 } from '../../admin/api'
@@ -12,7 +14,7 @@ import { siteMeta } from '../../lib/seo'
 import { useAdmin } from './admin-context'
 
 export function meta() {
-  return siteMeta({ title: 'Add recipe · EarthyGlow Admin', robots: 'noindex, nofollow' })
+  return siteMeta({ title: 'Recipe · EarthyGlow Admin', robots: 'noindex, nofollow' })
 }
 
 type IngredientLine = {
@@ -38,10 +40,13 @@ function emptyField(key: number): FieldLine {
 export default function NewRecipePage() {
   const { token } = useAdmin()
   const navigate = useNavigate()
+  const { id } = useParams()
+  const editing = id !== undefined
 
   const [materials, setMaterials] = useState<AdminMaterial[]>([])
   const [catalog, setCatalog] = useState<AdminCatalogProduct[]>([])
   const [loadError, setLoadError] = useState('')
+  const [recipeLoaded, setRecipeLoaded] = useState(!editing)
 
   const [productId, setProductId] = useState('')
   const [ingredients, setIngredients] = useState<IngredientLine[]>([emptyIngredient(1)])
@@ -53,12 +58,43 @@ export default function NewRecipePage() {
     if (!token) return
     let cancelled = false
     fetchAdminMaterials(token)
-      .then((data) => { if (!cancelled) setMaterials(data.materials) })
+      .then((data) => {
+        if (cancelled) return
+        setMaterials(data.materials)
+
+        if (!id) return
+        const recipe = data.recipes.find((item) => item.id === id)
+        if (!recipe) {
+          setLoadError('This recipe no longer exists')
+          return
+        }
+
+        setProductId(recipe.product.id)
+        setIngredients(
+          recipe.ingredients.length > 0
+            ? recipe.ingredients.map((ingredient, index) => ({
+                key: index + 1,
+                materialId: ingredient.materialId,
+                amount: formatAmount(ingredient.amount),
+              }))
+            : [emptyIngredient(1)],
+        )
+        setFields(
+          recipe.fields.length > 0
+            ? recipe.fields.map((field, index) => ({
+                key: index + 1,
+                label: field.label,
+                value: field.value,
+              }))
+            : [emptyField(1)],
+        )
+        setRecipeLoaded(true)
+      })
       .catch((caught: unknown) => {
         if (!cancelled) setLoadError(caught instanceof Error ? caught.message : 'Could not load materials')
       })
     return () => { cancelled = true }
-  }, [token])
+  }, [token, id])
 
   useEffect(() => {
     let cancelled = false
@@ -84,7 +120,7 @@ export default function NewRecipePage() {
     setError('')
     setSaving(true)
     try {
-      const recipe = await createAdminRecipe(token, {
+      const input = {
         productId,
         ingredients: ingredients.map((line) => ({
           materialId: line.materialId,
@@ -93,9 +129,17 @@ export default function NewRecipePage() {
         fields: fields
           .filter((line) => line.label.trim() !== '' && line.value.trim() !== '')
           .map((line) => ({ label: line.label.trim(), value: line.value.trim() })),
-      })
+      }
+      const recipe =
+        editing && id
+          ? await updateAdminRecipe(token, id, input)
+          : await createAdminRecipe(token, input)
       navigate('/admin/materials', {
-        state: { notice: `Recipe for "${recipe.product.name}" saved.` },
+        state: {
+          notice: editing
+            ? `Recipe for "${recipe.product.name}" updated.`
+            : `Recipe for "${recipe.product.name}" saved.`,
+        },
       })
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Could not save the recipe')
@@ -107,7 +151,7 @@ export default function NewRecipePage() {
     <div className="admin-page">
       <header className="admin-page-head">
         <div>
-          <h1>Add a recipe</h1>
+          <h1>{editing ? 'Edit recipe' : 'Add a recipe'}</h1>
           <p className="admin-page-sub">
             What one product is made of and any extra details. The overview then
             shows how many the leftover materials can still make.
@@ -122,7 +166,13 @@ export default function NewRecipePage() {
 
       {loadError !== '' && <p className="form-note is-error">{loadError}</p>}
 
-      {materials.length === 0 ? (
+      {editing && !recipeLoaded ? (
+        <section className="admin-panel">
+          <p className="admin-note">
+            {loadError === '' ? 'Loading recipe…' : 'Could not load this recipe.'}
+          </p>
+        </section>
+      ) : materials.length === 0 ? (
         <section className="admin-panel">
           <p className="admin-empty-inline">
             A recipe uses materials, and there are none yet.{' '}
@@ -273,7 +323,7 @@ export default function NewRecipePage() {
                 Cancel
               </Link>
               <LoadingButton type="submit" className="btn btn-primary" loading={saving}>
-                Save recipe
+                {editing ? 'Save changes' : 'Save recipe'}
               </LoadingButton>
             </div>
 

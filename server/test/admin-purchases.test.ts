@@ -24,7 +24,7 @@ async function authedApp() {
   return { app, token: login.json().token as string }
 }
 
-type Stub = { created: Record<string, unknown>[] }
+type Stub = { created: Record<string, unknown>[]; updated: Record<string, unknown>[] }
 
 // Stubs the purchase reads/writes and captures what the route tried to persist.
 function stubPurchases(
@@ -32,6 +32,7 @@ function stubPurchases(
   options: {
     rows?: Record<string, unknown>[]
     deleted?: boolean
+    updateMissing?: boolean
     document?: { documentName: string | null; documentMime: string | null; documentBytes: Buffer | null }
   } = {},
 ): Stub {
@@ -44,6 +45,7 @@ function stubPurchases(
   t.after(() => { for (const undo of restore) undo() })
 
   const created: Record<string, unknown>[] = []
+  const updated: Record<string, unknown>[] = []
 
   const row = (overrides: Record<string, unknown> = {}) => ({
     id: 'purchase-1',
@@ -74,13 +76,23 @@ function stubPurchases(
     for (const key of Object.keys(args.omit ?? {})) delete result[key]
     return result
   })
+  stub(prisma.purchase, 'update', async (args: { data: Record<string, unknown>; omit?: Record<string, boolean> }) => {
+    if (options.updateMissing) throw new Error('record not found')
+    updated.push(args.data)
+    const result: Record<string, unknown> = {
+      ...(options.rows?.[0] ?? row()),
+      ...args.data,
+    }
+    for (const key of Object.keys(args.omit ?? {})) delete result[key]
+    return result
+  })
   stub(prisma.purchase, 'delete', async () => {
     if (options.deleted === false) throw new Error('record not found')
     return row()
   })
   stub(prisma.purchase, 'findUnique', async () => options.document ?? row())
 
-  return { created }
+  return { created, updated }
 }
 
 test('purchase list returns the VAT split and never the document bytes', async (t) => {
@@ -252,6 +264,95 @@ test('purchase document endpoint 404s when there is no document', async (t) => {
     headers: { authorization: `Bearer ${token}` },
   })
   assert.equal(response.statusCode, 404)
+})
+
+test('purchase editing updates the fields and keeps the document', async (t) => {
+  const { updated } = stubPurchases(t)
+  const { app, token } = await authedApp()
+  const response = await app.inject({
+    method: 'PATCH',
+    url: '/api/admin/purchases/purchase-1',
+    headers: { authorization: `Bearer ${token}` },
+    payload: {
+      date: '2026-10-02',
+      description: 'Soy wax, 6kg',
+      cost: '30,00',
+    },
+  })
+  assert.equal(response.statusCode, 200)
+  assert.equal(response.json().purchase.costCents, 3000)
+
+  const persisted = updated[0]
+  assert.equal(persisted.description, 'Soy wax, 6kg')
+  assert.equal(persisted.costCents, 3000)
+  assert.equal(
+    new Date(persisted.dateBought as Date).toISOString(),
+    '2026-10-02T12:00:00.000Z',
+  )
+  // No document fields were sent, so the existing receipt stays untouched.
+  assert.ok(!('documentName' in persisted))
+})
+
+test('purchase editing can replace or remove the document', async (t) => {
+  const { updated } = stubPurchases(t)
+  const { app, token } = await authedApp()
+  const bytes = Buffer.from('new receipt')
+
+  const replace = await app.inject({
+    method: 'PATCH',
+    url: '/api/admin/purchases/purchase-1',
+    headers: { authorization: `Bearer ${token}` },
+    payload: {
+      date: '2026-10-02',
+      description: 'Soy wax, 6kg',
+      cost: '30,00',
+      document: {
+        name: 'new-receipt.pdf',
+        type: 'application/pdf',
+        data: bytes.toString('base64'),
+      },
+    },
+  })
+  assert.equal(replace.statusCode, 200)
+  assert.equal(updated[0].documentName, 'new-receipt.pdf')
+  assert.deepEqual(updated[0].documentBytes, bytes)
+
+  const remove = await app.inject({
+    method: 'PATCH',
+    url: '/api/admin/purchases/purchase-1',
+    headers: { authorization: `Bearer ${token}` },
+    payload: {
+      date: '2026-10-02',
+      description: 'Soy wax, 6kg',
+      cost: '30,00',
+      removeDocument: true,
+    },
+  })
+  assert.equal(remove.statusCode, 200)
+  assert.equal(updated[1].documentName, null)
+  assert.equal(updated[1].documentMime, null)
+  assert.equal(updated[1].documentBytes, null)
+})
+
+test('purchase editing rejects a bad cost and 404s an unknown id', async (t) => {
+  stubPurchases(t, { updateMissing: true })
+  const { app, token } = await authedApp()
+
+  const badCost = await app.inject({
+    method: 'PATCH',
+    url: '/api/admin/purchases/purchase-1',
+    headers: { authorization: `Bearer ${token}` },
+    payload: { date: '2026-10-02', description: 'Soy wax', cost: '0' },
+  })
+  assert.equal(badCost.statusCode, 400)
+
+  const missing = await app.inject({
+    method: 'PATCH',
+    url: '/api/admin/purchases/missing',
+    headers: { authorization: `Bearer ${token}` },
+    payload: { date: '2026-10-02', description: 'Soy wax', cost: '30,00' },
+  })
+  assert.equal(missing.statusCode, 404)
 })
 
 test('purchase deletion removes the record', async (t) => {

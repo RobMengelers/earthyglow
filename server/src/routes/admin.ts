@@ -208,6 +208,55 @@ const RECIPE_INCLUDE = {
   fields: { orderBy: { id: 'asc' as const } },
 }
 
+// Both creating and editing a recipe validate the same shape: the product must
+// exist, every ingredient must point at a material that still exists and use a
+// positive amount. Returns the normalised rows the write needs.
+type RecipeWriteData = {
+  productId: string
+  ingredients: { materialId: string; amount: number }[]
+  fields: { label: string; value: string }[]
+}
+
+async function buildRecipeWriteData(
+  input: z.infer<typeof recipeCreateSchema>,
+): Promise<{ data: RecipeWriteData } | { error: string }> {
+  const product = await prisma.product.findUnique({
+    where: { id: input.productId },
+    select: { id: true },
+  })
+  if (!product) return { error: 'That product no longer exists' }
+
+  const materials = await prisma.material.findMany({
+    where: { id: { in: input.ingredients.map((line) => line.materialId) } },
+    select: { id: true, name: true },
+  })
+  const byId = new Map(materials.map((material) => [material.id, material]))
+
+  const ingredients = []
+  for (const line of input.ingredients) {
+    const material = byId.get(line.materialId)
+    if (!material) return { error: 'That material no longer exists' }
+    const amount = parseDecimal(line.amount)
+    if (amount === null || amount <= 0) {
+      return {
+        error: `Enter how much ${material.name.toLowerCase()} the recipe uses, e.g. 0,05`,
+      }
+    }
+    ingredients.push({ materialId: material.id, amount })
+  }
+
+  return {
+    data: {
+      productId: product.id,
+      ingredients,
+      fields: input.fields.map((field) => ({
+        label: field.label,
+        value: field.value,
+      })),
+    },
+  }
+}
+
 const purchaseDocumentSchema = z.object({
   name: z.string().trim().min(1).max(200),
   type: z.string().trim().max(120).default('application/octet-stream'),
@@ -766,6 +815,76 @@ export async function adminRoutes(app: FastifyInstance) {
     },
   )
 
+  // Edits a purchase in place. An attached document is kept unless a new file
+  // is sent or `removeDocument` is true.
+  app.patch(
+    '/api/admin/purchases/:id',
+    { preHandler: requireAdmin, bodyLimit: 21 * 1024 * 1024 },
+    async (request, reply) => {
+      const body = request.body as Record<string, unknown>
+      const fields = purchaseFieldsSchema.safeParse({
+        date: body.date,
+        description: body.description,
+        cost: body.cost,
+      })
+      if (!fields.success) {
+        return reply
+          .code(400)
+          .send({ error: fields.error.issues[0]?.message ?? 'Invalid purchase' })
+      }
+
+      const costCents = eurosToCents(fields.data.cost)
+      if (costCents === null || costCents <= 0) {
+        return reply
+          .code(400)
+          .send({ error: 'Enter the total cost in euros, e.g. 24,50' })
+      }
+
+      let parsedDocument: z.infer<typeof purchaseDocumentSchema> | null = null
+      if (body.document !== undefined && body.document !== null) {
+        const parsed = purchaseDocumentSchema.safeParse(body.document)
+        if (!parsed.success) {
+          return reply.code(400).send({ error: 'The uploaded document is not valid' })
+        }
+        parsedDocument = parsed.data
+      }
+      const removeDocument = body.removeDocument === true
+
+      const data = {
+        dateBought: dateBoughtFromForm(fields.data.date),
+        description: fields.data.description,
+        costCents,
+        ...(parsedDocument
+          ? {
+              documentName: safeFileName(parsedDocument.name),
+              documentMime: parsedDocument.type,
+              documentBytes: Buffer.from(parsedDocument.data, 'base64'),
+            }
+          : removeDocument
+            ? { documentName: null, documentMime: null, documentBytes: null }
+            : {}),
+      }
+
+      const params = request.params as { id: string }
+      try {
+        const purchase = await prisma.purchase.update({
+          where: { id: params.id },
+          data,
+          omit: { documentBytes: true },
+        })
+        return {
+          purchase: {
+            ...purchase,
+            ...includedVatSplit(purchase.costCents),
+            hasDocument: purchase.documentName !== null,
+          },
+        }
+      } catch {
+        return reply.code(404).send({ error: 'Purchase not found' })
+      }
+    },
+  )
+
   app.delete(
     '/api/admin/purchases/:id',
     { preHandler: requireAdmin },
@@ -982,6 +1101,36 @@ export async function adminRoutes(app: FastifyInstance) {
     return { material }
   })
 
+  // Edits a material's name, unit and amount on hand. Renaming is safe even
+  // when recipes use it, because recipes point at the id, not the name.
+  app.patch(
+    '/api/admin/materials/:id',
+    { preHandler: requireAdmin },
+    async (request, reply) => {
+      const parsed = materialCreateSchema.safeParse(request.body)
+      if (!parsed.success) {
+        return reply
+          .code(400)
+          .send({ error: parsed.error.issues[0]?.message ?? 'Invalid material' })
+      }
+      const quantity = parseDecimal(parsed.data.quantity)
+      if (quantity === null || quantity < 0) {
+        return reply.code(400).send({ error: 'Enter the amount on hand, e.g. 5 or 2,5' })
+      }
+
+      const params = request.params as { id: string }
+      try {
+        const material = await prisma.material.update({
+          where: { id: params.id },
+          data: { name: parsed.data.name, unit: parsed.data.unit, quantity },
+        })
+        return { material }
+      } catch {
+        return reply.code(404).send({ error: 'Material not found' })
+      }
+    },
+  )
+
   // Tops up (or corrects) the stock of an existing material. A negative
   // amount is allowed so a spillage or correction can be recorded, but the
   // stock itself may never end up below zero.
@@ -1050,50 +1199,57 @@ export async function adminRoutes(app: FastifyInstance) {
         .send({ error: parsed.error.issues[0]?.message ?? 'Invalid recipe' })
     }
 
-    const product = await prisma.product.findUnique({
-      where: { id: parsed.data.productId },
-      select: { id: true },
-    })
-    if (!product) {
-      return reply.code(400).send({ error: 'That product no longer exists' })
-    }
-
-    const materials = await prisma.material.findMany({
-      where: { id: { in: parsed.data.ingredients.map((line) => line.materialId) } },
-      select: { id: true, name: true },
-    })
-    const byId = new Map(materials.map((material) => [material.id, material]))
-
-    const ingredients = []
-    for (const line of parsed.data.ingredients) {
-      const material = byId.get(line.materialId)
-      if (!material) {
-        return reply.code(400).send({ error: 'That material no longer exists' })
-      }
-      const amount = parseDecimal(line.amount)
-      if (amount === null || amount <= 0) {
-        return reply
-          .code(400)
-          .send({ error: `Enter how much ${material.name.toLowerCase()} the recipe uses, e.g. 0,05` })
-      }
-      ingredients.push({ materialId: material.id, amount })
+    const built = await buildRecipeWriteData(parsed.data)
+    if ('error' in built) {
+      return reply.code(400).send({ error: built.error })
     }
 
     const recipe = await prisma.recipe.create({
       data: {
-        productId: product.id,
-        ingredients: { create: ingredients },
-        fields: {
-          create: parsed.data.fields.map((field) => ({
-            label: field.label,
-            value: field.value,
-          })),
-        },
+        productId: built.data.productId,
+        ingredients: { create: built.data.ingredients },
+        fields: { create: built.data.fields },
       },
       include: RECIPE_INCLUDE,
     })
     return { recipe: serializeRecipe(recipe) }
   })
+
+  // Edits a recipe in place. The old ingredient and field rows are replaced in
+  // the same update, so the recipe always reflects exactly what the form sent.
+  app.patch(
+    '/api/admin/recipes/:id',
+    { preHandler: requireAdmin },
+    async (request, reply) => {
+      const parsed = recipeCreateSchema.safeParse(request.body)
+      if (!parsed.success) {
+        return reply
+          .code(400)
+          .send({ error: parsed.error.issues[0]?.message ?? 'Invalid recipe' })
+      }
+
+      const built = await buildRecipeWriteData(parsed.data)
+      if ('error' in built) {
+        return reply.code(400).send({ error: built.error })
+      }
+
+      const params = request.params as { id: string }
+      try {
+        const recipe = await prisma.recipe.update({
+          where: { id: params.id },
+          data: {
+            productId: built.data.productId,
+            ingredients: { deleteMany: {}, create: built.data.ingredients },
+            fields: { deleteMany: {}, create: built.data.fields },
+          },
+          include: RECIPE_INCLUDE,
+        })
+        return { recipe: serializeRecipe(recipe) }
+      } catch {
+        return reply.code(404).send({ error: 'Recipe not found' })
+      }
+    },
+  )
 
   app.delete(
     '/api/admin/recipes/:id',

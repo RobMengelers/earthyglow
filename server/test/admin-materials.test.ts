@@ -329,6 +329,107 @@ test('recipe creation rejects a zero ingredient amount and no ingredients', asyn
   assert.equal(empty.json().error, 'Add at least one material to the recipe')
 })
 
+test('material editing saves the new name, unit and amount', async (t) => {
+  const updates: Record<string, unknown>[] = []
+  stub(t, prisma.material, 'update', async (args: { data: Record<string, unknown> }) => {
+    updates.push(args.data)
+    return materialRow(args.data)
+  })
+  const { app, token } = await authedApp()
+  const response = await app.inject({
+    method: 'PATCH',
+    url: '/api/admin/materials/material-wax',
+    headers: { authorization: `Bearer ${token}` },
+    payload: { name: 'Coconut wax', unit: 'g', quantity: '4,25' },
+  })
+  assert.equal(response.statusCode, 200)
+  assert.equal(response.json().material.name, 'Coconut wax')
+  assert.deepEqual(updates[0], { name: 'Coconut wax', unit: 'g', quantity: 4.25 })
+})
+
+test('material editing rejects a malformed amount and 404s an unknown id', async (t) => {
+  stub(t, prisma.material, 'update', async () => {
+    throw new Error('record not found')
+  })
+  const { app, token } = await authedApp()
+
+  const malformed = await app.inject({
+    method: 'PATCH',
+    url: '/api/admin/materials/material-wax',
+    headers: { authorization: `Bearer ${token}` },
+    payload: { name: 'Soy wax', unit: 'kg', quantity: 'lots' },
+  })
+  assert.equal(malformed.statusCode, 400)
+
+  const missing = await app.inject({
+    method: 'PATCH',
+    url: '/api/admin/materials/missing',
+    headers: { authorization: `Bearer ${token}` },
+    payload: { name: 'Soy wax', unit: 'kg', quantity: '5' },
+  })
+  assert.equal(missing.statusCode, 404)
+})
+
+test('recipe editing replaces ingredients and fields', async (t) => {
+  const updates: Record<string, unknown>[] = []
+  stub(t, prisma.product, 'findUnique', async () => ({ id: 'floral-box' }))
+  stub(t, prisma.material, 'findMany', async () => [materialRow(), scentRow()])
+  stub(t, prisma.recipe, 'update', async (args: { data: Record<string, unknown> }) => {
+    updates.push(args.data)
+    return recipeRow()
+  })
+  const { app, token } = await authedApp()
+  const response = await app.inject({
+    method: 'PATCH',
+    url: '/api/admin/recipes/recipe-1',
+    headers: { authorization: `Bearer ${token}` },
+    payload: {
+      productId: 'floral-box',
+      ingredients: [
+        { materialId: 'material-wax', amount: '0,06' },
+        { materialId: 'material-scent', amount: '10' },
+      ],
+      fields: [{ label: 'Cure time', value: '72 hours' }],
+    },
+  })
+  assert.equal(response.statusCode, 200)
+  assert.equal(response.json().recipe.possibleUnits, 25)
+
+  const data = updates[0]
+  assert.equal(data.productId, 'floral-box')
+  assert.deepEqual(data.ingredients, {
+    deleteMany: {},
+    create: [
+      { materialId: 'material-wax', amount: 0.06 },
+      { materialId: 'material-scent', amount: 10 },
+    ],
+  })
+  assert.deepEqual(data.fields, {
+    deleteMany: {},
+    create: [{ label: 'Cure time', value: '72 hours' }],
+  })
+})
+
+test('recipe editing 404s on an unknown id', async (t) => {
+  stub(t, prisma.product, 'findUnique', async () => ({ id: 'floral-box' }))
+  stub(t, prisma.material, 'findMany', async () => [materialRow()])
+  stub(t, prisma.recipe, 'update', async () => {
+    throw new Error('record not found')
+  })
+  const { app, token } = await authedApp()
+  const response = await app.inject({
+    method: 'PATCH',
+    url: '/api/admin/recipes/missing',
+    headers: { authorization: `Bearer ${token}` },
+    payload: {
+      productId: 'floral-box',
+      ingredients: [{ materialId: 'material-wax', amount: '1' }],
+      fields: [],
+    },
+  })
+  assert.equal(response.statusCode, 404)
+})
+
 test('material deletion 409s while a recipe still uses it', async (t) => {
   stub(t, prisma.material, 'delete', async () => {
     throw new Error('foreign key constraint')

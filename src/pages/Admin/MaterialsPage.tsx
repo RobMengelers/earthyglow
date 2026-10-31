@@ -1,18 +1,21 @@
-import { useEffect, useRef, useState } from 'react'
+import { type FormEvent, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
 import {
   deleteAdminMaterial,
   deleteAdminRecipe,
   fetchAdminMaterials,
   formatAmount,
+  updateAdminMaterial,
   type AdminMaterial,
   type AdminMaterialsResponse,
   type AdminRecipe,
 } from '../../admin/api'
+import { LoadingButton } from '../../components/ui/LoadingButton'
 import { getProduct } from '../../data/products'
 import { siteMeta } from '../../lib/seo'
 import { useAdmin } from './admin-context'
 import { Modal } from './components/Modal'
+import { MATERIAL_UNITS } from './material-units'
 
 export function meta() {
   return siteMeta({ title: 'Materials & recipes · EarthyGlow Admin', robots: 'noindex, nofollow' })
@@ -28,6 +31,7 @@ export default function MaterialsPage() {
   const [loadError, setLoadError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
   const [flash, setFlash] = useState<Flash | undefined>(undefined)
+  const [editingMaterial, setEditingMaterial] = useState<AdminMaterial | null>(null)
   const [openRecipe, setOpenRecipe] = useState<AdminRecipe | null>(null)
   const noticeShown = useRef(false)
 
@@ -76,6 +80,21 @@ export default function MaterialsPage() {
         text: error instanceof Error ? error.message : 'Could not delete the material',
       })
     }
+  }
+
+  function handleMaterialSaved(updated: AdminMaterial) {
+    setData((current) =>
+      current
+        ? {
+            ...current,
+            materials: current.materials
+              .map((item) => (item.id === updated.id ? updated : item))
+              .sort((a, b) => a.name.localeCompare(b.name)),
+          }
+        : current,
+    )
+    setEditingMaterial(null)
+    setFlash({ tone: 'success', text: `Material "${updated.name}" updated.` })
   }
 
   async function removeRecipe(recipe: AdminRecipe) {
@@ -187,6 +206,13 @@ export default function MaterialsPage() {
                         <button
                           type="button"
                           className="admin-row-action is-quiet"
+                          onClick={() => setEditingMaterial(material)}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className="admin-row-action is-quiet"
                           onClick={() => void removeMaterial(material)}
                         >
                           Delete
@@ -230,6 +256,20 @@ export default function MaterialsPage() {
         )}
       </section>
 
+      {editingMaterial && token && (
+        <Modal
+          title={`Edit ${editingMaterial.name}`}
+          onClose={() => setEditingMaterial(null)}
+        >
+          <MaterialEditForm
+            token={token}
+            material={editingMaterial}
+            onCancel={() => setEditingMaterial(null)}
+            onSaved={handleMaterialSaved}
+          />
+        </Modal>
+      )}
+
       {openRecipe && (
         <Modal
           title={openRecipe.product.name}
@@ -240,6 +280,99 @@ export default function MaterialsPage() {
         </Modal>
       )}
     </div>
+  )
+}
+
+// The edit dialog behind the material row's Edit action. It saves name, unit
+// and quantity in one go; stock top-ups still have their own form.
+function MaterialEditForm({
+  token,
+  material,
+  onCancel,
+  onSaved,
+}: {
+  token: string
+  material: AdminMaterial
+  onCancel: () => void
+  onSaved: (material: AdminMaterial) => void
+}) {
+  const [name, setName] = useState(material.name)
+  const [unit, setUnit] = useState(material.unit)
+  const [quantity, setQuantity] = useState(String(material.quantity).replace('.', ','))
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  // Older materials may carry a unit that is no longer in the fixed list;
+  // keep it selectable instead of silently changing it on save.
+  const units: string[] = [...MATERIAL_UNITS]
+  if (!units.includes(unit)) units.unshift(unit)
+
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault()
+    if (saving) return
+    setError('')
+    setSaving(true)
+    try {
+      const updated = await updateAdminMaterial(token, material.id, {
+        name: name.trim(),
+        unit,
+        quantity: quantity.trim(),
+      })
+      onSaved(updated)
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Could not save the material')
+      setSaving(false)
+    }
+  }
+
+  return (
+    <form className="admin-form" onSubmit={handleSubmit}>
+      <div className="admin-form-grid">
+        <label>
+          <span>Material</span>
+          <input
+            type="text"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            placeholder="e.g. Soy wax"
+            maxLength={80}
+            required
+          />
+        </label>
+        <label>
+          <span>Unit</span>
+          <select value={unit} onChange={(event) => setUnit(event.target.value)} required>
+            {units.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="is-wide">
+          <span>Amount on hand</span>
+          <input
+            type="text"
+            inputMode="decimal"
+            value={quantity}
+            onChange={(event) => setQuantity(event.target.value)}
+            placeholder="e.g. 5"
+            required
+          />
+        </label>
+      </div>
+
+      <div className="admin-form-actions">
+        <button type="button" className="btn btn-ghost" onClick={onCancel}>
+          Cancel
+        </button>
+        <LoadingButton type="submit" className="btn btn-primary" loading={saving}>
+          Save changes
+        </LoadingButton>
+      </div>
+
+      {error !== '' && <p className="form-note is-error">{error}</p>}
+    </form>
   )
 }
 
@@ -372,6 +505,9 @@ function RecipeDetail({ recipe, onDelete }: { recipe: AdminRecipe; onDelete: () 
           <button type="button" className="admin-row-action is-quiet" onClick={onDelete}>
             Delete recipe
           </button>
+          <Link to={`/admin/recipes/${recipe.id}/edit`} className="btn btn-primary">
+            Edit recipe
+          </Link>
         </div>
       </div>
     </div>

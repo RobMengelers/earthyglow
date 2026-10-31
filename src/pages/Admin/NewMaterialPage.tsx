@@ -10,14 +10,11 @@ import {
 import { LoadingButton } from '../../components/ui/LoadingButton'
 import { siteMeta } from '../../lib/seo'
 import { useAdmin } from './admin-context'
+import { MATERIAL_UNITS } from './material-units'
 
 export function meta() {
   return siteMeta({ title: 'Add material · EarthyGlow Admin', robots: 'noindex, nofollow' })
 }
-
-// Units come from a fixed list rather than free text: "kgs", "KG" and "kg" as
-// separate spellings would quietly break the per-product calculations later.
-const UNITS = ['g', 'kg', 'ml', 'l', 'pcs'] as const
 
 export default function NewMaterialPage() {
   const { token } = useAdmin()
@@ -132,7 +129,7 @@ export default function NewMaterialPage() {
               <span>Unit</span>
               <select value={unit} onChange={(event) => setUnit(event.target.value)} required>
                 <option value="">Choose a unit…</option>
-                {UNITS.map((option) => (
+                {MATERIAL_UNITS.map((option) => (
                   <option key={option} value={option}>
                     {option}
                   </option>

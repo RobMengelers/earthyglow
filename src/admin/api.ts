@@ -313,12 +313,11 @@ export type AdminPurchaseInput = {
   cost: string
   /** Optional receipt/delivery note. */
   document?: File
+  /** Drop the currently attached document. Ignored when a new file is sent. */
+  removeDocument?: boolean
 }
 
-export async function createAdminPurchase(
-  token: string,
-  input: AdminPurchaseInput,
-): Promise<AdminPurchase> {
+async function purchasePayload(input: AdminPurchaseInput): Promise<Record<string, unknown>> {
   const payload: Record<string, unknown> = {
     date: input.date,
     description: input.description,
@@ -330,12 +329,39 @@ export async function createAdminPurchase(
       type: input.document.type || 'application/octet-stream',
       data: await fileToBase64(input.document),
     }
+  } else if (input.removeDocument) {
+    payload.removeDocument = true
   }
+  return payload
+}
 
+export async function createAdminPurchase(
+  token: string,
+  input: AdminPurchaseInput,
+): Promise<AdminPurchase> {
   const response = await fetch(`${API_URL}/api/admin/purchases`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(await purchasePayload(input)),
+  })
+  const body = (await response.json().catch(() => null)) as
+    | { purchase?: AdminPurchase; error?: string }
+    | null
+  if (!response.ok) {
+    throw new Error(body?.error ?? 'Could not save the purchase')
+  }
+  return body?.purchase as AdminPurchase
+}
+
+export async function updateAdminPurchase(
+  token: string,
+  id: string,
+  input: AdminPurchaseInput,
+): Promise<AdminPurchase> {
+  const response = await fetch(`${API_URL}/api/admin/purchases/${id}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(await purchasePayload(input)),
   })
   const body = (await response.json().catch(() => null)) as
     | { purchase?: AdminPurchase; error?: string }
@@ -462,6 +488,24 @@ export async function createAdminMaterial(
   return body?.material as AdminMaterial
 }
 
+/** Edits a material's name, unit and amount on hand. */
+export async function updateAdminMaterial(
+  token: string,
+  id: string,
+  input: AdminMaterialInput,
+): Promise<AdminMaterial> {
+  const response = await fetch(`${API_URL}/api/admin/materials/${id}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  const body = (await response.json().catch(() => null)) as
+    | { material?: AdminMaterial; error?: string }
+    | null
+  if (!response.ok) throw new Error(body?.error ?? 'Could not save the material')
+  return body?.material as AdminMaterial
+}
+
 /** Adds to the stock of a material; a negative amount corrects it down. */
 export async function addAdminMaterialStock(
   token: string,
@@ -505,6 +549,24 @@ export async function createAdminRecipe(
 ): Promise<AdminRecipe> {
   const response = await fetch(`${API_URL}/api/admin/recipes`, {
     method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  const body = (await response.json().catch(() => null)) as
+    | { recipe?: AdminRecipe; error?: string }
+    | null
+  if (!response.ok) throw new Error(body?.error ?? 'Could not save the recipe')
+  return body?.recipe as AdminRecipe
+}
+
+/** Replaces a recipe's product, ingredients and fields in one save. */
+export async function updateAdminRecipe(
+  token: string,
+  id: string,
+  input: AdminRecipeInput,
+): Promise<AdminRecipe> {
+  const response = await fetch(`${API_URL}/api/admin/recipes/${id}`, {
+    method: 'PATCH',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   })
