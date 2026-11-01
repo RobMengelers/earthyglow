@@ -39,7 +39,7 @@ function AdminProvider({ children }: { children: React.ReactNode }) {
   const [overview, setOverview] = useState<AdminOverview | null>(null)
   const [overviewError, setOverviewError] = useState('')
   const [overviewKey, setOverviewKey] = useState(0)
-  const [overviewPeriod, setOverviewPeriod] = useState<OverviewPeriod>('30d')
+  const [overviewPeriod, setOverviewPeriod] = useState<OverviewPeriod>('month')
   // True while a fetch is in flight so the dashboard can dim its cards while
   // the window (or the retry button) reloads the numbers.
   const [overviewBusy, setOverviewBusy] = useState(false)

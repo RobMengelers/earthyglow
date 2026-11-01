@@ -47,6 +47,7 @@ const optionalEmail = z.preprocess(
 )
 
 const manualOrderSchema = z.object({
+  date: z.iso.date().optional(),
   // `.prefault` keeps the whole object optional while still running the blank
   // handling above, so `{ customer: {} }`, `{ customer: {} }` omitted entirely
   // and a fully filled object all end up valid.
@@ -385,7 +386,8 @@ export async function adminRoutes(app: FastifyInstance) {
         .send({ error: parsed.error.issues[0]?.message ?? 'Invalid order' })
     }
 
-    const { customer, shipping, items, notes, sendInvoiceEmail } = parsed.data
+    const { customer, shipping, items, notes, sendInvoiceEmail, date } = parsed.data
+    const orderDate = date ? new Date(date + 'T00:00:00.000Z') : new Date()
 
     const lines = []
     for (const item of items) {
@@ -495,7 +497,8 @@ export async function adminRoutes(app: FastifyInstance) {
           orderNumber,
           customerId: dbCustomer.id,
           status: 'paid',
-          paidAt: new Date(),
+          paidAt: orderDate,
+          createdAt: orderDate,
           subtotalCents,
           shippingCents,
           totalCents,
@@ -676,30 +679,28 @@ export async function adminRoutes(app: FastifyInstance) {
     },
   )
 
-  // Powers the dashboard: status counts, how the last 30 days / quarter / year
-  // compare to the same window before it, what still needs shipping, and the
-  // newest orders. Aggregated in the database so the landing page stays cheap
-  // as the table grows. `period` picks the window; anything else falls back to
-  // 30 days.
-  const OVERVIEW_DAYS: Record<string, number> = {
-    '30d': 30,
-    quarter: 90,
-    year: 365,
-  }
+  // Calendar month by default; quarter/year retain their rolling windows.
   app.get('/api/admin/overview', { preHandler: requireAdmin }, async (request) => {
     const query = request.query as { period?: string }
-    const days = OVERVIEW_DAYS[query.period ?? '30d'] ?? 30
     const now = Date.now()
     const DAY = 24 * 60 * 60 * 1000
-    const periodStart = new Date(now - days * DAY)
-    const previousPeriodStart = new Date(now - 2 * days * DAY)
+    const days = query.period === 'quarter' ? 90 : query.period === 'year' ? 365 : null
+    // Date-only sales and purchases are stored at UTC midnight. Choose the
+    // shop's calendar month independently of the server's timezone.
+    const shopDate = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Europe/Amsterdam', year: 'numeric', month: '2-digit', day: '2-digit',
+    }).format(new Date(now))
+    const [year, month] = shopDate.split('-').map(Number)
+    const periodStart = days ? new Date(now - days * DAY) : new Date(Date.UTC(year, month - 1, 1))
+    const previousPeriodStart = days ? new Date(now - 2 * days * DAY) : new Date(Date.UTC(year, month - 2, 1))
+    const periodEnd = days ? undefined : new Date(Date.UTC(year, month, 1))
 
     const [counts, revenue, previousRevenue, expenses, previousExpenses, unfulfilledCount, customerCount, recent] =
       await Promise.all([
         prisma.order.groupBy({ by: ['status'], _count: true }),
         prisma.order.aggregate({
           _sum: { totalCents: true },
-          where: { status: 'paid', paidAt: { gte: periodStart } },
+          where: { status: 'paid', paidAt: { gte: periodStart, lt: periodEnd } },
         }),
         prisma.order.aggregate({
           _sum: { totalCents: true },
@@ -710,7 +711,7 @@ export async function adminRoutes(app: FastifyInstance) {
         }),
         prisma.purchase.aggregate({
           _sum: { costCents: true },
-          where: { dateBought: { gte: periodStart } },
+          where: { dateBought: { gte: periodStart, lt: periodEnd } },
         }),
         prisma.purchase.aggregate({
           _sum: { costCents: true },
@@ -756,7 +757,7 @@ export async function adminRoutes(app: FastifyInstance) {
       return { costCents, missingCostUnits }
     }
     const [production, previousProduction] = await Promise.all([
-      productionCosts(periodStart),
+      productionCosts(periodStart, periodEnd),
       productionCosts(previousPeriodStart, periodStart),
     ])
 
@@ -795,7 +796,7 @@ export async function adminRoutes(app: FastifyInstance) {
       previousMissingCostUnits: previousProduction.missingCostUnits,
       profitCents: revenueCents - production.costCents,
       previousProfitCents: previousRevenueCents - previousProduction.costCents,
-      profitAfterPurchasesCents: revenueCents - production.costCents - expensesCents,
+      profitAfterPurchasesCents: expensesCents - revenueCents,
       unfulfilledCount,
       customerCount,
       recentOrders: recent.map((order) => ({

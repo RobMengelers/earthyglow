@@ -174,6 +174,7 @@ type ManualOrderItemInput = {
 }
 
 export type ManualOrderInput = {
+  date?: string
   customer: {
     firstName?: string
     lastName?: string
@@ -251,11 +252,11 @@ export async function fetchAdminOrders(
 
 // Everything the dashboard needs in one round trip. The layout keeps the result
 // in context so the nav badge and the overview page never fetch it twice.
-export type OverviewPeriod = '30d' | 'quarter' | 'year'
+export type OverviewPeriod = 'month' | 'quarter' | 'year'
 
 export async function fetchAdminOverview(
   token: string,
-  period: OverviewPeriod = '30d',
+  period: OverviewPeriod = 'month',
 ): Promise<AdminOverview> {
   const response = await fetch(`${API_URL}/api/admin/overview?period=${period}`, {
     headers: { Authorization: `Bearer ${token}` },

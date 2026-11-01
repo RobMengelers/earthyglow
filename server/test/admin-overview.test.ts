@@ -56,6 +56,9 @@ function stubOverview(
   const findManyCalls: { where?: Record<string, unknown>; select?: unknown; take?: number }[] = []
   const dateWindows: { revenue: { gte?: Date; lt?: Date }; expenses: { gte?: Date; lt?: Date } }[] = []
 
+  let productionCalls = 0
+  let revenueCalls = 0
+  let expenseCalls = 0
   stub(prisma.recipe, 'findMany', async () => [
     { productId: 'candle', costCents: 121 },
     { productId: 'candle', costCents: 999 },
@@ -65,7 +68,7 @@ function stubOverview(
   stub(prisma.orderItem, 'groupBy', async (args: { where: { order: { status: string; paidAt: { lt?: Date } } } }) => {
     assert.equal(args.where.order.status, 'paid')
     return [
-      { productId: 'candle', _sum: { quantity: args.where.order.paidAt.lt ? 2 : 3 } },
+      { productId: 'candle', _sum: { quantity: productionCalls++ % 2 === 1 ? 2 : 3 } },
       { productId: 'unset', _sum: { quantity: 1 } },
       { productId: 'absent', _sum: { quantity: 2 } },
       { productId: 'free', _sum: { quantity: 4 } },
@@ -77,7 +80,7 @@ function stubOverview(
   ])
   stub(prisma.order, 'aggregate', async (args: { where: Record<string, unknown> }) => {
     // The route asks twice: the current window and the same window before it.
-    const isPrevious = (args.where.paidAt as { lt?: Date }).lt !== undefined
+    const isPrevious = revenueCalls++ % 2 === 1
     dateWindows.push({
       revenue: {
         gte: (args.where.paidAt as { gte?: Date }).gte,
@@ -94,7 +97,7 @@ function stubOverview(
     }
   })
   stub(prisma.purchase, 'aggregate', async (args: { where: Record<string, unknown> }) => {
-    const isPrevious = (args.where.dateBought as { lt?: Date }).lt !== undefined
+    const isPrevious = expenseCalls++ % 2 === 1
     dateWindows[dateWindows.length - 1].expenses = {
       gte: (args.where.dateBought as { gte?: Date }).gte,
       lt: (args.where.dateBought as { lt?: Date }).lt,
@@ -163,7 +166,7 @@ test('overview reports status counts, revenue and work waiting', async (t) => {
   assert.equal(body.previousProfitCents, 8000 - 242)
   assert.equal(body.productionCostCents, 363)
   assert.equal(body.previousProductionCostCents, 242)
-  assert.equal(body.profitAfterPurchasesCents, 12500 - 363 - 3500)
+  assert.equal(body.profitAfterPurchasesCents, 3500 - 12500)
   assert.equal(body.missingCostUnits, 3)
   assert.equal(body.previousMissingCostUnits, 3)
   assert.equal(body.unfulfilledCount, 3)
@@ -228,11 +231,13 @@ test('overview compares the same window before it for the requested period', asy
   const defaultPrevious = dateWindows[1]
   const quarterPrevious = dateWindows[3]
 
-  const defaultGap = defaultPrevious.revenue.lt!.getTime() - defaultPrevious.revenue.gte!.getTime()
-  assert.ok(
-    Math.abs(defaultGap - 30 * DAY) < 2000,
-    `default window should be 30 days, got ${defaultGap / DAY}`,
-  )
+  const shopDate = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Amsterdam', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date())
+  const [year, month] = shopDate.split('-').map(Number)
+  assert.equal(defaultPrevious.revenue.gte!.toISOString(), new Date(Date.UTC(year, month - 2, 1)).toISOString())
+  assert.equal(defaultPrevious.revenue.lt!.toISOString(), new Date(Date.UTC(year, month - 1, 1)).toISOString())
+  assert.equal(dateWindows[0].revenue.lt!.toISOString(), new Date(Date.UTC(year, month, 1)).toISOString())
 
   const quarterGap = quarterPrevious.revenue.lt!.getTime() - quarterPrevious.revenue.gte!.getTime()
   assert.ok(
@@ -246,4 +251,16 @@ test('overview compares the same window before it for the requested period', asy
     Math.abs(quarterStart + 180 * DAY - Date.now()) < 5000,
     'previous quarter should start ~180 days ago',
   )
+})
+
+test('this month handles year rollover and leap-year February', async (t) => {
+  t.mock.timers.enable({ apis: ['Date'], now: new Date('2028-01-15T12:00:00Z') })
+  const { dateWindows } = stubOverview(t)
+  await fetchOverview('month')
+  assert.equal(dateWindows[0].revenue.gte!.toISOString(), '2028-01-01T00:00:00.000Z')
+  assert.equal(dateWindows[1].revenue.gte!.toISOString(), '2027-12-01T00:00:00.000Z')
+  t.mock.timers.setTime(new Date('2028-02-29T12:00:00Z').getTime())
+  await fetchOverview('month')
+  assert.equal(dateWindows[2].revenue.gte!.toISOString(), '2028-02-01T00:00:00.000Z')
+  assert.equal(dateWindows[2].revenue.lt!.toISOString(), '2028-03-01T00:00:00.000Z')
 })

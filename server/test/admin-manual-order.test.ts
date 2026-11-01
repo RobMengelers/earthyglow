@@ -528,3 +528,36 @@ test('manual order requires an admin token', async (t) => {
   })
   assert.equal(response.statusCode, 401)
 })
+
+test('manual order saves the selected sale date for display and reporting', async (t) => {
+  const flow = stubFlow(t)
+  const { app, token } = await authedApp()
+  const response = await app.inject({
+    method: 'POST', url: '/api/admin/orders',
+    headers: { authorization: `Bearer ${token}` },
+    payload: {
+      date: '2026-08-15',
+      items: [{ productId: 'coconut-beach', variantId: 'sea-star', unitPriceCents: 1200, quantity: 1 }],
+    },
+  })
+  assert.equal(response.statusCode, 200)
+  assert.equal((flow.lastOrderData!.paidAt as Date).toISOString(), '2026-08-15T00:00:00.000Z')
+  assert.equal((flow.lastOrderData!.createdAt as Date).toISOString(), '2026-08-15T00:00:00.000Z')
+})
+
+test('manual order rejects invalid calendar dates before saving', async (t) => {
+  const flow = stubFlow(t)
+  const { app, token } = await authedApp()
+  for (const date of ['2026-02-30', 'not-a-date', '']) {
+    const response = await app.inject({
+      method: 'POST', url: '/api/admin/orders',
+      headers: { authorization: `Bearer ${token}` },
+      payload: {
+        date,
+        items: [{ productId: 'coconut-beach', variantId: 'sea-star', unitPriceCents: 1200, quantity: 1 }],
+      },
+    })
+    assert.equal(response.statusCode, 400)
+  }
+  assert.equal(flow.created.length, 0)
+})

@@ -16,17 +16,17 @@ export function meta() {
 }
 
 const PERIODS: { value: OverviewPeriod; label: string }[] = [
-  { value: '30d', label: '30 days' },
+  { value: 'month', label: 'This month' },
   { value: 'quarter', label: 'Quarter' },
   { value: 'year', label: 'Year' },
 ]
 
 function periodTitle(period: OverviewPeriod): string {
-  return period === 'quarter' ? 'last quarter' : period === 'year' ? 'last year' : 'last 30 days'
+  return period === 'quarter' ? 'last quarter' : period === 'year' ? 'last year' : 'this month'
 }
 
 function previousPeriodTitle(period: OverviewPeriod): string {
-  return period === 'quarter' ? 'previous quarter' : period === 'year' ? 'previous year' : 'previous 30 days'
+  return period === 'quarter' ? 'previous quarter' : period === 'year' ? 'previous year' : 'previous month'
 }
 
 export default function OverviewPage() {
@@ -164,12 +164,10 @@ function OverviewBody({
         />
         <MoneyCard
           label={`Profit after purchases · ${title} · ${vatLabel}`}
-          value={profit - spent}
+          value={spent - revenue}
           hint={
             <>
-              {formatEuros(profit)} recipe profit − {formatEuros(spent)} purchases.
-              <br />
-              Purchases are deducted additionally, even when they cover materials already included in recipe costs.
+              {formatEuros(spent)} purchases − {formatEuros(revenue)} revenue.
             </>
           }
           tone="profit"

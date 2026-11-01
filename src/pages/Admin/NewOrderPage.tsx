@@ -73,6 +73,9 @@ export default function NewOrderPage() {
   const [postalCode, setPostalCode] = useState('')
   const [city, setCity] = useState('')
   const [country, setCountry] = useState('')
+  const [date, setDate] = useState(() => new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Amsterdam', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date()))
   const [notes, setNotes] = useState('')
   const [sendInvoiceEmail, setSendInvoiceEmail] = useState(false)
   const [lines, setLines] = useState<ManualLine[]>([emptyLine(1)])
@@ -136,6 +139,7 @@ export default function NewOrderPage() {
     setError('')
 
     const payload = {
+      date,
       customer: {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
@@ -204,6 +208,15 @@ export default function NewOrderPage() {
       </header>
 
       <form className="admin-form-card" onSubmit={handleSubmit}>
+        <section className="admin-form-section">
+          <h2>Order date</h2>
+          <div className="admin-form-grid">
+            <label>
+              Date of sale
+              <input type="date" value={date} onChange={(event) => setDate(event.target.value)} required />
+            </label>
+          </div>
+        </section>
         <section className="admin-form-section">
           <h2>Items</h2>
           <p className="admin-form-hint">
