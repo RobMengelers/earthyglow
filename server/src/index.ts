@@ -2,6 +2,7 @@ import cors from '@fastify/cors'
 import formbody from '@fastify/formbody'
 import rateLimit from '@fastify/rate-limit'
 import Fastify, { type FastifyError } from 'fastify'
+import { corsOptions } from './cors.js'
 import { env } from './env.js'
 import { retryUnsentInvoices } from './email.js'
 import { prisma } from './prisma.js'
@@ -22,14 +23,7 @@ const app = Fastify({ logger: true, trustProxy: true })
 // Only the storefront (and its deploy previews) may call the API from a
 // browser. FRONTEND_URL accepts a comma-separated list so a single deploy can
 // allow the canonical domain plus previews without opening CORS to everyone.
-const allowedOrigins = env.FRONTEND_URL.split(',')
-  .map((origin) => origin.trim())
-  .filter((origin) => origin.length > 0)
-
-await app.register(cors, {
-  origin: allowedOrigins,
-  methods: ['GET', 'HEAD', 'POST', 'PATCH', 'DELETE'],
-})
+await app.register(cors, corsOptions(env.FRONTEND_URL))
 await app.register(formbody)
 await app.register(rateLimit, {
   max: 120,

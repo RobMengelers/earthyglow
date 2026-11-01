@@ -148,6 +148,7 @@ type InvoiceData = {
   customerPostalCode: string
   customerCity: string
   customerCountry: string
+  pricesIncludeVat?: boolean
   subtotalCents: number
   shippingCents: number
   totalCents: number
@@ -169,6 +170,7 @@ type InvoiceOrder = {
   postalCode: string
   city: string
   country: string
+  pricesIncludeVat?: boolean
   subtotalCents: number
   shippingCents: number
   totalCents: number
@@ -420,12 +422,17 @@ async function generateInvoicePdf(
   // ---- Totals ----
   const labelRight = amountRight - 150
   y -= 14
-  drawRight('Subtotal', labelRight, y, 10, BODY, fonts.body)
+  drawRight(data.pricesIncludeVat === false ? 'Subtotal excl. VAT' : 'Subtotal', labelRight, y, 10, BODY, fonts.body)
   drawRight(formatEuro(data.subtotalCents), amountRight, y, 10, INK, fonts.body)
   y -= 20
   drawRight('Shipping', labelRight, y, 10, BODY, fonts.body)
   drawRight(formatEuro(data.shippingCents), amountRight, y, 10, INK, fonts.body)
   y -= 20
+  if (data.pricesIncludeVat === false) {
+    drawRight('VAT (21%)', labelRight, y, 10, BODY, fonts.body)
+    drawRight(formatEuro(data.totalCents - data.subtotalCents), amountRight, y, 10, INK, fonts.body)
+    y -= 20
+  }
   if (data.discountCents > 0) {
     drawRight(
       `Discount (${data.couponCode ?? 'coupon'})`,
@@ -568,6 +575,7 @@ function buildInvoiceData(order: InvoiceOrder): InvoiceData {
     customerPostalCode: order.postalCode,
     customerCity: order.city,
     customerCountry: order.country,
+    pricesIncludeVat: order.pricesIncludeVat,
     subtotalCents: order.subtotalCents,
     shippingCents: order.shippingCents,
     totalCents: order.totalCents,

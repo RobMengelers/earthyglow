@@ -627,3 +627,48 @@ test('custom items reject blank names and catalog options', async (t) => {
   }
   assert.equal(flow.created.length, 0)
 })
+
+test('custom order VAT basis is saved on create and edit and totals include VAT', async (t) => {
+  const flow = stubFlow(t)
+  const { app, token } = await authedApp()
+  t.after(() => app.close())
+  for (const method of ['POST', 'PUT'] as const) {
+    for (const pricesIncludeVat of [true, false]) {
+      const response = await app.inject({
+        method,
+        url: method === 'POST' ? '/api/admin/orders' : '/api/admin/orders/order-new',
+        headers: { authorization: `Bearer ${token}` },
+        payload: { pricesIncludeVat, items: [{ name: 'Custom candle', unitPriceCents: 1000, quantity: 2 }] },
+      })
+      assert.equal(response.statusCode, 200)
+      const data = flow.lastOrderData!
+      assert.equal(data.pricesIncludeVat, pricesIncludeVat)
+      assert.equal(data.subtotalCents, 2000)
+      assert.equal(data.totalCents, pricesIncludeVat ? 2000 : 2420)
+      // Overview aggregates totalCents, so exclusive input contributes gross revenue.
+      const gross = data.totalCents as number
+      assert.equal(gross - Math.round(gross * 100 / 121), pricesIncludeVat ? 347 : 420)
+      assert.equal((data.items as { create: { unitPriceCents: number }[] }).create[0].unitPriceCents, 1000)
+    }
+  }
+})
+
+test('exclusive VAT rounds to cents and invalid VAT flags are rejected', async (t) => {
+  const flow = stubFlow(t)
+  const { app, token } = await authedApp()
+  t.after(() => app.close())
+  const base = { items: [{ name: 'Custom candle', unitPriceCents: 999, quantity: 1 }] }
+  const response = await app.inject({
+    method: 'POST', url: '/api/admin/orders',
+    headers: { authorization: `Bearer ${token}` },
+    payload: { ...base, pricesIncludeVat: false },
+  })
+  assert.equal(response.statusCode, 200)
+  assert.equal(flow.lastOrderData!.totalCents, 1209)
+  const invalid = await app.inject({
+    method: 'POST', url: '/api/admin/orders',
+    headers: { authorization: `Bearer ${token}` },
+    payload: { ...base, pricesIncludeVat: 'false' },
+  })
+  assert.equal(invalid.statusCode, 400)
+})

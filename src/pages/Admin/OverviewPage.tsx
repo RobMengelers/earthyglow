@@ -121,7 +121,8 @@ function OverviewBody({
   title: string
   previousTitle: string
 }) {
-  // VAT is included in every shop price (21%). Splitting the aggregates the
+  // Saved order totals include 21% VAT, including custom orders entered net.
+  // Splitting the aggregates the
   // same way the invoice does gives the "what you really keep / really pay"
   // numbers; the VAT figures themselves are what the admin pays or reclaims.
   const netRevenue = splitIncludedVat(overview.revenueCents).netCents

@@ -1938,3 +1938,16 @@
   font-weight: 400;
   color: var(--ink);
 }
+
+.admin-detail-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.admin-order-edit {
+  font-size: 0.75rem;
+  color: var(--text-muted, #70665e);
+  text-underline-offset: 3px;
+}
+.admin-order-edit:hover { color: var(--text, #332b25); }

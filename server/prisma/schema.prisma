@@ -129,6 +129,7 @@ model Order {
   id                     String            @id @default(uuid())
   orderNumber            String            @unique
   isManual               Boolean           @default(false)
+  pricesIncludeVat       Boolean           @default(true)
   customerId             String
   customer               Customer          @relation(fields: [customerId], references: [id])
   status                 OrderStatus       @default(pending)

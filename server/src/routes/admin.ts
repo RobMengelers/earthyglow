@@ -47,6 +47,7 @@ const optionalEmail = z.preprocess(
 )
 
 const manualOrderSchema = z.object({
+  pricesIncludeVat: z.boolean().default(true),
   date: z.iso.date().optional(),
   // `.prefault` keeps the whole object optional while still running the blank
   // handling above, so `{ customer: {} }`, `{ customer: {} }` omitted entirely
@@ -401,7 +402,7 @@ export async function adminRoutes(app: FastifyInstance) {
         .send({ error: parsed.error.issues[0]?.message ?? 'Invalid order' })
     }
 
-    const { customer, shipping, items, notes, sendInvoiceEmail, date } = parsed.data
+    const { customer, shipping, items, notes, sendInvoiceEmail, date, pricesIncludeVat } = parsed.data
     const orderDate = date ? new Date(date + 'T00:00:00.000Z') : new Date()
 
     const lines = []
@@ -482,7 +483,8 @@ export async function adminRoutes(app: FastifyInstance) {
       0,
     )
     if (subtotalCents > 2_147_483_647) return reply.code(400).send({ error: 'Order total is too large' })
-    const totalCents = subtotalCents
+    const totalCents = pricesIncludeVat ? subtotalCents : subtotalCents + Math.round(subtotalCents * 21 / 100)
+    if (totalCents > 2_147_483_647) return reply.code(400).send({ error: 'Order total is too large' })
     const orderNumber = createOrderNumber()
     const email = customer.email ? customer.email.toLowerCase() : null
 
@@ -516,6 +518,7 @@ export async function adminRoutes(app: FastifyInstance) {
 
       const data = {
           isManual: true,
+          pricesIncludeVat,
           customerId: dbCustomer.id,
           status: 'paid' as const,
           paidAt: orderDate,

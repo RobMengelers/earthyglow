@@ -61,6 +61,7 @@ type AdminOrderItem = {
 
 export type AdminOrder = {
   isManual: boolean
+  pricesIncludeVat: boolean
   id: string
   orderNumber: string
   couponCode: string | null
@@ -177,6 +178,7 @@ type ManualOrderItemInput = {
 }
 
 export type ManualOrderInput = {
+  pricesIncludeVat?: boolean
   date?: string
   customer: {
     firstName?: string

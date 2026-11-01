@@ -81,6 +81,7 @@ export default function NewOrderPage() {
     timeZone: 'Europe/Amsterdam', year: 'numeric', month: '2-digit', day: '2-digit',
   }).format(new Date()))
   const [notes, setNotes] = useState('')
+  const [pricesIncludeVat, setPricesIncludeVat] = useState(true)
   const [sendInvoiceEmail, setSendInvoiceEmail] = useState(false)
   const [lines, setLines] = useState<ManualLine[]>([emptyLine(1)])
 
@@ -106,6 +107,7 @@ export default function NewOrderPage() {
       setEmail(clean(order.customer.email)); setPhone(clean(order.customer.phone))
       setAddress(clean(order.address)); setPostalCode(clean(order.postalCode))
       setCity(clean(order.city)); setCountry(clean(order.country)); setNotes(order.notes ?? '')
+      setPricesIncludeVat(order.pricesIncludeVat ?? true)
       setDate((order.paidAt ?? order.createdAt).slice(0, 10))
       setLines(order.items.map((item, index) => ({
         key: index + 1, productId: item.productId, name: item.productId === 'custom' ? item.name : '',
@@ -117,10 +119,15 @@ export default function NewOrderPage() {
     return () => { cancelled = true }
   }, [id, token])
 
-  const totalCents = useMemo(
+  const subtotalCents = useMemo(
     () => lines.reduce((sum, line) => sum + eurosToCents(line.price) * line.quantity, 0),
     [lines],
   )
+
+  const vatCents = pricesIncludeVat
+    ? subtotalCents - Math.round(subtotalCents * 100 / 121)
+    : Math.round(subtotalCents * 21 / 100)
+  const totalCents = pricesIncludeVat ? subtotalCents : subtotalCents + vatCents
 
   // Without an address to send to, the option is unavailable rather than a
   // silent no-op on save.
@@ -166,6 +173,7 @@ export default function NewOrderPage() {
 
     const payload = {
       date,
+      pricesIncludeVat,
       customer: {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
@@ -251,6 +259,13 @@ export default function NewOrderPage() {
             Pick a product or choose Custom item to enter a name and price.
           </p>
 
+          <label className="admin-manual-checkbox">
+            <input type="checkbox" checked={pricesIncludeVat} onChange={(event) => setPricesIncludeVat(event.target.checked)} />
+            <span>Prices include 21% VAT
+              <small>Uncheck to enter prices excluding VAT; 21% VAT is added to the total.</small>
+            </span>
+          </label>
+
           {catalogError !== '' && <p className="form-note is-error">{catalogError}</p>}
 
           <div className="admin-manual-lines">
@@ -321,7 +336,7 @@ export default function NewOrderPage() {
                   )}
 
                   <label className="admin-manual-price">
-                    <span>Price €</span>
+                    <span>Price € {pricesIncludeVat ? 'incl. VAT' : 'excl. VAT'}</span>
                     <input
                       inputMode="decimal"
                       pattern="[0-9]+([.,][0-9]{1,2})?"
@@ -439,8 +454,9 @@ export default function NewOrderPage() {
         <footer className="admin-form-foot">
           <div className="admin-form-summary">
             <p className="admin-form-total">
-              Total <strong>{formatEuros(totalCents)}</strong>
+              Total incl. VAT <strong>{formatEuros(totalCents)}</strong>
             </p>
+            <p className="admin-form-hint">VAT (21%): {formatEuros(vatCents)}</p>
             <label className={`admin-manual-checkbox${canEmail ? '' : ' is-disabled'}`}>
               <input
                 type="checkbox"

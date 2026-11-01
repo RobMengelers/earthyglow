@@ -1,0 +1,1 @@
+ALTER TABLE "Order" ADD COLUMN "pricesIncludeVat" BOOLEAN NOT NULL DEFAULT true;

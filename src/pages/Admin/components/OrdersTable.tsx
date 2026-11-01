@@ -225,8 +225,10 @@ function OrderDetail({ order }: { order: AdminOrder }) {
   return (
     <div className="admin-order-detail">
       <section className="admin-detail-col">
-        <h3>Items</h3>
-        {order.isManual && order.status === 'paid' && <Link className="btn btn-ghost" to={`/admin/orders/${order.id}/edit`}>Edit order</Link>}
+        <div className="admin-detail-heading">
+          <h3>Items</h3>
+          {order.isManual && order.status === 'paid' && <Link className="admin-order-edit" to={`/admin/orders/${order.id}/edit`}>Edit order</Link>}
+        </div>
         <table className="admin-detail-items">
           <tbody>
             {order.items.map((item, index) => (
@@ -249,9 +251,12 @@ function OrderDetail({ order }: { order: AdminOrder }) {
           </tbody>
           <tfoot>
             <tr>
-              <td>Subtotal</td>
+              <td>Subtotal{order.pricesIncludeVat === false ? ' excl. VAT' : ''}</td>
               <td>{formatEuros(order.subtotalCents)}</td>
             </tr>
+            {order.pricesIncludeVat === false && (
+              <tr><td>VAT (21%)</td><td>{formatEuros(order.totalCents - order.subtotalCents)}</td></tr>
+            )}
             {order.shippingCents > 0 && (
               <tr>
                 <td>Shipping</td>
