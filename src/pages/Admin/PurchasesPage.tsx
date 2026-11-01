@@ -7,6 +7,7 @@ import {
   formatDate,
   formatEuros,
   type AdminPurchase,
+  type AdminPurchaseDocument,
 } from '../../admin/api'
 import { siteMeta } from '../../lib/seo'
 import { useAdmin } from './admin-context'
@@ -76,10 +77,10 @@ export default function PurchasesPage() {
   }
 
   const downloadDocument = useCallback(
-    async (purchase: AdminPurchase) => {
+    async (purchase: AdminPurchase, document: AdminPurchaseDocument) => {
       if (!token) return
       try {
-        await downloadAdminPurchaseDocument(token, purchase)
+        await downloadAdminPurchaseDocument(token, purchase, document)
       } catch (error) {
         setFlash({
           tone: 'error',
@@ -146,7 +147,7 @@ export default function PurchasesPage() {
                 <th className="is-right">Cost incl. VAT</th>
                 <th className="is-right">Excl. VAT</th>
                 <th className="is-right">VAT (21%)</th>
-                <th>Document</th>
+                <th>Documents</th>
                 <th aria-label="Actions" />
               </tr>
             </thead>
@@ -184,16 +185,18 @@ export default function PurchasesPage() {
                     <td className="is-right">{formatEuros(purchase.netCents)}</td>
                     <td className="is-right">{formatEuros(purchase.vatCents)}</td>
                     <td>
-                      {purchase.hasDocument ? (
-                        <button
-                          type="button"
-                          className="admin-doc-link"
-                          onClick={() => void downloadDocument(purchase)}
-                          title={purchase.documentName ?? undefined}
-                        >
-                          {purchase.documentName ?? 'Open document'}
-                        </button>
-                      ) : (
+                      {purchase.documents.length > 0 ? purchase.documents.map((document) => (
+                        <div key={document.id}>
+                          <button
+                            type="button"
+                            className="admin-doc-link"
+                            onClick={() => void downloadDocument(purchase, document)}
+                            title={document.name}
+                          >
+                            {document.name}
+                          </button>
+                        </div>
+                      )) : (
                         <span className="admin-muted">—</span>
                       )}
                     </td>

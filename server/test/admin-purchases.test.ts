@@ -33,7 +33,7 @@ function stubPurchases(
     rows?: Record<string, unknown>[]
     deleted?: boolean
     updateMissing?: boolean
-    document?: { documentName: string | null; documentMime: string | null; documentBytes: Buffer | null }
+    document?: { name: string; mime: string; bytes: Buffer } | null
   } = {},
 ): Stub {
   const restore: (() => void)[] = []
@@ -52,45 +52,54 @@ function stubPurchases(
     dateBought: new Date('2026-10-01T12:00:00.000Z'),
     description: 'Soy wax, 5kg',
     costCents: 1210,
-    documentName: null,
-    documentMime: null,
+    documents: [],
     createdAt: new Date('2026-10-01T13:00:00.000Z'),
     updatedAt: new Date('2026-10-01T13:00:00.000Z'),
     ...overrides,
   })
 
-  stub(prisma.purchase, 'findMany', async (args: Record<string, unknown>) => {
-    const rows = options.rows ?? [row()]
-    return rows.map((r) => {
-      const rest: Record<string, unknown> = { ...r }
-      for (const key of Object.keys((args.omit ?? {}) as Record<string, boolean>)) {
-        delete rest[key]
-      }
-      return rest
+  function documentMetadata(documents: Record<string, unknown>[]) {
+    return documents.map(({ id, name, mime }) => ({ id, name, mime }))
+  }
+  function resultDocuments(args: { data: Record<string, unknown> }) {
+    const changes = args.data.documents as {
+      create: Record<string, unknown>[]
+      deleteMany?: { id: { in: string[] } }
+    }
+    const existing = (options.rows?.[0]?.documents ?? []) as Record<string, unknown>[]
+    return documentMetadata([
+      ...existing.filter((doc) => !changes.deleteMany?.id.in.includes(doc.id as string)),
+      ...changes.create.map((doc, index) => ({ id: `document-${index}`, ...doc })),
+    ])
+  }
+  stub(prisma.purchase, 'findMany', async (args: { include: unknown }) => {
+    assert.deepEqual(args.include, {
+      documents: {
+        select: { id: true, name: true, mime: true },
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      },
     })
+    return (options.rows ?? [row()]).map((r) => ({
+      ...r, documents: documentMetadata((r.documents ?? []) as Record<string, unknown>[]),
+    }))
   })
-  stub(prisma.purchase, 'create', async (args: { data: Record<string, unknown>; omit?: Record<string, boolean> }) => {
+  stub(prisma.purchase, 'create', async (args: { data: Record<string, unknown> }) => {
     created.push(args.data)
-    const result: Record<string, unknown> = { id: 'purchase-new', ...args.data }
-    // Mirror Prisma so dropping `omit` from the create fails the test.
-    for (const key of Object.keys(args.omit ?? {})) delete result[key]
-    return result
+    return { id: 'purchase-new', ...args.data, documents: resultDocuments(args) }
   })
-  stub(prisma.purchase, 'update', async (args: { data: Record<string, unknown>; omit?: Record<string, boolean> }) => {
+  stub(prisma.purchase, 'update', async (args: { data: Record<string, unknown> }) => {
     if (options.updateMissing) throw new Error('record not found')
     updated.push(args.data)
-    const result: Record<string, unknown> = {
-      ...(options.rows?.[0] ?? row()),
-      ...args.data,
-    }
-    for (const key of Object.keys(args.omit ?? {})) delete result[key]
-    return result
+    return { ...(options.rows?.[0] ?? row()), ...args.data, documents: resultDocuments(args) }
   })
   stub(prisma.purchase, 'delete', async () => {
     if (options.deleted === false) throw new Error('record not found')
     return row()
   })
-  stub(prisma.purchase, 'findUnique', async () => options.document ?? row())
+  stub(prisma.purchaseDocument, 'findFirst', async (args: { where: unknown }) => {
+    assert.deepEqual(args.where, { id: 'document-1', purchaseId: 'purchase-1' })
+    return options.document ?? null
+  })
 
   return { created, updated }
 }
@@ -103,9 +112,7 @@ test('purchase list returns the VAT split and never the document bytes', async (
         dateBought: new Date('2026-10-01T12:00:00.000Z'),
         description: 'Soy wax, 5kg',
         costCents: 1210,
-        documentName: 'receipt.pdf',
-        documentMime: 'application/pdf',
-        documentBytes: Buffer.from('%PDF'),
+        documents: [{ id: 'document-1', name: 'receipt.pdf', mime: 'application/pdf', bytes: Buffer.from('%PDF') }],
         createdAt: new Date('2026-10-01T13:00:00.000Z'),
       },
     ],
@@ -123,9 +130,7 @@ test('purchase list returns the VAT split and never the document bytes', async (
   // 21% VAT included: net 1000, VAT 210 for a gross of 1210.
   assert.equal(purchase.netCents, 1000)
   assert.equal(purchase.vatCents, 210)
-  assert.equal(purchase.hasDocument, true)
-  assert.equal(purchase.documentName, 'receipt.pdf')
-  assert.ok(!('documentBytes' in purchase), 'documentBytes must be omitted')
+  assert.deepEqual(purchase.documents, [{ id: 'document-1', name: 'receipt.pdf', mime: 'application/pdf' }])
 })
 
 test('purchase requires an admin token', async (t) => {
@@ -155,7 +160,7 @@ test('purchase creation splits the VAT-inclusive cost', async (t) => {
   assert.equal(purchase.costCents, 2450)
   assert.equal(purchase.netCents, Math.round((2450 * 100) / 121))
   assert.equal(purchase.vatCents, 2450 - purchase.netCents)
-  assert.equal(purchase.hasDocument, false)
+  assert.deepEqual(purchase.documents, [])
 
   const persisted = created[0]
   assert.equal(persisted.costCents, 2450)
@@ -164,7 +169,7 @@ test('purchase creation splits the VAT-inclusive cost', async (t) => {
     new Date(persisted.dateBought as Date).toISOString(),
     '2026-10-01T12:00:00.000Z',
   )
-  assert.equal(persisted.documentBytes, null)
+  assert.deepEqual(persisted.documents, { create: [] })
 })
 
 test('purchase creation rejects a malformed cost', async (t) => {
@@ -212,35 +217,33 @@ test('purchase creation stores a base64 document', async (t) => {
       date: '2026-10-05',
       description: 'Votive moulds',
       cost: '45,90',
-      document: {
+      documents: [{
         name: 'receipt.pdf',
         type: 'application/pdf',
         data: bytes.toString('base64'),
-      },
+      }],
     },
   })
   assert.equal(response.statusCode, 200)
-  assert.equal(response.json().purchase.hasDocument, true)
+  assert.equal(response.json().purchase.documents.length, 1)
 
   const persisted = created[0]
-  assert.equal(persisted.documentName, 'receipt.pdf')
-  assert.equal(persisted.documentMime, 'application/pdf')
-  assert.deepEqual(persisted.documentBytes, bytes)
+  assert.deepEqual(persisted.documents, { create: [{ name: 'receipt.pdf', mime: 'application/pdf', bytes }] })
 })
 
 test('purchase document endpoint streams the bytes with an attachment header', async (t) => {
   const bytes = Buffer.from('%PDF fake')
   stubPurchases(t, {
     document: {
-      documentName: 'receipt.pdf',
-      documentMime: 'application/pdf',
-      documentBytes: bytes,
+      name: 'receipt.pdf',
+      mime: 'application/pdf',
+      bytes,
     },
   })
   const { app, token } = await authedApp()
   const response = await app.inject({
     method: 'GET',
-    url: '/api/admin/purchases/purchase-1/document',
+    url: '/api/admin/purchases/purchase-1/documents/document-1',
     headers: { authorization: `Bearer ${token}` },
   })
   assert.equal(response.statusCode, 200)
@@ -251,16 +254,12 @@ test('purchase document endpoint streams the bytes with an attachment header', a
 
 test('purchase document endpoint 404s when there is no document', async (t) => {
   stubPurchases(t, {
-    document: {
-      documentName: null,
-      documentMime: null,
-      documentBytes: null,
-    },
+    document: null,
   })
   const { app, token } = await authedApp()
   const response = await app.inject({
     method: 'GET',
-    url: '/api/admin/purchases/purchase-1/document',
+    url: '/api/admin/purchases/purchase-1/documents/document-1',
     headers: { authorization: `Bearer ${token}` },
   })
   assert.equal(response.statusCode, 404)
@@ -290,11 +289,12 @@ test('purchase editing updates the fields and keeps the document', async (t) => 
     '2026-10-02T12:00:00.000Z',
   )
   // No document fields were sent, so the existing receipt stays untouched.
-  assert.ok(!('documentName' in persisted))
+  assert.deepEqual(persisted.documents, { create: [], deleteMany: { id: { in: [] } } })
 })
 
-test('purchase editing can replace or remove the document', async (t) => {
-  const { updated } = stubPurchases(t)
+test('purchase editing appends documents and removes only selected documents', async (t) => {
+  const existing = { id: 'existing', name: 'old.pdf', mime: 'application/pdf' }
+  const { updated } = stubPurchases(t, { rows: [{ documents: [existing] }] })
   const { app, token } = await authedApp()
   const bytes = Buffer.from('new receipt')
 
@@ -306,16 +306,21 @@ test('purchase editing can replace or remove the document', async (t) => {
       date: '2026-10-02',
       description: 'Soy wax, 6kg',
       cost: '30,00',
-      document: {
+      documents: [{
         name: 'new-receipt.pdf',
         type: 'application/pdf',
         data: bytes.toString('base64'),
-      },
+      }],
     },
   })
   assert.equal(replace.statusCode, 200)
-  assert.equal(updated[0].documentName, 'new-receipt.pdf')
-  assert.deepEqual(updated[0].documentBytes, bytes)
+  assert.deepEqual(replace.json().purchase.documents, [
+    existing, { id: 'document-0', name: 'new-receipt.pdf', mime: 'application/pdf' },
+  ])
+  assert.deepEqual(updated[0].documents, {
+    create: [{ name: 'new-receipt.pdf', mime: 'application/pdf', bytes }],
+    deleteMany: { id: { in: [] } },
+  })
 
   const remove = await app.inject({
     method: 'PATCH',
@@ -325,13 +330,12 @@ test('purchase editing can replace or remove the document', async (t) => {
       date: '2026-10-02',
       description: 'Soy wax, 6kg',
       cost: '30,00',
-      removeDocument: true,
+      removeDocumentIds: ['existing'],
     },
   })
   assert.equal(remove.statusCode, 200)
-  assert.equal(updated[1].documentName, null)
-  assert.equal(updated[1].documentMime, null)
-  assert.equal(updated[1].documentBytes, null)
+  assert.deepEqual(updated[1].documents, { create: [], deleteMany: { id: { in: ['existing'] } } })
+  assert.deepEqual(remove.json().purchase.documents, [])
 })
 
 test('purchase editing rejects a bad cost and 404s an unknown id', async (t) => {
@@ -376,4 +380,35 @@ test('purchase deletion 404s on an unknown id', async (t) => {
     headers: { authorization: `Bearer ${token}` },
   })
   assert.equal(response.statusCode, 404)
+})
+test('multiple documents are stored together and invalid batches write nothing', async (t) => {
+  const { created } = stubPurchases(t)
+  const { app, token } = await authedApp()
+  const document = { name: 'receipt.pdf', type: 'application/pdf', data: Buffer.from('receipt').toString('base64') }
+  const send = (documents: unknown) => app.inject({
+    method: 'POST', url: '/api/admin/purchases',
+    headers: { authorization: `Bearer ${token}` },
+    payload: { date: '2026-10-01', description: 'Wax', cost: '10', documents },
+  })
+  const response = await send([document, { ...document, name: 'delivery.pdf' }])
+  assert.equal(response.statusCode, 200)
+  assert.deepEqual(response.json().purchase.documents.map((doc: { name: string }) => doc.name), ['receipt.pdf', 'delivery.pdf'])
+  for (const documents of [
+    [document, { ...document, data: '' }],
+    [{ ...document, data: 'not base64!' }],
+    Array(21).fill(document),
+    [{ ...document, data: 'A'.repeat(20 * 1024 * 1024 + 1) }],
+    Array(3).fill({ ...document, data: 'A'.repeat(14 * 1024 * 1024 - 600000) }),
+    'invalid',
+  ]) {
+    assert.equal((await send(documents)).statusCode, 400)
+  }
+  assert.equal(created.length, 1)
+})
+
+test('document downloads require an admin token', async () => {
+  const app = Fastify()
+  await app.register(adminRoutes)
+  const response = await app.inject({ method: 'GET', url: '/api/admin/purchases/purchase-1/documents/document-1' })
+  assert.equal(response.statusCode, 401)
 })

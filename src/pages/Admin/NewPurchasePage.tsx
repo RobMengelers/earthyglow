@@ -7,7 +7,7 @@ import {
   formatEuros,
   splitIncludedVat,
   updateAdminPurchase,
-  type AdminPurchase,
+  type AdminPurchaseDocument,
 } from '../../admin/api'
 import { LoadingButton } from '../../components/ui/LoadingButton'
 import { siteMeta } from '../../lib/seo'
@@ -37,9 +37,9 @@ export default function NewPurchasePage() {
   const [date, setDate] = useState(todayInput)
   const [description, setDescription] = useState('')
   const [cost, setCost] = useState('')
-  const [document, setDocument] = useState<File | null>(null)
-  const [removeDocument, setRemoveDocument] = useState(false)
-  const [existingDocument, setExistingDocument] = useState<AdminPurchase | null>(null)
+  const [documents, setDocuments] = useState<File[]>([])
+  const [removeDocumentIds, setRemoveDocumentIds] = useState<string[]>([])
+  const [existingDocuments, setExistingDocuments] = useState<AdminPurchaseDocument[]>([])
   const [loaded, setLoaded] = useState(!editing)
   const [loadError, setLoadError] = useState('')
   const [error, setError] = useState('')
@@ -59,7 +59,7 @@ export default function NewPurchasePage() {
         setDate(purchase.dateBought.slice(0, 10))
         setDescription(purchase.description)
         setCost((purchase.costCents / 100).toFixed(2).replace('.', ','))
-        setExistingDocument(purchase)
+        setExistingDocuments(purchase.documents)
         setLoaded(true)
       })
       .catch((caught: unknown) => {
@@ -80,8 +80,17 @@ export default function NewPurchasePage() {
       setError('Enter the total cost in euros, e.g. 24,50')
       return
     }
-    if (document && document.size > MAX_DOCUMENT_BYTES) {
-      setError('The document is too large (max 15 MB)')
+    if (documents.some((file) => file.size > MAX_DOCUMENT_BYTES)) {
+      setError('Each document must be 15 MB or less')
+      return
+    }
+
+    if (documents.length > 20 || documents.reduce((sum, file) => sum + file.size, 0) > 30 * 1024 * 1024) {
+      setError('Upload up to 20 documents and 30 MB total per save')
+      return
+    }
+    if (documents.some((file) => file.size === 0)) {
+      setError('Empty documents cannot be uploaded')
       return
     }
 
@@ -91,8 +100,8 @@ export default function NewPurchasePage() {
         date,
         description,
         cost,
-        document: document ?? undefined,
-        removeDocument: editing ? removeDocument : undefined,
+        documents,
+        removeDocumentIds,
       }
       if (editing && id) {
         await updateAdminPurchase(token, id, input)
@@ -181,41 +190,53 @@ export default function NewPurchasePage() {
             </label>
             <label className="is-wide">
               <span>
-                Document <small className="admin-optional">optional</small>
+                Documents <small className="admin-optional">optional</small>
               </span>
               <input
                 type="file"
+                multiple
                 accept=".pdf,.png,.jpg,.jpeg,.webp,.heic"
                 onChange={(event) => {
-                  const next = event.target.files?.[0] ?? null
-                  setDocument(next)
-                  if (next) setRemoveDocument(false)
+                  const next = Array.from(event.target.files ?? [])
+                  setDocuments((current) => [...current, ...next])
+                  event.target.value = ''
                 }}
               />
               <small className="admin-form-hint">
-                {document
-                  ? document.name
-                  : existingDocument?.hasDocument
-                    ? `Current: ${existingDocument.documentName}. Choose a file to replace it.`
-                    : 'A receipt or delivery note to keep with the purchase.'}
+                Add receipts or delivery notes. Up to 20 files per save, 15 MB each and 30 MB total.
               </small>
             </label>
           </div>
 
-          {existingDocument?.hasDocument && (
-            <label className="admin-manual-checkbox">
+          {documents.length > 0 && (
+            <ul>
+              {documents.map((file, index) => (
+                <li key={index}>
+                  {file.name}{' '}
+                  <button type="button" className="admin-doc-link" disabled={saving}
+                    onClick={() => setDocuments((current) => current.filter((_, i) => i !== index))}>
+                    Remove from upload
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {existingDocuments.map((document) => (
+            <label className="admin-manual-checkbox" key={document.id}>
               <input
                 type="checkbox"
-                checked={removeDocument}
-                disabled={document !== null}
-                onChange={(event) => setRemoveDocument(event.target.checked)}
+                checked={removeDocumentIds.includes(document.id)}
+                disabled={saving}
+                onChange={(event) => setRemoveDocumentIds((current) =>
+                  event.target.checked
+                    ? [...current, document.id]
+                    : current.filter((id) => id !== document.id),
+                )}
               />
-              <span>
-                Remove the current document
-                <small>{existingDocument.documentName}</small>
-              </span>
+              <span>Remove {document.name}</span>
             </label>
-          )}
+          ))}
 
           <div className="admin-form-summary">
             <VatBreakdown cost={cost} />

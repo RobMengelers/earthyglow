@@ -262,14 +262,22 @@ model Purchase {
   dateBought    DateTime
   description   String
   costCents     Int
-  // The document is optional (a receipt or delivery note). Stored as bytes
-  // following the invoice PDF precedent; the client only ever receives the
-  // file via a dedicated download endpoint.
-  documentName  String?
-  documentMime  String?
-  documentBytes Bytes?
+  documents     PurchaseDocument[]
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   @@index([dateBought])
+}
+
+
+model PurchaseDocument {
+  id         String   @id @default(uuid())
+  purchaseId String
+  purchase   Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  name       String
+  mime       String
+  bytes      Bytes
+  createdAt  DateTime @default(now())
+
+  @@index([purchaseId])
 }

@@ -279,6 +279,8 @@ export async function refundAdminOrder(token: string, orderId: string): Promise<
   return (await response.json()) as AdminOrder
 }
 
+export type AdminPurchaseDocument = { id: string; name: string; mime: string }
+
 export type AdminPurchase = {
   id: string
   dateBought: string
@@ -289,8 +291,7 @@ export type AdminPurchase = {
   netCents: number
   /** Derived: the 21% VAT taken out of costCents. */
   vatCents: number
-  hasDocument: boolean
-  documentName: string | null
+  documents: AdminPurchaseDocument[]
   createdAt: string
 }
 
@@ -317,10 +318,8 @@ export type AdminPurchaseInput = {
   description: string
   /** The total the receipt shows, exactly as typed (e.g. "24,50"). */
   cost: string
-  /** Optional receipt/delivery note. */
-  document?: File
-  /** Drop the currently attached document. Ignored when a new file is sent. */
-  removeDocument?: boolean
+  documents?: File[]
+  removeDocumentIds?: string[]
 }
 
 async function purchasePayload(input: AdminPurchaseInput): Promise<Record<string, unknown>> {
@@ -328,15 +327,12 @@ async function purchasePayload(input: AdminPurchaseInput): Promise<Record<string
     date: input.date,
     description: input.description,
     cost: input.cost,
-  }
-  if (input.document) {
-    payload.document = {
-      name: input.document.name,
-      type: input.document.type || 'application/octet-stream',
-      data: await fileToBase64(input.document),
-    }
-  } else if (input.removeDocument) {
-    payload.removeDocument = true
+    removeDocumentIds: input.removeDocumentIds ?? [],
+    documents: await Promise.all((input.documents ?? []).map(async (file) => ({
+      name: file.name,
+      type: file.type || 'application/octet-stream',
+      data: await fileToBase64(file),
+    }))),
   }
   return payload
 }
@@ -398,9 +394,10 @@ export async function deleteAdminPurchase(
 export async function downloadAdminPurchaseDocument(
   token: string,
   purchase: AdminPurchase,
+  attachment: AdminPurchaseDocument,
 ): Promise<void> {
   const response = await fetch(
-    `${API_URL}/api/admin/purchases/${purchase.id}/document`,
+    `${API_URL}/api/admin/purchases/${purchase.id}/documents/${attachment.id}`,
     { headers: { Authorization: `Bearer ${token}` } },
   )
   if (!response.ok) {
@@ -413,7 +410,7 @@ export async function downloadAdminPurchaseDocument(
   const url = URL.createObjectURL(await response.blob())
   const link = document.createElement('a')
   link.href = url
-  link.download = purchase.documentName ?? 'document'
+  link.download = attachment.name
   document.body.append(link)
   link.click()
   link.remove()

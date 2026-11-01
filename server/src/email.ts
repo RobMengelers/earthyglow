@@ -508,7 +508,7 @@ async function generateInvoicePdf(
     fonts.displayItalic,
   )
 
-  const foot = 'Questions about this invoice? Reply to this email.'
+  const foot = 'Questions about this invoice?'
   const footSize = 9
   const footW = fonts.body.widthOfTextAtSize(foot, footSize)
   draw(foot, center - footW / 2, 42, footSize, BODY, fonts.body)

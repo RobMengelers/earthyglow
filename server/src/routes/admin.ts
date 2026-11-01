@@ -265,8 +265,32 @@ const purchaseDocumentSchema = z.object({
   type: z.string().trim().max(120).default('application/octet-stream'),
   // Base64 of the uploaded file. The cap keeps a single receipt/document
   // manageable (~15 MB of decoded bytes) without unbounded request bodies.
-  data: z.string().min(1).max(20 * 1024 * 1024),
+  data: z.string().min(1).max(20 * 1024 * 1024)
+    .refine((value) => Buffer.from(value, 'base64').toString('base64') === value, 'Invalid document encoding'),
 })
+
+const purchaseAttachmentsSchema = z.object({
+  documents: z.array(purchaseDocumentSchema).max(20).default([]),
+  removeDocumentIds: z.array(z.string().min(1)).max(100).default([]),
+}).refine(
+  (input) => input.documents.reduce((sum, doc) => sum + Buffer.from(doc.data, 'base64').length, 0) <= 30 * 1024 * 1024,
+  'Documents must total 30 MB or less per save',
+)
+
+const purchaseDocumentsInclude = {
+  documents: {
+    select: { id: true, name: true, mime: true },
+    orderBy: [{ createdAt: 'asc' as const }, { id: 'asc' as const }],
+  },
+}
+
+function documentCreates(documents: z.infer<typeof purchaseDocumentSchema>[]) {
+  return documents.map((doc) => ({
+    name: safeFileName(doc.name),
+    mime: doc.type,
+    bytes: Buffer.from(doc.data, 'base64'),
+  }))
+}
 
 function eurosToCents(value: string): number | null {
   const normalized = value.replace(',', '.')
@@ -786,23 +810,22 @@ export async function adminRoutes(app: FastifyInstance) {
   app.get('/api/admin/purchases', { preHandler: requireAdmin }, async () => {
     const purchases = await prisma.purchase.findMany({
       orderBy: { dateBought: 'desc' },
-      omit: { documentBytes: true },
+      include: purchaseDocumentsInclude,
     })
     return {
       purchases: purchases.map((purchase) => ({
         ...purchase,
         ...includedVatSplit(purchase.costCents),
-        hasDocument: purchase.documentName !== null,
       })),
     }
   })
 
   // Records a purchase. `date` is the day it was bought, `description` the free
   // text, `cost` the VAT-inclusive total (split into net + 21% VAT), and
-  // `document` is an optional base64-encoded receipt.
+  // `documents` contains optional base64-encoded receipts.
   app.post(
     '/api/admin/purchases',
-    { preHandler: requireAdmin, bodyLimit: 21 * 1024 * 1024 },
+    { preHandler: requireAdmin, bodyLimit: 41 * 1024 * 1024 },
     async (request, reply) => {
       const body = request.body as Record<string, unknown>
       const fields = purchaseFieldsSchema.safeParse({
@@ -823,13 +846,9 @@ export async function adminRoutes(app: FastifyInstance) {
           .send({ error: 'Enter the total cost in euros, e.g. 24,50' })
       }
 
-      let parsedDocument: z.infer<typeof purchaseDocumentSchema> | null = null
-      if (body.document !== undefined && body.document !== null) {
-        const parsed = purchaseDocumentSchema.safeParse(body.document)
-        if (!parsed.success) {
-          return reply.code(400).send({ error: 'The uploaded document is not valid' })
-        }
-        parsedDocument = parsed.data
+      const attachments = purchaseAttachmentsSchema.safeParse(body)
+      if (!attachments.success) {
+        return reply.code(400).send({ error: attachments.error.issues[0]?.message ?? 'Invalid documents' })
       }
 
       const purchase = await prisma.purchase.create({
@@ -837,30 +856,24 @@ export async function adminRoutes(app: FastifyInstance) {
           dateBought: dateBoughtFromForm(fields.data.date),
           description: fields.data.description,
           costCents,
-          documentName: parsedDocument ? safeFileName(parsedDocument.name) : null,
-          documentMime: parsedDocument ? parsedDocument.type : null,
-          documentBytes: parsedDocument
-            ? Buffer.from(parsedDocument.data, 'base64')
-            : null,
+          documents: { create: documentCreates(attachments.data.documents) },
         },
-        omit: { documentBytes: true },
+        include: purchaseDocumentsInclude,
       })
 
       return {
         purchase: {
           ...purchase,
           ...includedVatSplit(purchase.costCents),
-          hasDocument: purchase.documentName !== null,
         },
       }
     },
   )
 
-  // Edits a purchase in place. An attached document is kept unless a new file
-  // is sent or `removeDocument` is true.
+  // Adds documents and removes only explicitly selected attachments atomically.
   app.patch(
     '/api/admin/purchases/:id',
-    { preHandler: requireAdmin, bodyLimit: 21 * 1024 * 1024 },
+    { preHandler: requireAdmin, bodyLimit: 41 * 1024 * 1024 },
     async (request, reply) => {
       const body = request.body as Record<string, unknown>
       const fields = purchaseFieldsSchema.safeParse({
@@ -881,29 +894,19 @@ export async function adminRoutes(app: FastifyInstance) {
           .send({ error: 'Enter the total cost in euros, e.g. 24,50' })
       }
 
-      let parsedDocument: z.infer<typeof purchaseDocumentSchema> | null = null
-      if (body.document !== undefined && body.document !== null) {
-        const parsed = purchaseDocumentSchema.safeParse(body.document)
-        if (!parsed.success) {
-          return reply.code(400).send({ error: 'The uploaded document is not valid' })
-        }
-        parsedDocument = parsed.data
+      const attachments = purchaseAttachmentsSchema.safeParse(body)
+      if (!attachments.success) {
+        return reply.code(400).send({ error: attachments.error.issues[0]?.message ?? 'Invalid documents' })
       }
-      const removeDocument = body.removeDocument === true
 
       const data = {
         dateBought: dateBoughtFromForm(fields.data.date),
         description: fields.data.description,
         costCents,
-        ...(parsedDocument
-          ? {
-              documentName: safeFileName(parsedDocument.name),
-              documentMime: parsedDocument.type,
-              documentBytes: Buffer.from(parsedDocument.data, 'base64'),
-            }
-          : removeDocument
-            ? { documentName: null, documentMime: null, documentBytes: null }
-            : {}),
+        documents: {
+          create: documentCreates(attachments.data.documents),
+          deleteMany: { id: { in: attachments.data.removeDocumentIds } },
+        },
       }
 
       const params = request.params as { id: string }
@@ -911,13 +914,12 @@ export async function adminRoutes(app: FastifyInstance) {
         const purchase = await prisma.purchase.update({
           where: { id: params.id },
           data,
-          omit: { documentBytes: true },
+          include: purchaseDocumentsInclude,
         })
         return {
           purchase: {
             ...purchase,
             ...includedVatSplit(purchase.costCents),
-            hasDocument: purchase.documentName !== null,
           },
         }
       } catch {
@@ -940,27 +942,22 @@ export async function adminRoutes(app: FastifyInstance) {
     },
   )
 
-  // Serves the document (receipt) that was attached to a purchase, so the admin
-  // can open the original file exactly as it was uploaded.
+  // Only serve a document when it belongs to the requested purchase.
   app.get(
-    '/api/admin/purchases/:id/document',
+    '/api/admin/purchases/:id/documents/:documentId',
     { preHandler: requireAdmin },
     async (request, reply) => {
-      const params = request.params as { id: string }
-      const purchase = await prisma.purchase.findUnique({
-        where: { id: params.id },
-        select: { documentName: true, documentMime: true, documentBytes: true },
+      const params = request.params as { id: string; documentId: string }
+      const document = await prisma.purchaseDocument.findFirst({
+        where: { id: params.documentId, purchaseId: params.id },
       })
-      if (!purchase || !purchase.documentBytes || !purchase.documentName) {
+      if (!document) {
         return reply.code(404).send({ error: 'No document for this purchase' })
       }
       return reply
-        .type(purchase.documentMime ?? 'application/octet-stream')
-        .header(
-          'Content-Disposition',
-          `attachment; filename="${purchase.documentName}"`,
-        )
-        .send(Buffer.from(purchase.documentBytes))
+        .type(document.mime)
+        .header('Content-Disposition', `attachment; filename="${document.name}"`)
+        .send(Buffer.from(document.bytes))
     },
   )
 
