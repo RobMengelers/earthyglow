@@ -70,12 +70,14 @@ const manualOrderSchema = z.object({
   items: z
     .array(
       z.object({
-        productId: z.string().trim().min(1).max(100),
+        productId: z.string().trim().min(1).max(100).optional(),
+        name: z.string().trim().min(1).max(200).optional(),
         variantId: z.string().trim().min(1).max(80).optional(),
         colorId: z.string().trim().min(1).max(80).optional(),
         unitPriceCents: z.number().int().min(0).max(1_000_000),
         quantity: z.number().int().min(1).max(99),
-      }),
+      }).refine((item) => Boolean(item.productId) !== Boolean(item.name), "Choose a product or enter a custom item name")
+        .refine((item) => Boolean(item.productId) || (!item.variantId && !item.colorId), "Custom items cannot have catalog options"),
     )
     .min(1)
     .max(50),
@@ -378,7 +380,20 @@ export async function adminRoutes(app: FastifyInstance) {
   // Records a sale made in person. The order is born paid (the money changed
   // hands in the shop) and its invoice PDF is archived immediately, so the
   // download button works without ever going through the email flow.
-  app.post('/api/admin/orders', { preHandler: requireAdmin }, async (request, reply) => {
+  app.get('/api/admin/orders/:id', { preHandler: requireAdmin }, async (request, reply) => {
+    const { id } = request.params as { id: string }
+    const order = await prisma.order.findUnique({ where: { id }, omit: { invoicePdf: true }, include: { customer: true, items: { orderBy: { position: 'asc' } } } })
+    if (!order) return reply.code(404).send({ error: 'Order not found' })
+    return order
+  })
+
+  const saveManualOrder = async (request: FastifyRequest, reply: FastifyReply) => {
+    const id = (request.params as { id?: string }).id
+    const existing = id ? await prisma.order.findUnique({ where: { id }, omit: { invoicePdf: true } }) : null
+    if (id && !existing) return reply.code(404).send({ error: 'Order not found' })
+    if (existing && (!existing.isManual || existing.status !== 'paid')) {
+      return reply.code(409).send({ error: 'Only paid custom orders can be edited' })
+    }
     const parsed = manualOrderSchema.safeParse(request.body)
     if (!parsed.success) {
       return reply
@@ -391,6 +406,12 @@ export async function adminRoutes(app: FastifyInstance) {
 
     const lines = []
     for (const item of items) {
+      if (!item.productId) {
+        lines.push({ productId: 'custom', name: item.name!, variantId: null, variantLabel: null,
+          colorId: null, colorLabel: null, unitPriceCents: item.unitPriceCents,
+          quantity: item.quantity, lineTotalCents: item.unitPriceCents * item.quantity, position: lines.length })
+        continue
+      }
       const product = await prisma.product.findUnique({
         where: { id: item.productId },
         select: {
@@ -460,6 +481,7 @@ export async function adminRoutes(app: FastifyInstance) {
       (sum, line) => sum + line.lineTotalCents,
       0,
     )
+    if (subtotalCents > 2_147_483_647) return reply.code(400).send({ error: 'Order total is too large' })
     const totalCents = subtotalCents
     const orderNumber = createOrderNumber()
     const email = customer.email ? customer.email.toLowerCase() : null
@@ -492,11 +514,10 @@ export async function adminRoutes(app: FastifyInstance) {
             },
           })
 
-      const order = await prisma.order.create({
-        data: {
-          orderNumber,
+      const data = {
+          isManual: true,
           customerId: dbCustomer.id,
-          status: 'paid',
+          status: 'paid' as const,
           paidAt: orderDate,
           createdAt: orderDate,
           subtotalCents,
@@ -508,8 +529,15 @@ export async function adminRoutes(app: FastifyInstance) {
           city: shipping.city,
           country: shipping.country,
           notes: notes || null,
-          items: { create: lines },
-        },
+        }
+      const selection = {
+        omit: { invoicePdf: true as const },
+        include: { customer: true as const, items: { orderBy: { position: 'asc' as const } } },
+      }
+      const order = id
+        ? await prisma.order.update({ where: { id }, data: { ...data, items: { deleteMany: {}, create: lines }, invoicePdf: null, invoiceSentAt: null }, ...selection })
+        : await prisma.order.create({
+        data: { ...data, orderNumber, items: { create: lines } },
         // The PDF is archived after this insert, so `omit` also keeps the
         // response free of the bytea column.
         omit: { invoicePdf: true },
@@ -556,7 +584,9 @@ export async function adminRoutes(app: FastifyInstance) {
       request.log.error({ error }, 'Could not create manual order')
       return reply.code(500).send({ error: 'Could not save the order' })
     }
-  })
+  }
+  app.post('/api/admin/orders', { preHandler: requireAdmin }, saveManualOrder)
+  app.put('/api/admin/orders/:id', { preHandler: requireAdmin }, saveManualOrder)
 
   // The orders list is keyset-paginated so a shop that has grown past a few
   // hundred orders still loads a bounded page. Status, fulfilment and the free

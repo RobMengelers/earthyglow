@@ -77,7 +77,7 @@ type Flow = {
 // the route tried to persist.
 function stubFlow(
   t: { after: (fn: () => void) => void },
-  options: { variantMissing?: boolean; withColors?: boolean; colorMissing?: boolean } = {},
+  options: { variantMissing?: boolean; withColors?: boolean; colorMissing?: boolean; isManual?: boolean } = {},
 ): Flow {
   const restore: (() => void)[] = []
   const stub = (target: object, key: string, impl: unknown) => {
@@ -126,10 +126,14 @@ function stubFlow(
     for (const key of Object.keys(args.omit ?? {})) delete row[key]
     return row
   })
-  stub(prisma.order, 'update', async () => ({}))
+  stub(prisma.order, 'update', async (args: { data: Record<string, unknown> }) => {
+    if (args.data.items) created.push(args.data)
+    return { id: 'order-new', orderNumber: 'EG-NEW123', ...args.data }
+  })
   // archiveInvoiceForOrder re-reads the order with customer + items.
   stub(prisma.order, 'findUnique', async () => ({
     id: 'order-new',
+    isManual: options.isManual ?? true,
     orderNumber: 'EG-NEW123',
     status: 'paid',
     paidAt: new Date('2026-09-30T12:00:00.000Z'),
@@ -556,6 +560,68 @@ test('manual order rejects invalid calendar dates before saving', async (t) => {
         date,
         items: [{ productId: 'coconut-beach', variantId: 'sea-star', unitPriceCents: 1200, quantity: 1 }],
       },
+    })
+    assert.equal(response.statusCode, 400)
+  }
+  assert.equal(flow.created.length, 0)
+})
+
+
+test('custom items store their name and totals without catalog options', async (t) => {
+  const flow = stubFlow(t)
+  const { app, token } = await authedApp()
+  t.after(() => app.close())
+  const response = await app.inject({ method: 'POST', url: '/api/admin/orders',
+    headers: { authorization: `Bearer ${token}` },
+    payload: { items: [{ name: '  Bespoke candle  ', unitPriceCents: 2300, quantity: 2 }] },
+  })
+  assert.equal(response.statusCode, 200)
+  const data = flow.lastOrderData!
+  const items = (data.items as { create: Record<string, unknown>[] }).create
+  assert.equal(items[0].name, 'Bespoke candle')
+  assert.equal(items[0].productId, 'custom')
+  assert.equal(data.totalCents, 4600)
+  assert.equal(data.isManual, true)
+})
+
+test('editing replaces items and invalidates the old invoice without changing the order number', async (t) => {
+  const flow = stubFlow(t)
+  const { app, token } = await authedApp()
+  t.after(() => app.close())
+  const response = await app.inject({ method: 'PUT', url: '/api/admin/orders/order-new',
+    headers: { authorization: `Bearer ${token}` },
+    payload: { date: '2026-10-20', items: [{ name: 'Replacement candle', unitPriceCents: 1500, quantity: 3 }] },
+  })
+  assert.equal(response.statusCode, 200)
+  const data = flow.lastOrderData!
+  assert.equal(data.totalCents, 4500)
+  assert.deepEqual((data.items as { deleteMany: unknown }).deleteMany, {})
+  assert.equal(data.invoicePdf, null)
+  assert.equal(data.invoiceSentAt, null)
+  assert.equal(data.orderNumber, undefined)
+  assert.equal(response.json().hasInvoicePdf, true)
+})
+
+test('editing online orders is rejected before writes', async (t) => {
+  const flow = stubFlow(t, { isManual: false })
+  const { app, token } = await authedApp()
+  t.after(() => app.close())
+  const response = await app.inject({ method: 'PUT', url: '/api/admin/orders/order-new',
+    headers: { authorization: `Bearer ${token}` },
+    payload: { items: [{ name: 'Candle', unitPriceCents: 100, quantity: 1 }] },
+  })
+  assert.equal(response.statusCode, 409)
+  assert.equal(flow.created.length, 0)
+})
+
+test('custom items reject blank names and catalog options', async (t) => {
+  const flow = stubFlow(t)
+  const { app, token } = await authedApp()
+  t.after(() => app.close())
+  for (const item of [{ name: ' ' }, { name: 'Custom', variantId: 'sea-star' }, { name: 'Custom', productId: 'coconut-beach' }]) {
+    const response = await app.inject({ method: 'POST', url: '/api/admin/orders',
+      headers: { authorization: `Bearer ${token}` },
+      payload: { items: [{ ...item, unitPriceCents: 100, quantity: 1 }] },
     })
     assert.equal(response.statusCode, 400)
   }

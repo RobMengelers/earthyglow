@@ -48,6 +48,7 @@ type AdminCustomer = {
 }
 
 type AdminOrderItem = {
+  productId: string
   name: string
   variantId?: string | null
   variantLabel?: string | null
@@ -59,6 +60,7 @@ type AdminOrderItem = {
 }
 
 export type AdminOrder = {
+  isManual: boolean
   id: string
   orderNumber: string
   couponCode: string | null
@@ -164,7 +166,8 @@ export async function fetchAdminCatalog(): Promise<AdminCatalogProduct[]> {
 }
 
 type ManualOrderItemInput = {
-  productId: string
+  productId?: string
+  name?: string
   variantId?: string
   // The colour that was poured, for products that come in colours.
   colorId?: string
@@ -197,9 +200,10 @@ export type CreatedOrderResult = { order: AdminOrder; hasInvoicePdf: boolean }
 export async function createManualOrder(
   token: string,
   input: ManualOrderInput,
+  id?: string,
 ): Promise<CreatedOrderResult> {
-  const response = await fetch(`${API_URL}/api/admin/orders`, {
-    method: 'POST',
+  const response = await fetch(`${API_URL}/api/admin/orders${id ? `/${id}` : ""}`, {
+    method: id ? 'PUT' : 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   })
@@ -810,4 +814,10 @@ export async function setAdminCouponActive(
     throw new Error(body?.error ?? 'Could not update the coupon')
   }
   return body.coupon
+}
+
+export async function fetchAdminOrder(token: string, id: string): Promise<AdminOrder> {
+  const response = await fetch(`${API_URL}/api/admin/orders/${id}`, { headers: { Authorization: `Bearer ${token}` } })
+  if (!response.ok) throw new Error('Could not load order')
+  return response.json()
 }

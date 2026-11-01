@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router'
 import {
   displayText,
   downloadAdminInvoice,
@@ -225,6 +226,7 @@ function OrderDetail({ order }: { order: AdminOrder }) {
     <div className="admin-order-detail">
       <section className="admin-detail-col">
         <h3>Items</h3>
+        {order.isManual && order.status === 'paid' && <Link className="btn btn-ghost" to={`/admin/orders/${order.id}/edit`}>Edit order</Link>}
         <table className="admin-detail-items">
           <tbody>
             {order.items.map((item, index) => (

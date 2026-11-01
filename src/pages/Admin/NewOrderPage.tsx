@@ -1,7 +1,8 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link, useNavigate, useParams } from 'react-router'
 import {
   createManualOrder,
+  fetchAdminOrder,
   fetchAdminCatalog,
   formatEuros,
   type AdminCatalogProduct,
@@ -12,6 +13,7 @@ import { LoadingButton } from '../../components/ui/LoadingButton'
 import { siteMeta } from '../../lib/seo'
 
 type ManualLine = {
+  name: string
   key: number
   productId: string
   variantId: string
@@ -24,7 +26,7 @@ type ManualLine = {
 }
 
 function emptyLine(key: number): ManualLine {
-  return { key, productId: '', variantId: '', colorId: '', price: '', quantity: 1 }
+  return { key, name: '', productId: '', variantId: '', colorId: '', price: '', quantity: 1 }
 }
 
 // Prices are entered in euros because that is how the shop thinks about them;
@@ -60,6 +62,8 @@ export function meta() {
 export default function NewOrderPage() {
   const { token } = useAdmin()
   const navigate = useNavigate()
+  const { id } = useParams()
+  const [loaded, setLoaded] = useState(!id)
 
   const [catalog, setCatalog] = useState<AdminCatalogProduct[]>([])
   const [catalogError, setCatalogError] = useState('')
@@ -90,6 +94,28 @@ export default function NewOrderPage() {
       .catch(() => { if (!cancelled) setCatalogError('Could not load products') })
     return () => { cancelled = true }
   }, [])
+
+  useEffect(() => {
+    if (!id) return
+    let cancelled = false
+    fetchAdminOrder(token ?? '', id).then((order) => {
+      if (cancelled) return
+      if (!order.isManual || order.status !== 'paid') throw new Error('Only paid custom orders can be edited')
+      const clean = (value: string | null) => value === '-' ? '' : value ?? ''
+      setFirstName(clean(order.customer.firstName)); setLastName(clean(order.customer.lastName))
+      setEmail(clean(order.customer.email)); setPhone(clean(order.customer.phone))
+      setAddress(clean(order.address)); setPostalCode(clean(order.postalCode))
+      setCity(clean(order.city)); setCountry(clean(order.country)); setNotes(order.notes ?? '')
+      setDate((order.paidAt ?? order.createdAt).slice(0, 10))
+      setLines(order.items.map((item, index) => ({
+        key: index + 1, productId: item.productId, name: item.productId === 'custom' ? item.name : '',
+        variantId: item.variantId ?? '', colorId: item.colorId ?? '',
+        price: centsToInput(item.unitPriceCents), quantity: item.quantity,
+      })))
+      setLoaded(true)
+    }).catch((error: Error) => { if (!cancelled) setError(error.message) })
+    return () => { cancelled = true }
+  }, [id, token])
 
   const totalCents = useMemo(
     () => lines.reduce((sum, line) => sum + eurosToCents(line.price) * line.quantity, 0),
@@ -123,7 +149,7 @@ export default function NewOrderPage() {
   }
 
   function addLine() {
-    setLines((current) => [...current, emptyLine(current.length + 1)])
+    setLines((current) => [...current, emptyLine(Math.max(0, ...current.map((line) => line.key)) + 1)])
   }
 
   function removeLine(key: number) {
@@ -153,7 +179,8 @@ export default function NewOrderPage() {
         country: country.trim(),
       },
       items: lines.map((line) => ({
-        productId: line.productId,
+        productId: line.productId === 'custom' ? undefined : line.productId,
+        name: line.productId === 'custom' ? line.name.trim() : undefined,
         variantId: line.variantId || undefined,
         colorId: line.colorId || undefined,
         unitPriceCents: eurosToCents(line.price),
@@ -164,7 +191,7 @@ export default function NewOrderPage() {
     }
 
     try {
-      const result = await createManualOrder(token ?? '', payload)
+      const result = await createManualOrder(token ?? '', payload, id)
       navigate('/admin/orders', {
         state: {
           notice: sendInvoiceEmail
@@ -192,14 +219,15 @@ export default function NewOrderPage() {
     }
   }
 
+  if (!loaded) return <div className="admin-page"><p>{error || 'Loading order…'}</p><Link to="/admin/orders">Back to orders</Link></div>
+
   return (
     <div className="admin-page">
       <header className="admin-page-head">
         <div>
-          <h1>New order</h1>
+          <h1>{id ? 'Edit order' : 'New order'}</h1>
           <p className="admin-page-sub">
-            A sale made in the shop or at a market. The order is marked as paid and its
-            invoice is archived straight away.
+            {id ? 'Update the sale details. Saving replaces the archived invoice; emailing the updated invoice is optional.' : 'A sale made in the shop or at a market. The order is marked as paid and its invoice is archived straight away.'}
           </p>
         </div>
         <Link to="/admin/orders" className="btn btn-ghost">
@@ -220,7 +248,7 @@ export default function NewOrderPage() {
         <section className="admin-form-section">
           <h2>Items</h2>
           <p className="admin-form-hint">
-            Pick a product and adjust the price if this was a trade or market price.
+            Pick a product or choose Custom item to enter a name and price.
           </p>
 
           {catalogError !== '' && <p className="form-note is-error">{catalogError}</p>}
@@ -240,13 +268,17 @@ export default function NewOrderPage() {
                       required
                     >
                       <option value="">Choose a product…</option>
+                      <option value="custom">Custom item</option>
+                      {line.productId && line.productId !== 'custom' && !product && <option value={line.productId}>Unavailable product</option>}
                       {catalog.map((item) => (
                         <option key={item.id} value={item.id}>{item.name}</option>
                       ))}
                     </select>
                   </label>
 
-                  {product && product.variants.length > 0 ? (
+                  {line.productId === 'custom' ? (
+                    <label><span>Item name</span><input value={line.name} maxLength={200} required onChange={(event) => updateLine(line.key, { name: event.target.value })} /></label>
+                  ) : product && product.variants.length > 0 ? (
                     <label className="admin-manual-variant">
                       <span>Option</span>
                       <select
@@ -292,6 +324,7 @@ export default function NewOrderPage() {
                     <span>Price €</span>
                     <input
                       inputMode="decimal"
+                      pattern="[0-9]+([.,][0-9]{1,2})?"
                       placeholder="0.00"
                       value={line.price}
                       title={edited ? `Changed from ${formatEuros(listPrice)}` : 'Price per unit'}
