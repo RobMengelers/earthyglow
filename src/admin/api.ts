@@ -123,6 +123,8 @@ export type AdminOverview = {
   revenueCents: number
   /** The 30 days before that, for the trend arrow. */
   previousRevenueCents: number
+  netRevenueCents: number
+  previousNetRevenueCents: number
   /** Purchase (materials) cost in the last 30 days, VAT-inclusive. */
   expensesCents: number
   /** The 30 days before that, for the trend arrow. */

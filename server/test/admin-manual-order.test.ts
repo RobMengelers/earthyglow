@@ -628,7 +628,7 @@ test('custom items reject blank names and catalog options', async (t) => {
   assert.equal(flow.created.length, 0)
 })
 
-test('custom order VAT basis is saved on create and edit and totals include VAT', async (t) => {
+test('custom order VAT basis is saved on create and edit and totals stay unchanged', async (t) => {
   const flow = stubFlow(t)
   const { app, token } = await authedApp()
   t.after(() => app.close())
@@ -644,16 +644,13 @@ test('custom order VAT basis is saved on create and edit and totals include VAT'
       const data = flow.lastOrderData!
       assert.equal(data.pricesIncludeVat, pricesIncludeVat)
       assert.equal(data.subtotalCents, 2000)
-      assert.equal(data.totalCents, pricesIncludeVat ? 2000 : 2420)
-      // Overview aggregates totalCents, so exclusive input contributes gross revenue.
-      const gross = data.totalCents as number
-      assert.equal(gross - Math.round(gross * 100 / 121), pricesIncludeVat ? 347 : 420)
+      assert.equal(data.totalCents, 2000)
       assert.equal((data.items as { create: { unitPriceCents: number }[] }).create[0].unitPriceCents, 1000)
     }
   }
 })
 
-test('exclusive VAT rounds to cents and invalid VAT flags are rejected', async (t) => {
+test('unchecked VAT preserves cents and invalid VAT flags are rejected', async (t) => {
   const flow = stubFlow(t)
   const { app, token } = await authedApp()
   t.after(() => app.close())
@@ -664,7 +661,7 @@ test('exclusive VAT rounds to cents and invalid VAT flags are rejected', async (
     payload: { ...base, pricesIncludeVat: false },
   })
   assert.equal(response.statusCode, 200)
-  assert.equal(flow.lastOrderData!.totalCents, 1209)
+  assert.equal(flow.lastOrderData!.totalCents, 999)
   const invalid = await app.inject({
     method: 'POST', url: '/api/admin/orders',
     headers: { authorization: `Bearer ${token}` },

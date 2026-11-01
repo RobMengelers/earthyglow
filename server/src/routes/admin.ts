@@ -483,7 +483,7 @@ export async function adminRoutes(app: FastifyInstance) {
       0,
     )
     if (subtotalCents > 2_147_483_647) return reply.code(400).send({ error: 'Order total is too large' })
-    const totalCents = pricesIncludeVat ? subtotalCents : subtotalCents + Math.round(subtotalCents * 21 / 100)
+    const totalCents = subtotalCents
     if (totalCents > 2_147_483_647) return reply.code(400).send({ error: 'Order total is too large' })
     const orderNumber = createOrderNumber()
     const email = customer.email ? customer.email.toLowerCase() : null
@@ -731,11 +731,13 @@ export async function adminRoutes(app: FastifyInstance) {
     const [counts, revenue, previousRevenue, expenses, previousExpenses, unfulfilledCount, customerCount, recent] =
       await Promise.all([
         prisma.order.groupBy({ by: ['status'], _count: true }),
-        prisma.order.aggregate({
+        prisma.order.groupBy({
+          by: ['pricesIncludeVat'],
           _sum: { totalCents: true },
           where: { status: 'paid', paidAt: { gte: periodStart, lt: periodEnd } },
         }),
-        prisma.order.aggregate({
+        prisma.order.groupBy({
+          by: ['pricesIncludeVat'],
           _sum: { totalCents: true },
           where: {
             status: 'paid',
@@ -812,8 +814,12 @@ export async function adminRoutes(app: FastifyInstance) {
     const stats: Record<string, number> = {}
     for (const row of counts) stats[row.status] = row._count
 
-    const revenueCents = revenue._sum.totalCents ?? 0
-    const previousRevenueCents = previousRevenue._sum.totalCents ?? 0
+    const sumRevenue = (rows: typeof revenue, net: boolean) => rows.reduce((sum, row) => {
+      const total = row._sum.totalCents ?? 0
+      return sum + (net && row.pricesIncludeVat ? includedVatSplit(total).netCents : total)
+    }, 0)
+    const revenueCents = sumRevenue(revenue, false)
+    const previousRevenueCents = sumRevenue(previousRevenue, false)
     const expensesCents = expenses._sum.costCents ?? 0
     const previousExpensesCents = previousExpenses._sum.costCents ?? 0
 
@@ -821,6 +827,8 @@ export async function adminRoutes(app: FastifyInstance) {
       stats,
       revenueCents,
       previousRevenueCents,
+      netRevenueCents: sumRevenue(revenue, true),
+      previousNetRevenueCents: sumRevenue(previousRevenue, true),
       expensesCents,
       previousExpensesCents,
       productionCostCents: production.costCents,

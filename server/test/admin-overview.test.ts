@@ -38,6 +38,7 @@ function stubOverview(
     rows?: RecentRow[]
     revenue?: number
     previousRevenue?: number
+    withoutVatRevenue?: number
     expenses?: number
     previousExpenses?: number
     unfulfilled?: number
@@ -74,11 +75,11 @@ function stubOverview(
       { productId: 'free', _sum: { quantity: 4 } },
     ]
   })
-  stub(prisma.order, 'groupBy', async () => [
-    { status: 'paid', _count: 4 },
-    { status: 'pending', _count: 1 },
-  ])
-  stub(prisma.order, 'aggregate', async (args: { where: Record<string, unknown> }) => {
+  stub(prisma.order, 'groupBy', async (args: { by: string[]; where: Record<string, unknown> }) => {
+    if (args.by.includes('status')) return [
+      { status: 'paid', _count: 4 },
+      { status: 'pending', _count: 1 },
+    ]
     // The route asks twice: the current window and the same window before it.
     const isPrevious = revenueCalls++ % 2 === 1
     dateWindows.push({
@@ -88,13 +89,12 @@ function stubOverview(
       },
       expenses: {},
     })
-    return {
-      _sum: {
-        totalCents: isPrevious
-          ? (options.previousRevenue ?? 8000)
-          : (options.revenue ?? 12500),
-      },
-    }
+    const total = isPrevious ? (options.previousRevenue ?? 8000) : (options.revenue ?? 12500)
+    const withoutVat = options.withoutVatRevenue ?? 0
+    return [
+      { pricesIncludeVat: true, _sum: { totalCents: total - withoutVat } },
+      { pricesIncludeVat: false, _sum: { totalCents: withoutVat } },
+    ]
   })
   stub(prisma.purchase, 'aggregate', async (args: { where: Record<string, unknown> }) => {
     const isPrevious = expenseCalls++ % 2 === 1
@@ -263,4 +263,16 @@ test('this month handles year rollover and leap-year February', async (t) => {
   await fetchOverview('month')
   assert.equal(dateWindows[2].revenue.gte!.toISOString(), '2028-02-01T00:00:00.000Z')
   assert.equal(dateWindows[2].revenue.lt!.toISOString(), '2028-03-01T00:00:00.000Z')
+})
+
+test('overview extracts VAT only from checked orders in both periods', async (t) => {
+  stubOverview(t, { revenue: 24200, previousRevenue: 36300, withoutVatRevenue: 12100 })
+  const { app, response } = await fetchOverview()
+  t.after(() => app.close())
+  assert.equal(response.statusCode, 200)
+  const body = response.json()
+  assert.equal(body.revenueCents, 24200)
+  assert.equal(body.netRevenueCents, 22100)
+  assert.equal(body.previousRevenueCents, 36300)
+  assert.equal(body.previousNetRevenueCents, 32100)
 })

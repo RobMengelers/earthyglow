@@ -428,11 +428,6 @@ async function generateInvoicePdf(
   drawRight('Shipping', labelRight, y, 10, BODY, fonts.body)
   drawRight(formatEuro(data.shippingCents), amountRight, y, 10, INK, fonts.body)
   y -= 20
-  if (data.pricesIncludeVat === false) {
-    drawRight('VAT (21%)', labelRight, y, 10, BODY, fonts.body)
-    drawRight(formatEuro(data.totalCents - data.subtotalCents), amountRight, y, 10, INK, fonts.body)
-    y -= 20
-  }
   if (data.discountCents > 0) {
     drawRight(
       `Discount (${data.couponCode ?? 'coupon'})`,
@@ -458,7 +453,7 @@ async function generateInvoicePdf(
   drawRight(formatEuro(data.totalCents), amountRight, y, 14, CLAY, fonts.displaySemibold)
   y -= 17
   drawRight(
-    `(incl. 21% VAT: ${formatEuro(includedVatCents(data.totalCents))})`,
+    data.pricesIncludeVat === false ? 'Without VAT' : `(incl. 21% VAT: ${formatEuro(includedVatCents(data.totalCents))})`,
     amountRight,
     y,
     8.5,

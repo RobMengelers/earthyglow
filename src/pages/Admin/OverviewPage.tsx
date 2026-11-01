@@ -121,13 +121,9 @@ function OverviewBody({
   title: string
   previousTitle: string
 }) {
-  // Saved order totals include 21% VAT, including custom orders entered net.
-  // Splitting the aggregates the
-  // same way the invoice does gives the "what you really keep / really pay"
-  // numbers; the VAT figures themselves are what the admin pays or reclaims.
-  const netRevenue = splitIncludedVat(overview.revenueCents).netCents
+  const netRevenue = overview.netRevenueCents
   const netExpenses = splitIncludedVat(overview.expensesCents).netCents
-  const prevNetRevenue = splitIncludedVat(overview.previousRevenueCents).netCents
+  const prevNetRevenue = overview.previousNetRevenueCents
 
   const revenue = excl ? netRevenue : overview.revenueCents
   const spent = excl ? netExpenses : overview.expensesCents

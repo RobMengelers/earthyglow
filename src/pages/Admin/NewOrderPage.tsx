@@ -126,8 +126,8 @@ export default function NewOrderPage() {
 
   const vatCents = pricesIncludeVat
     ? subtotalCents - Math.round(subtotalCents * 100 / 121)
-    : Math.round(subtotalCents * 21 / 100)
-  const totalCents = pricesIncludeVat ? subtotalCents : subtotalCents + vatCents
+    : 0
+  const totalCents = subtotalCents
 
   // Without an address to send to, the option is unavailable rather than a
   // silent no-op on save.
@@ -262,7 +262,7 @@ export default function NewOrderPage() {
           <label className="admin-manual-checkbox">
             <input type="checkbox" checked={pricesIncludeVat} onChange={(event) => setPricesIncludeVat(event.target.checked)} />
             <span>Prices include 21% VAT
-              <small>Uncheck to enter prices excluding VAT; 21% VAT is added to the total.</small>
+              <small>When checked, 21% VAT is extracted in the overview. Uncheck for no VAT; the total stays unchanged.</small>
             </span>
           </label>
 
@@ -454,7 +454,7 @@ export default function NewOrderPage() {
         <footer className="admin-form-foot">
           <div className="admin-form-summary">
             <p className="admin-form-total">
-              Total incl. VAT <strong>{formatEuros(totalCents)}</strong>
+              Total {pricesIncludeVat ? 'incl. VAT' : 'without VAT'} <strong>{formatEuros(totalCents)}</strong>
             </p>
             <p className="admin-form-hint">VAT (21%): {formatEuros(vatCents)}</p>
             <label className={`admin-manual-checkbox${canEmail ? '' : ' is-disabled'}`}>

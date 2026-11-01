@@ -254,9 +254,6 @@ function OrderDetail({ order }: { order: AdminOrder }) {
               <td>Subtotal{order.pricesIncludeVat === false ? ' excl. VAT' : ''}</td>
               <td>{formatEuros(order.subtotalCents)}</td>
             </tr>
-            {order.pricesIncludeVat === false && (
-              <tr><td>VAT (21%)</td><td>{formatEuros(order.totalCents - order.subtotalCents)}</td></tr>
-            )}
             {order.shippingCents > 0 && (
               <tr>
                 <td>Shipping</td>
