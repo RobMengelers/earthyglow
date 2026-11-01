@@ -10,6 +10,7 @@ export type Product = {
   description: string
   collectionId: string
   variantLabel?: string
+  variantGroups?: { id: string; label: string; variantIds: string[] }[]
   variants?: ProductVariant[]
   colorLabel?: string
   colors?: ProductColor[]
@@ -21,6 +22,8 @@ export type ProductVariant = {
   priceCents?: number
   swatch?: string
   image?: string
+  // When supplied, these pictures replace the product gallery for this variant.
+  images?: string[]
 }
 
 // A colour is a second, independent choice next to the size/shape variants.
@@ -383,6 +386,11 @@ export const collections: Collection[] = [
         priceCents: 695,
         image: '/images/christmas-bubble-candle.webp',
         images: ['/images/products/christmas-bubble-candle/image-1.webp'],
+        colorLabel: 'colour',
+        colors: [
+          { id: 'green', label: 'Green', swatch: '#51865a', images: ['/images/products/christmas-bubble-candle/image-1.webp'] },
+          { id: 'red', label: 'Red', swatch: '#a71930', images: ['/images/products/christmas-bubble-candle/red/image-1.webp'] },
+        ],
         collectionId: 'natural-glow',
         description:
           'Add a festive touch to your home with our handmade Christmas Bubble Candle. This unscented decorative candle is made with 100% natural soy wax, a cotton wick and mica powder, finished with beautiful Christmas-inspired details. \n\n With its playful bubble shape and festive colours, it is perfect as a small Christmas decoration or seasonal gift. \n\n Approx. 50 g wax | Approx. 6 cm high | Unscented | 100% natural soy wax',
@@ -392,10 +400,21 @@ export const collections: Collection[] = [
         name: 'Christmas Tree Dinner Candle',
         priceCents: 295,
         image: '/images/christmas-tree-dinner-candle.webp',
-        images: ['/images/products/christmas-tree-dinner-candle/image-1.webp'],
+        images: ['/images/products/christmas-tree-dinner-candle/white/image-1.webp'],
+        variantLabel: 'colour',
+        variantGroups: [
+          { id: 'single', label: 'Single', variantIds: ['christmas-tree-white', 'christmas-tree-pink', 'christmas-tree-red'] },
+          { id: 'bundle', label: 'Bundle (3 colours)', variantIds: ['christmas-tree-bundle'] },
+        ],
+        variants: [
+          { id: 'christmas-tree-white', label: 'White', priceCents: 295, swatch: '#f0ebe1', image: '/images/products/christmas-tree-dinner-candle/white/image-1.webp', images: ['/images/products/christmas-tree-dinner-candle/white/image-1.webp'] },
+          { id: 'christmas-tree-pink', label: 'Pink', priceCents: 295, swatch: '#e8a1b5', image: '/images/products/christmas-tree-dinner-candle/pink/image-1.webp', images: ['/images/products/christmas-tree-dinner-candle/pink/image-1.webp'] },
+          { id: 'christmas-tree-red', label: 'Red', priceCents: 295, swatch: '#c94c55', image: '/images/products/christmas-tree-dinner-candle/red/image-1.webp', images: ['/images/products/christmas-tree-dinner-candle/red/image-1.webp'] },
+          { id: 'christmas-tree-bundle', label: 'Bundle (3 colours)', priceCents: 750, image: '/images/christmas-tree-dinner-candle-bundle.webp', images: ['/images/christmas-tree-dinner-candle-bundle.webp'] },
+        ],
         collectionId: 'natural-glow',
         description:
-          'Bring a festive touch to your Christmas table with our handmade Christmas Tree Dinner Candle. Its elegant tree-inspired shape makes it perfect for a cozy Christmas dinner, festive table setting or seasonal decoration. \n\n The candle is unscented and made with 100% natural soy wax, mica powder and a cotton wick. Each candle is handmade, making every piece slightly unique. \n\n Approx. 20 cm high | Unscented | 100% natural soy wax',
+          'Bring a festive touch to your Christmas table with our handmade Christmas Tree Dinner Candle. Its elegant tree-inspired shape makes it perfect for a cozy Christmas dinner, festive table setting or seasonal decoration. \n\n The candle is unscented and made with 100% natural soy wax, mica powder and a cotton wick. Each candle is handmade, making every piece slightly unique. Choose a single candle in white, pink or red, or a bundle of three with one of each colour, finished with golden details. \n\n Approx. 20 cm high | Unscented | 100% natural soy wax',
       },
       {
         id: 'twisted-tree-candle',

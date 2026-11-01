@@ -55,6 +55,7 @@ const scentRow = (overrides: Record<string, unknown> = {}) =>
 function recipeRow(overrides: Record<string, unknown> = {}) {
   return {
     id: 'recipe-1',
+    costCents: 450,
     product: { id: 'floral-box', name: 'The Floral Box' },
     createdAt: new Date('2026-10-02T12:00:00.000Z'),
     updatedAt: new Date('2026-10-02T12:00:00.000Z'),
@@ -246,6 +247,7 @@ test('recipe creation persists ingredients and fields and returns the yield', as
     headers: { authorization: `Bearer ${token}` },
     payload: {
       productId: 'floral-box',
+      cost: '4,50',
       ingredients: [
         { materialId: 'material-wax', amount: '0,05' },
         { materialId: 'material-scent', amount: '12' },
@@ -255,9 +257,11 @@ test('recipe creation persists ingredients and fields and returns the yield', as
   })
   assert.equal(response.statusCode, 200)
   assert.equal(response.json().recipe.possibleUnits, 25)
+  assert.equal(response.json().recipe.costCents, 450)
 
   const data = created[0]
   assert.equal(data.productId, 'floral-box')
+  assert.equal(data.costCents, 450)
   const lines = data.ingredients as { create: { materialId: string; amount: number }[] }
   assert.equal(lines.create[0].amount, 0.05)
   assert.equal(lines.create[1].amount, 12)
@@ -293,6 +297,7 @@ test('recipe creation rejects an unknown product and an unknown material', async
     headers: { authorization: `Bearer ${token}` },
     payload: {
       productId: 'floral-box',
+      cost: '4,50',
       ingredients: [{ materialId: 'gone', amount: '1' }],
       fields: [],
     },
@@ -313,6 +318,7 @@ test('recipe creation rejects a zero ingredient amount and no ingredients', asyn
     headers: { authorization: `Bearer ${token}` },
     payload: {
       productId: 'floral-box',
+      cost: '4,50',
       ingredients: [{ materialId: 'material-wax', amount: '0' }],
       fields: [],
     },
@@ -323,7 +329,8 @@ test('recipe creation rejects a zero ingredient amount and no ingredients', asyn
     method: 'POST',
     url: '/api/admin/recipes',
     headers: { authorization: `Bearer ${token}` },
-    payload: { productId: 'floral-box', ingredients: [], fields: [] },
+    payload: { productId: 'floral-box',
+      cost: '4,50', ingredients: [], fields: [] },
   })
   assert.equal(empty.statusCode, 400)
   assert.equal(empty.json().error, 'Add at least one material to the recipe')
@@ -385,6 +392,7 @@ test('recipe editing replaces ingredients and fields', async (t) => {
     headers: { authorization: `Bearer ${token}` },
     payload: {
       productId: 'floral-box',
+      cost: '4,50',
       ingredients: [
         { materialId: 'material-wax', amount: '0,06' },
         { materialId: 'material-scent', amount: '10' },
@@ -394,9 +402,11 @@ test('recipe editing replaces ingredients and fields', async (t) => {
   })
   assert.equal(response.statusCode, 200)
   assert.equal(response.json().recipe.possibleUnits, 25)
+  assert.equal(response.json().recipe.costCents, 450)
 
   const data = updates[0]
   assert.equal(data.productId, 'floral-box')
+  assert.equal(data.costCents, 450)
   assert.deepEqual(data.ingredients, {
     deleteMany: {},
     create: [
@@ -423,6 +433,7 @@ test('recipe editing 404s on an unknown id', async (t) => {
     headers: { authorization: `Bearer ${token}` },
     payload: {
       productId: 'floral-box',
+      cost: '4,50',
       ingredients: [{ materialId: 'material-wax', amount: '1' }],
       fields: [],
     },
@@ -468,4 +479,23 @@ test('recipe deletion 404s on an unknown id', async (t) => {
     headers: { authorization: `Bearer ${token}` },
   })
   assert.equal(response.statusCode, 404)
+})
+
+test('recipe costs reject negative, malformed and fractional-cent amounts', async () => {
+  const { app, token } = await authedApp()
+  for (const cost of ['-1', '1.234', 'abc', '10000000', '']) {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/admin/recipes',
+      headers: { authorization: `Bearer ${token}` },
+      payload: {
+        productId: 'floral-box',
+        cost,
+        ingredients: [{ materialId: 'material-wax', amount: '0.05' }],
+        fields: [],
+      },
+    })
+    assert.equal(response.statusCode, 400, cost)
+  }
+  await app.close()
 })

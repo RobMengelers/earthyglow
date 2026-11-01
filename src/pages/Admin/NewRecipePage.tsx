@@ -49,6 +49,7 @@ export default function NewRecipePage() {
   const [recipeLoaded, setRecipeLoaded] = useState(!editing)
 
   const [productId, setProductId] = useState('')
+  const [cost, setCost] = useState('')
   const [ingredients, setIngredients] = useState<IngredientLine[]>([emptyIngredient(1)])
   const [fields, setFields] = useState<FieldLine[]>([emptyField(1)])
   const [error, setError] = useState('')
@@ -70,6 +71,7 @@ export default function NewRecipePage() {
         }
 
         setProductId(recipe.product.id)
+        setCost(recipe.costCents == null ? '' : (recipe.costCents / 100).toFixed(2))
         setIngredients(
           recipe.ingredients.length > 0
             ? recipe.ingredients.map((ingredient, index) => ({
@@ -122,6 +124,7 @@ export default function NewRecipePage() {
     try {
       const input = {
         productId,
+        cost: cost.trim(),
         ingredients: ingredients.map((line) => ({
           materialId: line.materialId,
           amount: line.amount.trim(),
@@ -202,6 +205,14 @@ export default function NewRecipePage() {
                 </select>
               </label>
             </div>
+
+            <label>
+              <span>Cost to make one product (€ incl. 21% VAT)</span>
+              <input type="text" inputMode="decimal" value={cost}
+                onChange={(event) => setCost(event.target.value)}
+                placeholder="e.g. 4,50" required pattern="[0-9]{1,7}([,.][0-9]{1,2})?" />
+              <small>Used for every unit sold, including all variants. Updating this cost recalculates historical profit estimates. If a product has multiple recipes, the most recently updated recipe is used.</small>
+            </label>
 
             <div className="admin-recipe-block">
               <span className="admin-recipe-legend">Materials used for one product</span>

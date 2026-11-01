@@ -135,6 +135,7 @@ const materialStockSchema = z.object({
 })
 
 const recipeCreateSchema = z.object({
+  cost: purchaseFieldsSchema.shape.cost.optional(),
   productId: z.string().trim().min(1, 'Choose the product this recipe makes').max(100),
   ingredients: z
     .array(
@@ -171,6 +172,7 @@ function possibleUnits(quantity: number, amount: number): number {
 }
 
 type RecipeWithRelations = {
+  costCents: number | null
   id: string
   product: { id: string; name: string }
   ingredients: {
@@ -192,6 +194,7 @@ function serializeRecipe(recipe: RecipeWithRelations) {
   }))
   return {
     id: recipe.id,
+    costCents: recipe.costCents,
     product: recipe.product,
     ingredients,
     fields: recipe.fields.map((field) => ({ label: field.label, value: field.value })),
@@ -700,6 +703,39 @@ export async function adminRoutes(app: FastifyInstance) {
         }),
       ])
 
+    // Group paid quantities by product, using the same payment windows as revenue.
+    const productionCosts = async (gte: Date, lt?: Date) => {
+      const [sales, recipes] = await Promise.all([
+        prisma.orderItem.groupBy({
+          by: ['productId'],
+          where: { order: { status: 'paid', paidAt: { gte, lt } } },
+          _sum: { quantity: true },
+        }),
+        prisma.recipe.findMany({
+          select: { productId: true, costCents: true },
+          orderBy: [{ updatedAt: 'desc' }, { id: 'asc' }],
+        }),
+      ])
+      // Legacy data permits multiple recipes: the most recently updated is used.
+      const costs = new Map<string, number | null>()
+      for (const recipe of recipes) {
+        if (!costs.has(recipe.productId)) costs.set(recipe.productId, recipe.costCents)
+      }
+      let costCents = 0
+      let missingCostUnits = 0
+      for (const sale of sales) {
+        const quantity = sale._sum.quantity ?? 0
+        const cost = costs.get(sale.productId)
+        if (cost == null) missingCostUnits += quantity
+        else costCents += cost * quantity
+      }
+      return { costCents, missingCostUnits }
+    }
+    const [production, previousProduction] = await Promise.all([
+      productionCosts(periodStart),
+      productionCosts(previousPeriodStart, periodStart),
+    ])
+
     const cachedIds = recent.map((order) => order.id)
     const archivedIds = new Set(
       cachedIds.length === 0
@@ -729,8 +765,13 @@ export async function adminRoutes(app: FastifyInstance) {
       previousRevenueCents,
       expensesCents,
       previousExpensesCents,
-      profitCents: revenueCents - expensesCents,
-      previousProfitCents: previousRevenueCents - previousExpensesCents,
+      productionCostCents: production.costCents,
+      previousProductionCostCents: previousProduction.costCents,
+      missingCostUnits: production.missingCostUnits,
+      previousMissingCostUnits: previousProduction.missingCostUnits,
+      profitCents: revenueCents - production.costCents,
+      previousProfitCents: previousRevenueCents - previousProduction.costCents,
+      profitAfterPurchasesCents: revenueCents - production.costCents - expensesCents,
       unfulfilledCount,
       customerCount,
       recentOrders: recent.map((order) => ({
@@ -1207,6 +1248,7 @@ export async function adminRoutes(app: FastifyInstance) {
     const recipe = await prisma.recipe.create({
       data: {
         productId: built.data.productId,
+        costCents: parsed.data.cost === undefined ? undefined : Math.round(Number(parsed.data.cost.replace(',', '.')) * 100),
         ingredients: { create: built.data.ingredients },
         fields: { create: built.data.fields },
       },
@@ -1239,6 +1281,7 @@ export async function adminRoutes(app: FastifyInstance) {
           where: { id: params.id },
           data: {
             productId: built.data.productId,
+            costCents: parsed.data.cost === undefined ? undefined : Math.round(Number(parsed.data.cost.replace(',', '.')) * 100),
             ingredients: { deleteMany: {}, create: built.data.ingredients },
             fields: { deleteMany: {}, create: built.data.fields },
           },

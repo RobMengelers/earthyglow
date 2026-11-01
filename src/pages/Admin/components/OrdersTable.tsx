@@ -294,6 +294,12 @@ function OrderDetail({ order }: { order: AdminOrder }) {
         <h3>Payment</h3>
         <p>{paymentLabel(order)}</p>
         <dl className="admin-detail-list">
+          {order.couponCode && (
+            <div>
+              <dt>Coupon code</dt>
+              <dd>{order.couponCode}</dd>
+            </div>
+          )}
           <div>
             <dt>Paid</dt>
             <dd>{formatDateTimeOrDash(order.paidAt)}</dd>

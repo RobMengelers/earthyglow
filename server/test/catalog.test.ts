@@ -181,3 +181,38 @@ test('catalog exposes the colours of a product', async () => {
   assert.equal(response.statusCode, 200)
   assert.equal(response.json().products[0].colors[0].label, 'Pink')
 })
+
+test('Christmas colours and the fixed three-tree bundle are orderable with correct prices', async () => {
+  mockCatalog()
+  mockOrderWrites()
+  stub(prisma.customer, 'upsert', async () => ({ id: 'test-customer' }))
+  let saved: { items: { create: { variantLabel?: string; colorLabel?: string; unitPriceCents: number }[] } } | undefined
+  stub(prisma.order, 'create', async ({ data }: { data: NonNullable<typeof saved> }) => {
+    saved = data
+    return { id: 'test-order', status: 'pending' }
+  })
+  stub(prisma.order, 'update', async () => ({}))
+  const response = await checkout([
+    ...['white', 'pink', 'red'].map((colorId) => ({ id: 'christmas-tree-dinner-candle', quantity: 1, variantId: `christmas-tree-${colorId}` })),
+    ...['green', 'red'].map((colorId) => ({ id: 'christmas-bubble-candle', quantity: 1, colorId })),
+    { id: 'christmas-tree-dinner-candle', quantity: 1, variantId: 'christmas-tree-bundle' },
+  ])
+  assert.equal(response.statusCode, 200, response.body)
+  assert.deepEqual(saved?.items.create.map((line) => [line.variantLabel ?? line.colorLabel, line.unitPriceCents]), [
+    ['White', 295], ['Pink', 295], ['Red', 295], ['Green', 695], ['Red', 695], ['Bundle (3 colours)', 750],
+  ])
+  assert.equal(response.json().subtotalCents, 3025)
+})
+
+test('Christmas single candles require a colour and the fixed bundle rejects colour choices', async () => {
+  mockCatalog()
+  for (const item of [
+    { id: 'christmas-tree-dinner-candle', quantity: 1 },
+    { id: 'christmas-bubble-candle', quantity: 1 },
+    { id: 'christmas-tree-dinner-candle', quantity: 1, variantId: 'christmas-tree-bundle', colorId: 'red' },
+    { id: 'christmas-tree-dinner-candle-bundle', quantity: 1 },
+  ]) {
+    const response = await checkout([item])
+    assert.equal(response.statusCode, 400, response.body)
+  }
+})

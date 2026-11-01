@@ -127,21 +127,12 @@ function OverviewBody({
   const netRevenue = splitIncludedVat(overview.revenueCents).netCents
   const netExpenses = splitIncludedVat(overview.expensesCents).netCents
   const prevNetRevenue = splitIncludedVat(overview.previousRevenueCents).netCents
-  const prevNetExpenses = splitIncludedVat(overview.previousExpensesCents).netCents
 
   const revenue = excl ? netRevenue : overview.revenueCents
   const spent = excl ? netExpenses : overview.expensesCents
-  const profit = excl ? netRevenue - netExpenses : overview.revenueCents - overview.expensesCents
+  const productionCost = excl ? splitIncludedVat(overview.productionCostCents).netCents : overview.productionCostCents
+  const profit = revenue - productionCost
   const prevRevenue = excl ? prevNetRevenue : overview.previousRevenueCents
-  const prevSpent = excl ? prevNetExpenses : overview.previousExpensesCents
-  const prevProfit = excl
-    ? prevNetRevenue - prevNetExpenses
-    : overview.previousProfitCents
-
-  const revenueTrend = prevRevenue === 0 ? null : ((revenue - prevRevenue) / prevRevenue) * 100
-  const profitTrend = prevProfit === 0 ? null : ((profit - prevProfit) / Math.abs(prevProfit)) * 100
-  const spentTrend = prevSpent === 0 ? null : ((spent - prevSpent) / prevSpent) * 100
-
   const vatRevenue = overview.revenueCents - netRevenue
   const vatExpenses = overview.expensesCents - netExpenses
   const vatBalance = vatRevenue - vatExpenses
@@ -154,14 +145,7 @@ function OverviewBody({
           value={profit}
           hint={
             <>
-              {formatEuros(revenue)} earned − {formatEuros(spent)} spent
-              {profitTrend !== null && (
-                <>
-                  {' · '}
-                  <Trend value={profitTrend} />
-                  {` vs. ${previousTitle}`}
-                </>
-              )}
+              {formatEuros(revenue)} earned − {formatEuros(productionCost)} recipe costs
             </>
           }
           tone="profit"
@@ -170,49 +154,26 @@ function OverviewBody({
         <MoneyCard
           label={`Revenue · ${title} · ${vatLabel}`}
           value={revenue}
-          hint={
-            revenueTrend === null ? (
-              <>No paid orders to compare against the previous period</>
-            ) : (
-              <>
-                <Trend value={revenueTrend} />
-                {` vs. ${previousTitle} (`}
-                {formatEuros(prevRevenue)}
-                {')'}
-              </>
-            )
-          }
+          hint={<>{formatEuros(prevRevenue)} in the {previousTitle}</>}
           loading={loading}
         />
         <SpendingCard
-          label={`Spent · ${title} · ${vatLabel}`}
+          label={`Purchases · ${title} · ${vatLabel}`}
           value={spent}
+          hint="Add a purchase"
+        />
+        <MoneyCard
+          label={`Profit after purchases · ${title} · ${vatLabel}`}
+          value={profit - spent}
           hint={
             <>
-              {spentTrend === null ? (
-                <>Nothing recorded to compare against the previous period</>
-              ) : (
-                <>
-                  <Trend value={spentTrend} positiveIsUp={false} />
-                  {` vs. ${previousTitle}`}
-                </>
-              )}
-              {' · Add a purchase'}
+              {formatEuros(profit)} recipe profit − {formatEuros(spent)} purchases.
+              <br />
+              Purchases are deducted additionally, even when they cover materials already included in recipe costs.
             </>
           }
-        />
-        <StatCard
-          label="To fulfil"
-          value={String(overview.unfulfilledCount)}
-          hint="Paid orders that were not sent yet"
-          to="/admin/orders?fulfilment=open"
-          highlight={overview.unfulfilledCount > 0}
-        />
-        <StatCard
-          label="Orders"
-          value={String(totalOrders(overview))}
-          hint={`${overview.stats.paid ?? 0} paid · ${overview.stats.pending ?? 0} awaiting payment`}
-          to="/admin/orders"
+          tone="profit"
+          loading={loading}
         />
       </div>
 
@@ -285,20 +246,7 @@ function OverviewBody({
   )
 }
 
-function totalOrders(overview: AdminOverview): number {
-  return Object.values(overview.stats).reduce((sum, count) => sum + count, 0)
-}
 
-// Up/down arrow with the percentage, coloured for good or bad news. "Positive
-// is up" defaults to true; spending flips it because rising costs are bad.
-function Trend({ value, positiveIsUp = true }: { value: number; positiveIsUp?: boolean }) {
-  const up = positiveIsUp ? value >= 0 : value < 0
-  return (
-    <span className={up ? 'admin-trend is-up' : 'admin-trend is-down'}>
-      {up ? '▲' : '▼'} {Math.abs(Math.round(value))}%
-    </span>
-  )
-}
 
 function MoneyCard({
   label,
@@ -343,36 +291,6 @@ function SpendingCard({
       <p className="admin-card-value">{formatEuros(value)}</p>
       <p className="admin-card-hint">{hint}</p>
     </Link>
-  )
-}
-
-function StatCard({
-  label,
-  value,
-  hint,
-  to,
-  highlight = false,
-}: {
-  label: string
-  value: string
-  hint: string
-  to?: string
-  highlight?: boolean
-}) {
-  const body = (
-    <>
-      <h2 className="admin-card-label">{label}</h2>
-      <p className={`admin-card-value${highlight ? ' is-highlight' : ''}`}>{value}</p>
-      <p className="admin-card-hint">{hint}</p>
-    </>
-  )
-
-  return to ? (
-    <Link className="admin-card is-link" to={to}>
-      {body}
-    </Link>
-  ) : (
-    <article className="admin-card">{body}</article>
   )
 }
 

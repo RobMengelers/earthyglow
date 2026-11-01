@@ -61,6 +61,7 @@ type AdminOrderItem = {
 export type AdminOrder = {
   id: string
   orderNumber: string
+  couponCode: string | null
   status: string
   subtotalCents: number
   shippingCents: number
@@ -109,6 +110,11 @@ export type AdminOrdersQuery = {
 }
 
 export type AdminOverview = {
+  productionCostCents: number
+  previousProductionCostCents: number
+  missingCostUnits: number
+  previousMissingCostUnits: number
+  profitAfterPurchasesCents: number
   stats: Record<string, number>
   /** Paid order value in the last 30 days. */
   revenueCents: number
@@ -118,9 +124,9 @@ export type AdminOverview = {
   expensesCents: number
   /** The 30 days before that, for the trend arrow. */
   previousExpensesCents: number
-  /** revenueCents − expensesCents over the last 30 days. */
+  /** revenueCents − productionCostCents over the last 30 days. */
   profitCents: number
-  /** previousRevenueCents − previousExpensesCents. */
+  /** previousRevenueCents − previousProductionCostCents. */
   previousProfitCents: number
   /** Paid orders that were never marked processed: the shop's to-do list. */
   unfulfilledCount: number
@@ -439,6 +445,7 @@ export type AdminRecipeField = {
 }
 
 export type AdminRecipe = {
+  costCents: number | null
   id: string
   product: { id: string; name: string }
   ingredients: AdminRecipeIngredient[]
@@ -538,6 +545,7 @@ export async function deleteAdminMaterial(token: string, id: string): Promise<vo
 }
 
 export type AdminRecipeInput = {
+  cost: string
   productId: string
   ingredients: { materialId: string; amount: string }[]
   fields: { label: string; value: string }[]

@@ -391,6 +391,7 @@ function YieldCard({ recipe, onOpen }: { recipe: AdminRecipe; onOpen: () => void
       <span className="admin-yield-card-body">
         <span className="admin-yield-card-head">
           <strong>{recipe.product.name}</strong>
+          <span>{recipe.costCents == null ? 'Cost not set' : `€ ${(recipe.costCents / 100).toFixed(2)} per product incl. VAT`}</span>
           <span className="admin-yield-figure">
             <span className={`admin-yield${recipe.possibleUnits === 0 ? ' is-out' : ''}`}>
               {recipe.possibleUnits}

@@ -56,6 +56,21 @@ function stubOverview(
   const findManyCalls: { where?: Record<string, unknown>; select?: unknown; take?: number }[] = []
   const dateWindows: { revenue: { gte?: Date; lt?: Date }; expenses: { gte?: Date; lt?: Date } }[] = []
 
+  stub(prisma.recipe, 'findMany', async () => [
+    { productId: 'candle', costCents: 121 },
+    { productId: 'candle', costCents: 999 },
+    { productId: 'unset', costCents: null },
+    { productId: 'free', costCents: 0 },
+  ])
+  stub(prisma.orderItem, 'groupBy', async (args: { where: { order: { status: string; paidAt: { lt?: Date } } } }) => {
+    assert.equal(args.where.order.status, 'paid')
+    return [
+      { productId: 'candle', _sum: { quantity: args.where.order.paidAt.lt ? 2 : 3 } },
+      { productId: 'unset', _sum: { quantity: 1 } },
+      { productId: 'absent', _sum: { quantity: 2 } },
+      { productId: 'free', _sum: { quantity: 4 } },
+    ]
+  })
   stub(prisma.order, 'groupBy', async () => [
     { status: 'paid', _count: 4 },
     { status: 'pending', _count: 1 },
@@ -144,8 +159,13 @@ test('overview reports status counts, revenue and work waiting', async (t) => {
   assert.equal(body.previousRevenueCents, 8000)
   assert.equal(body.expensesCents, 3500)
   assert.equal(body.previousExpensesCents, 2000)
-  assert.equal(body.profitCents, 12500 - 3500)
-  assert.equal(body.previousProfitCents, 8000 - 2000)
+  assert.equal(body.profitCents, 12500 - 363)
+  assert.equal(body.previousProfitCents, 8000 - 242)
+  assert.equal(body.productionCostCents, 363)
+  assert.equal(body.previousProductionCostCents, 242)
+  assert.equal(body.profitAfterPurchasesCents, 12500 - 363 - 3500)
+  assert.equal(body.missingCostUnits, 3)
+  assert.equal(body.previousMissingCostUnits, 3)
   assert.equal(body.unfulfilledCount, 3)
   assert.equal(body.customerCount, 9)
   assert.equal(body.recentOrders.length, 2)

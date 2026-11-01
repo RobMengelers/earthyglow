@@ -62,6 +62,7 @@ export function ProductPage() {
   const { addItem } = useCart()
   const product = getProduct(productId)
   const [variantId, setVariantId] = useState('')
+  const [variantGroupId, setVariantGroupId] = useState('')
   const [colorId, setColorId] = useState('')
   const [quantity, setQuantity] = useState(1)
   const [galleryIndex, setGalleryIndex] = useState(0)
@@ -79,6 +80,10 @@ export function ProductPage() {
   const collectionTitle = collection?.title ?? 'EarthyGlow'
   const season = seasonForProduct(product.id)
   const selectedVariant = product.variants?.find((variant) => variant.id === variantId)
+  const selectedVariantGroup = product.variantGroups?.find((group) => group.id === variantGroupId)
+  const visibleVariants = product.variantGroups
+    ? product.variants?.filter((variant) => selectedVariantGroup?.variantIds.includes(variant.id))
+    : product.variants
   const selectedColor = product.colors?.find((color) => color.id === colorId)
 
   // The gallery belongs to the chosen colour. A colour with its own
@@ -89,7 +94,7 @@ export function ProductPage() {
       ? color.base
         ? variant?.image ?? color.images[0]
         : color.images[0]
-      : variant?.image
+      : variant?.images?.[0] ?? variant?.image
 
   const baseGallery = product.images?.length ? product.images : [product.image]
   const colorGallery = selectedColor?.images ?? []
@@ -98,7 +103,9 @@ export function ProductPage() {
     ? selectedColor?.base
       ? [heroImage, ...colorGallery.filter((img) => img !== heroImage)]
       : colorGallery
-    : [heroImage, ...baseGallery.filter((img) => img !== heroImage)]
+    : selectedVariant?.images?.length
+      ? selectedVariant.images
+      : [heroImage, ...baseGallery.filter((img) => img !== heroImage)]
   const displayedImage = galleryImages[galleryIndex]
 
   const imageUrls = (product.images?.length ? product.images : [product.image]).map(absoluteUrl)
@@ -145,7 +152,7 @@ export function ProductPage() {
 
   const selectVariant = (id: string) => {
     const nextVariant = product.variants?.find((variant) => variant.id === id)
-    crossfadeTo(heroFor(nextVariant, selectedColor))
+    crossfadeTo(heroFor(nextVariant, selectedColor) ?? baseGallery[0])
     setVariantId(id)
     setGalleryIndex(0)
   }
@@ -157,13 +164,16 @@ export function ProductPage() {
     setGalleryIndex(0)
   }
 
-  // The pickers are shown colour first, size second, so the button asks for
-  // the same choice in the same order.
-  const missingOption = product.colors && !selectedColor
-    ? 'Choose a colour'
-    : product.variants && !selectedVariant
-      ? 'Choose an option'
-      : null
+  // Ask for missing selections in the same order as the visible pickers.
+  const missingOption = product.variantGroups && !selectedVariantGroup
+    ? 'Choose single or bundle'
+    : selectedVariantGroup && selectedVariantGroup.variantIds.length > 1 && !selectedVariant
+      ? 'Choose a colour'
+      : product.colors && !selectedColor
+        ? 'Choose a colour'
+        : product.variants && !selectedVariant
+          ? 'Choose an option'
+          : null
 
   return (
     <>
@@ -294,11 +304,34 @@ export function ProductPage() {
                 </fieldset>
               )}
 
-              {product.variants && (
+              {product.variantGroups && (
                 <fieldset className="product-options">
-                  <legend>Choose your {product.variantLabel ?? (product.variants.some((variant) => variant.swatch) ? 'colour' : 'shape')}</legend>
+                  <legend>Choose your option</legend>
                   <div className="product-option-list">
-                    {product.variants.map((variant) => (
+                    {product.variantGroups.map((group) => (
+                      <label key={group.id} className={`product-option${variantGroupId === group.id ? ' is-selected' : ''}`}>
+                        <input
+                          type="radio"
+                          name="product-variant-group"
+                          value={group.id}
+                          checked={variantGroupId === group.id}
+                          onChange={() => {
+                            setVariantGroupId(group.id)
+                            selectVariant(group.variantIds.length === 1 ? group.variantIds[0] : '')
+                          }}
+                        />
+                        <span>{group.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+              )}
+
+              {visibleVariants && visibleVariants.length > 0 && (!product.variantGroups || visibleVariants.length > 1) && (
+                <fieldset className="product-options">
+                  <legend>Choose your {product.variantLabel ?? (visibleVariants.some((variant) => variant.swatch) ? 'colour' : 'shape')}</legend>
+                  <div className="product-option-list">
+                    {visibleVariants.map((variant) => (
                       <label key={variant.id} className={`product-option${variantId === variant.id ? ' is-selected' : ''}`}>
                         <input type="radio" name="product-variant" value={variant.id} checked={variantId === variant.id} onChange={() => selectVariant(variant.id)} />
                         <span
