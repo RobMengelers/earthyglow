@@ -21,6 +21,14 @@ export function meta() {
   return siteMeta({ title: 'Materials & recipes · EarthyGlow Admin', robots: 'noindex, nofollow' })
 }
 
+function recipeScope(recipe: AdminRecipe) {
+  const product = getProduct(recipe.product.id)
+  return [
+    product?.variants?.find(option => option.id === recipe.variantId)?.label ?? recipe.variantId ?? 'All variants',
+    product?.colors?.find(option => option.id === recipe.colorId)?.label ?? recipe.colorId ?? 'All colors',
+  ].join(' · ')
+}
+
 type Flash = { tone: 'success' | 'error'; text: string }
 
 export default function MaterialsPage() {
@@ -99,7 +107,7 @@ export default function MaterialsPage() {
 
   async function removeRecipe(recipe: AdminRecipe) {
     if (!token) return
-    if (!window.confirm(`Delete the recipe for "${recipe.product.name}"?`)) return
+    if (!window.confirm(`Delete the recipe for "${recipe.product.name} · ${recipeScope(recipe)}"?`)) return
     try {
       await deleteAdminRecipe(token, recipe.id)
       setData((current) =>
@@ -272,7 +280,7 @@ export default function MaterialsPage() {
 
       {openRecipe && (
         <Modal
-          title={openRecipe.product.name}
+          title={`${openRecipe.product.name} · ${recipeScope(openRecipe)}`}
           onClose={() => setOpenRecipe(null)}
           wide
         >
@@ -381,23 +389,29 @@ function MaterialEditForm({
 function YieldCard({ recipe, onOpen }: { recipe: AdminRecipe; onOpen: () => void }) {
   const product = getProduct(recipe.product.id)
   const image = product?.images?.[0] ?? product?.image
-  const options = product?.variants ?? []
+  const options = [
+    ...(product?.variants ?? []).filter(variant => !recipe.variantId || variant.id === recipe.variantId)
+      .map(variant => ({ ...variant, key: `variant-${variant.id}` })),
+    ...(product?.colors ?? []).filter(color => !recipe.colorId || color.id === recipe.colorId)
+      .map(color => ({ ...color, key: `color-${color.id}` })),
+  ]
 
   return (
     <button type="button" className="admin-yield-card" onClick={onOpen}>
       {image && (
-        <img className="admin-yield-card-img" src={image} alt="" width={64} height={64} loading="lazy" />
+        <img className="admin-yield-card-img" src={image} alt="" width={48} height={48} loading="lazy" />
       )}
       <span className="admin-yield-card-body">
         <span className="admin-yield-card-head">
           <strong>{recipe.product.name}</strong>
-          <span>{recipe.costCents == null ? 'Cost not set' : `€ ${(recipe.costCents / 100).toFixed(2)} per product incl. VAT`}</span>
-          <span className="admin-yield-figure">
-            <span className={`admin-yield${recipe.possibleUnits === 0 ? ' is-out' : ''}`}>
-              {recipe.possibleUnits}
-            </span>
-            <span className="admin-yield-label">can still make</span>
+          <span>{recipeScope(recipe)}</span>
+          <span className="admin-yield-cost">{recipe.costCents == null ? 'Cost not added yet' : `€ ${(recipe.costCents / 100).toFixed(2)} / unit · incl. VAT`}</span>
+        </span>
+        <span className="admin-yield-figure">
+          <span className={`admin-yield${recipe.possibleUnits === 0 ? ' is-out' : ''}`}>
+            {recipe.possibleUnits}
           </span>
+          <span className="admin-yield-label">can still make</span>
         </span>
         <span className="admin-recipe-madeof">
           {recipe.ingredients.map((ingredient) => (
@@ -409,16 +423,16 @@ function YieldCard({ recipe, onOpen }: { recipe: AdminRecipe; onOpen: () => void
         </span>
         {options.length > 0 && (
           <span className="admin-recipe-options" aria-label="Available options">
-            {options.map((variant) => (
-              <span className="admin-recipe-option" key={variant.id}>
-                {variant.swatch && (
+            {options.map((option) => (
+              <span className="admin-recipe-option" key={option.key}>
+                {option.swatch && (
                   <span
                     className="admin-recipe-swatch"
-                    style={{ backgroundColor: variant.swatch }}
+                    style={{ backgroundColor: option.swatch }}
                     aria-hidden="true"
                   />
                 )}
-                {variant.label}
+                {option.label}
               </span>
             ))}
           </span>
@@ -433,7 +447,7 @@ function YieldCard({ recipe, onOpen }: { recipe: AdminRecipe; onOpen: () => void
 function RecipeDetail({ recipe, onDelete }: { recipe: AdminRecipe; onDelete: () => void }) {
   const product = getProduct(recipe.product.id)
   const image = product?.images?.[0] ?? product?.image
-  const options = product?.variants ?? []
+  const options = (product?.variants ?? []).filter(variant => !recipe.variantId || variant.id === recipe.variantId)
 
   return (
     <div className="admin-recipe-detail">
@@ -458,6 +472,7 @@ function RecipeDetail({ recipe, onDelete }: { recipe: AdminRecipe; onDelete: () 
       </div>
 
       <div className="admin-recipe-detail-main">
+        <p>{recipe.costCents == null ? 'Cost not set' : `Production cost: € ${(recipe.costCents / 100).toFixed(2)} per unit incl. VAT`}</p>
         <table className="admin-table admin-recipe-detail-table">
           <thead>
             <tr>

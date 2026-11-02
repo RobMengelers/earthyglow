@@ -1,3 +1,4 @@
+import { deductOrderMaterials } from '../material-stock.js'
 import type { OrderStatus } from '@prisma/client'
 import type { FastifyInstance } from 'fastify'
 import { sendNewOrderNotification, sendOrderInvoice } from '../email.js'
@@ -54,14 +55,17 @@ export async function webhookRoutes(app: FastifyInstance) {
 
     const status = statusMap[info.status] ?? order.status
 
+    await prisma.$transaction(async tx => {
+      if (status !== order.status) {
+        await tx.order.update({
+          where: { id: order.id },
+          data: { status, ...(status === 'paid' ? { paidAt: new Date() } : {}) },
+        })
+      }
+      if (status === 'paid') await deductOrderMaterials(tx, order.id)
+    })
+
     if (status !== order.status) {
-      await prisma.order.update({
-        where: { id: order.id },
-        data: {
-          status,
-          ...(status === 'paid' ? { paidAt: new Date() } : {}),
-        },
-      })
       request.log.info(
         { orderNumber: order.orderNumber, from: order.status, to: status },
         'Order status updated from Mollie webhook',

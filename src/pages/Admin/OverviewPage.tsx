@@ -4,10 +4,12 @@ import {
   formatEuros,
   splitIncludedVat,
   type AdminOverview,
+  type AdminSoldItem,
   type OverviewPeriod,
 } from '../../admin/api'
 import { siteMeta } from '../../lib/seo'
 import { useAdmin } from './admin-context'
+import { Modal } from './components/Modal'
 
 export function meta() {
   return siteMeta({ title: 'Overview · EarthyGlow Admin', robots: 'noindex, nofollow' })
@@ -231,6 +233,7 @@ function OverviewBody({
   title: string
   previousLabel: string
 }) {
+  const [showSoldItems, setShowSoldItems] = useState(false)
   const netRevenue = overview.netRevenueCents
   const netExpenses = splitIncludedVat(overview.expensesCents).netCents
   const prevNetRevenue = overview.previousNetRevenueCents
@@ -257,6 +260,17 @@ function OverviewBody({
           }
           tone="profit"
           loading={loading}
+          action={
+            <button
+              type="button"
+              className="admin-link-button admin-card-action"
+              disabled={loading}
+              aria-haspopup="dialog"
+              onClick={() => setShowSoldItems(true)}
+            >
+              View sold products →
+            </button>
+          }
         />
         <MoneyCard
           label={`Revenue · ${title} · ${vatLabel}`}
@@ -264,10 +278,11 @@ function OverviewBody({
           hint={<>{formatEuros(prevRevenue)} in {previousLabel}</>}
           loading={loading}
         />
-        <SpendingCard
+        <MoneyCard
           label={`Purchases · ${title} · ${vatLabel}`}
           value={spent}
-          hint="Add a purchase"
+          hint="Recorded material costs"
+          loading={loading}
         />
         <MoneyCard
           label={`Revenue against purchases · ${title} · ${vatLabel}`}
@@ -281,6 +296,17 @@ function OverviewBody({
           loading={loading}
         />
       </div>
+
+      {showSoldItems && (
+        <Modal
+          title={`Sold products · ${title}`}
+          description="Paid orders in the selected period. Recipe status reflects your current recipes."
+          onClose={() => setShowSoldItems(false)}
+          wide
+        >
+          <SoldItems items={overview.soldItems} />
+        </Modal>
+      )}
 
       <section className="admin-vat-note">
         <h2>{`VAT · ${title}`}</h2>
@@ -317,12 +343,14 @@ function MoneyCard({
   hint,
   loading = false,
   tone,
+  action,
 }: {
   label: string
   value: number
   hint: ReactNode
   loading?: boolean
   tone?: 'profit'
+  action?: ReactNode
 }) {
   return (
     <article className="admin-card">
@@ -333,27 +361,54 @@ function MoneyCard({
         {formatEuros(value)}
       </p>
       <p className="admin-card-hint">{hint}</p>
+      {action}
     </article>
   )
 }
 
-// The cost side of the profit card. Links to the purchases page, because
-// recording materials there is what feeds this number.
-function SpendingCard({
-  label,
-  value,
-  hint,
-}: {
-  label: string
-  value: number
-  hint: ReactNode
-}) {
+function SoldItems({ items }: { items: AdminSoldItem[] }) {
+  if (items.length === 0) {
+    return <p className="admin-empty-inline">No products sold in this period.</p>
+  }
+
+  const products = items.filter((item) => item.recipeStatus !== 'custom')
+  const customItems = items.filter((item) => item.recipeStatus === 'custom')
+  const missing = products.filter((item) => item.recipeStatus === 'missing').length
+  const noCost = products.filter((item) => item.recipeStatus === 'no-cost').length
+  const labels = { ready: 'Recipe added', missing: 'Missing recipe', 'no-cost': 'Recipe needs a cost', custom: 'No recipe needed' }
+
   return (
-    <Link className="admin-card is-link" to="/admin/purchases">
-      <h2 className="admin-card-label">{label}</h2>
-      <p className="admin-card-value">{formatEuros(value)}</p>
-      <p className="admin-card-hint">{hint}</p>
-    </Link>
+    <div className="admin-sold-items">
+      {(missing > 0 || noCost > 0) && (
+        <p className="admin-note">
+          {missing} product{missing === 1 ? '' : 's'} missing a recipe · {noCost} recipe{noCost === 1 ? '' : 's'} missing a cost.
+          {' '}Their costs are not included in profit yet.
+        </p>
+      )}
+      {[{ title: 'Products', rows: products }, { title: 'Custom items', rows: customItems }].map((group) => group.rows.length > 0 && (
+        <section key={group.title}>
+          <h3>{group.title}</h3>
+          {group.title === 'Custom items' && (
+            <p className="admin-note">Custom-order items do not need recipes. Their revenue is included in profit, but no recipe costs are deducted.</p>
+          )}
+          <div className="admin-table-wrap">
+            <table className="admin-table">
+              <thead><tr><th scope="col">Item</th><th scope="col">Quantity sold</th><th scope="col">Recipe status</th></tr></thead>
+              <tbody>
+                {group.rows.map((item) => (
+                  <tr key={JSON.stringify([item.productId, item.name])}>
+                    <td>{item.name}</td>
+                    <td>{item.quantity}</td>
+                    <td><span className={`admin-badge${item.recipeStatus === 'ready' ? ' is-paid' : item.recipeStatus === 'custom' ? '' : ' is-pending'}`}>{labels[item.recipeStatus]}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ))}
+      {products.length > 0 && <Link to="/admin/materials">Manage recipes →</Link>}
+    </div>
   )
 }
 

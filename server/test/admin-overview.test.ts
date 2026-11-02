@@ -69,10 +69,13 @@ function stubOverview(
   stub(prisma.orderItem, 'groupBy', async (args: { where: { order: { status: string; paidAt: { lt?: Date } } } }) => {
     assert.equal(args.where.order.status, 'paid')
     return [
-      { productId: 'candle', _sum: { quantity: productionCalls++ % 2 === 1 ? 2 : 3 } },
-      { productId: 'unset', _sum: { quantity: 1 } },
-      { productId: 'absent', _sum: { quantity: 2 } },
-      { productId: 'free', _sum: { quantity: 4 } },
+      { productId: 'candle', name: 'Candle', _sum: { quantity: productionCalls++ % 2 === 1 ? 2 : 3 } },
+      { productId: 'unset', name: 'Unset', _sum: { quantity: 1 } },
+      { productId: 'absent', name: 'Absent', _sum: { quantity: 2 } },
+      { productId: 'free', name: 'Free', _sum: { quantity: 1 } },
+      { productId: 'free', name: 'Free renamed', _sum: { quantity: 3 } },
+      { productId: 'custom', name: 'Gift wrapping', _sum: { quantity: 2 } },
+      { productId: 'custom', name: 'Bespoke candle', _sum: { quantity: 1 } },
     ]
   })
   stub(prisma.order, 'groupBy', async (args: { by: string[]; where: Record<string, unknown> }) => {
@@ -289,4 +292,46 @@ test('overview extracts VAT only from checked orders in both periods', async (t)
   assert.equal(body.netRevenueCents, 22100)
   assert.equal(body.previousRevenueCents, 36300)
   assert.equal(body.previousNetRevenueCents, 32100)
+})
+
+test('overview groups sold products and keeps custom items out of missing recipes', async (t) => {
+  stubOverview(t)
+  const { app, response } = await fetchOverview()
+  t.after(() => app.close())
+  assert.equal(response.statusCode, 200)
+  const body = response.json()
+  assert.deepEqual(body.soldItems, [
+    { productId: 'free', name: 'Free', quantity: 4, recipeStatus: 'ready' },
+    { productId: 'candle', name: 'Candle', quantity: 3, recipeStatus: 'ready' },
+    { productId: 'absent', name: 'Absent', quantity: 2, recipeStatus: 'missing' },
+    { productId: 'custom', name: 'Gift wrapping', quantity: 2, recipeStatus: 'custom' },
+    { productId: 'custom', name: 'Bespoke candle', quantity: 1, recipeStatus: 'custom' },
+    { productId: 'unset', name: 'Unset', quantity: 1, recipeStatus: 'no-cost' },
+  ])
+  assert.equal(body.missingCostUnits, 3)
+  assert.equal(body.productionCostCents, 363)
+})
+
+test('profit uses exact option recipes before variant, color and product defaults', async (t) => {
+  stubOverview(t)
+  const originalSales = prisma.orderItem.groupBy
+  const originalRecipes = prisma.recipe.findMany
+  t.after(() => { prisma.orderItem.groupBy = originalSales; prisma.recipe.findMany = originalRecipes })
+  Reflect.set(prisma.orderItem, 'groupBy', async () => [
+    { productId: 'candle', name: 'Candle', variantId: 'large', colorId: 'pink', _sum: { quantity: 2 } },
+    { productId: 'candle', name: 'Candle', variantId: 'large', colorId: 'white', _sum: { quantity: 1 } },
+    { productId: 'candle', name: 'Candle', variantId: 'small', colorId: 'pink', _sum: { quantity: 1 } },
+    { productId: 'candle', name: 'Candle', variantId: 'small', colorId: 'white', _sum: { quantity: 1 } },
+  ])
+  Reflect.set(prisma.recipe, 'findMany', async () => [
+    { productId: 'candle', costCents: 100, variantId: null, colorId: null },
+    { productId: 'candle', costCents: 200, variantId: null, colorId: 'pink' },
+    { productId: 'candle', costCents: 300, variantId: 'large', colorId: null },
+    { productId: 'candle', costCents: 400, variantId: 'large', colorId: 'pink' },
+  ])
+  const { app, response } = await fetchOverview()
+  t.after(() => app.close())
+  assert.equal(response.statusCode, 200)
+  assert.equal(response.json().productionCostCents, 1400)
+  assert.equal(response.json().missingCostUnits, 0)
 })

@@ -1,3 +1,4 @@
+import { deductOrderMaterials } from '../material-stock.js'
 import type { FastifyInstance } from 'fastify'
 import { isProduction } from '../env.js'
 import { mollieEnabled } from '../mollie.js'
@@ -47,12 +48,12 @@ export async function orderRoutes(app: FastifyInstance) {
       return reply.code(404).send({ error: 'Order not found' })
     }
 
-    if (order.status !== 'paid') {
-      await prisma.order.update({
-        where: { id: order.id },
-        data: { status: 'paid', paidAt: new Date() },
-      })
-    }
+    await prisma.$transaction(async tx => {
+      if (order.status !== 'paid') {
+        await tx.order.update({ where: { id: order.id }, data: { status: 'paid', paidAt: new Date() } })
+      }
+      await deductOrderMaterials(tx, order.id)
+    })
 
     return reply.send({ orderNumber, status: 'paid' })
   })

@@ -8,6 +8,7 @@ import {
   updateAdminRecipe,
   type AdminCatalogProduct,
   type AdminMaterial,
+  type AdminRecipe,
 } from '../../admin/api'
 import { LoadingButton } from '../../components/ui/LoadingButton'
 import { siteMeta } from '../../lib/seo'
@@ -49,6 +50,11 @@ export default function NewRecipePage() {
   const [recipeLoaded, setRecipeLoaded] = useState(!editing)
 
   const [productId, setProductId] = useState('')
+  const [variantId, setVariantId] = useState('')
+  const [colorId, setColorId] = useState('')
+  const [recipes, setRecipes] = useState<AdminRecipe[]>([])
+  const selectedProduct = catalog.find(product => product.id === productId)
+  const duplicate = recipes.find(recipe => recipe.id !== id && recipe.product.id === productId && (recipe.variantId ?? '') === variantId && (recipe.colorId ?? '') === colorId)
   const [cost, setCost] = useState('')
   const [ingredients, setIngredients] = useState<IngredientLine[]>([emptyIngredient(1)])
   const [fields, setFields] = useState<FieldLine[]>([emptyField(1)])
@@ -62,6 +68,7 @@ export default function NewRecipePage() {
       .then((data) => {
         if (cancelled) return
         setMaterials(data.materials)
+        setRecipes(data.recipes)
 
         if (!id) return
         const recipe = data.recipes.find((item) => item.id === id)
@@ -71,6 +78,8 @@ export default function NewRecipePage() {
         }
 
         setProductId(recipe.product.id)
+        setVariantId(recipe.variantId ?? '')
+        setColorId(recipe.colorId ?? '')
         setCost(recipe.costCents == null ? '' : (recipe.costCents / 100).toFixed(2))
         setIngredients(
           recipe.ingredients.length > 0
@@ -124,6 +133,8 @@ export default function NewRecipePage() {
     try {
       const input = {
         productId,
+        variantId: variantId || null,
+        colorId: colorId || null,
         cost: cost.trim(),
         ingredients: ingredients.map((line) => ({
           materialId: line.materialId,
@@ -193,7 +204,7 @@ export default function NewRecipePage() {
                 <span>Product this recipe makes</span>
                 <select
                   value={productId}
-                  onChange={(event) => setProductId(event.target.value)}
+                  onChange={(event) => { setProductId(event.target.value); setVariantId(''); setColorId('') }}
                   required
                 >
                   <option value="">Choose a product…</option>
@@ -206,12 +217,51 @@ export default function NewRecipePage() {
               </label>
             </div>
 
+            {selectedProduct && <div className="admin-recipe-block">
+              <span className="admin-recipe-legend">Which version does this recipe make?</span>
+              <p className="admin-note">Choose a variant and/or color for a distinct recipe. Leave both on “All” for a product default. A specific recipe takes priority over the default.</p>
+              {selectedProduct.variants.length > 0 && <label>
+                <span>Variant / size</span>
+                <select value={variantId} onChange={event => setVariantId(event.target.value)}>
+                  <option value="">All variants (default)</option>
+                  {variantId && !selectedProduct.variants.some(v => v.id === variantId) && <option value={variantId}>{variantId} (unavailable)</option>}
+                  {selectedProduct.variants.map(variant => <option key={variant.id} value={variant.id}>{variant.label}</option>)}
+                </select>
+              </label>}
+              {!!selectedProduct.colors?.length && <label>
+                <span>Color</span>
+                <select value={colorId} onChange={event => setColorId(event.target.value)}>
+                  <option value="">All colors (default)</option>
+                  {colorId && !selectedProduct.colors.some(c => c.id === colorId) && <option value={colorId}>{colorId} (unavailable)</option>}
+                  {selectedProduct.colors.map(color => <option key={color.id} value={color.id}>{color.label}</option>)}
+                </select>
+              </label>}
+              {duplicate && <p className="form-note is-error">This version already has a recipe. <Link to={`/admin/recipes/${duplicate.id}/edit`}>Edit the existing recipe</Link> or choose another version.</p>}
+              {recipes.some(recipe => recipe.product.id === productId && recipe.id !== id) && <label>
+                <span>Start with an existing recipe (optional)</span>
+                <select value="" onChange={event => {
+                  const source = recipes.find(recipe => recipe.id === event.target.value)
+                  if (!source) return
+                  if ((cost || ingredients.some(line => line.materialId)) && !window.confirm('Replace the current ingredients, cost and extra details with this recipe?')) return
+                  setCost(source.costCents == null ? '' : (source.costCents / 100).toFixed(2))
+                  setIngredients(source.ingredients.map((line, index) => ({ key: index + 1, materialId: line.materialId, amount: formatAmount(line.amount) })))
+                  setFields(source.fields.map((line, index) => ({ key: index + 1, ...line })))
+                }}>
+                  <option value="">Copy ingredients, cost and details from…</option>
+                  {recipes.filter(recipe => recipe.product.id === productId && recipe.id !== id).map(recipe => <option key={recipe.id} value={recipe.id}>
+                    {selectedProduct.variants.find(v => v.id === recipe.variantId)?.label ?? recipe.variantId ?? 'All variants'} / {selectedProduct.colors?.find(c => c.id === recipe.colorId)?.label ?? recipe.colorId ?? 'All colors'}
+                  </option>)}
+                </select>
+                <small>The selected variant and color stay the same. Adjust the copied amounts and cost before saving.</small>
+              </label>}
+            </div>}
+
             <label>
               <span>Cost to make one product (€ incl. 21% VAT)</span>
               <input type="text" inputMode="decimal" value={cost}
                 onChange={(event) => setCost(event.target.value)}
                 placeholder="e.g. 4,50" required pattern="[0-9]{1,7}([,.][0-9]{1,2})?" />
-              <small>Used for every unit sold, including all variants. Updating this cost recalculates historical profit estimates. If a product has multiple recipes, the most recently updated recipe is used.</small>
+              <small>Production cost for this recipe’s variant/color, not the customer selling price. Updating it recalculates historical profit estimates. Exact variant + color recipes take priority, followed by variant, color, then the product default.</small>
             </label>
 
             <div className="admin-recipe-block">
@@ -270,7 +320,7 @@ export default function NewRecipePage() {
                 type="button"
                 className="admin-manual-add"
                 onClick={() =>
-                  setIngredients((current) => [...current, emptyIngredient(current.length + 1)])
+                  setIngredients((current) => [...current, emptyIngredient(Math.max(0, ...current.map(line => line.key)) + 1)])
                 }
               >
                 + Add material line
@@ -323,7 +373,7 @@ export default function NewRecipePage() {
               <button
                 type="button"
                 className="admin-manual-add"
-                onClick={() => setFields((current) => [...current, emptyField(current.length + 1)])}
+                onClick={() => setFields((current) => [...current, emptyField(Math.max(0, ...current.map(line => line.key)) + 1)])}
               >
                 + Add detail
               </button>
@@ -333,7 +383,7 @@ export default function NewRecipePage() {
               <Link to="/admin/materials" className="btn btn-ghost">
                 Cancel
               </Link>
-              <LoadingButton type="submit" className="btn btn-primary" loading={saving}>
+              <LoadingButton type="submit" className="btn btn-primary" loading={saving} disabled={!!duplicate || !!loadError}>
                 {editing ? 'Save changes' : 'Save recipe'}
               </LoadingButton>
             </div>

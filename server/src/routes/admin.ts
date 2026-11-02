@@ -1,3 +1,4 @@
+import { deductOrderMaterials } from '../material-stock.js'
 import { Prisma, type OrderStatus } from '@prisma/client'
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { gzipSync, gunzipSync } from 'node:zlib'
@@ -22,6 +23,15 @@ const ORDER_STATUSES: OrderStatus[] = [
   'canceled',
   'refunded',
 ]
+
+type SoldItemStatus = 'ready' | 'missing' | 'no-cost' | 'custom'
+
+type SoldItem = {
+  productId: string
+  name: string
+  quantity: number
+  recipeStatus: SoldItemStatus
+}
 
 // A sale made in person. Every customer detail is optional: blanks become "-"
 // in the non-nullable text columns (and NULL for email, which is unique), so a
@@ -140,6 +150,8 @@ const materialStockSchema = z.object({
 })
 
 const recipeCreateSchema = z.object({
+  variantId: z.string().trim().min(1).max(100).nullable().optional(),
+  colorId: z.string().trim().min(1).max(100).nullable().optional(),
   cost: purchaseFieldsSchema.shape.cost.optional(),
   productId: z.string().trim().min(1, 'Choose the product this recipe makes').max(100),
   ingredients: z
@@ -177,6 +189,8 @@ function possibleUnits(quantity: number, amount: number): number {
 }
 
 type RecipeWithRelations = {
+  variantId: string | null
+  colorId: string | null
   costCents: number | null
   id: string
   product: { id: string; name: string }
@@ -200,6 +214,8 @@ function serializeRecipe(recipe: RecipeWithRelations) {
   return {
     id: recipe.id,
     costCents: recipe.costCents,
+    variantId: recipe.variantId ?? null,
+    colorId: recipe.colorId ?? null,
     product: recipe.product,
     ingredients,
     fields: recipe.fields.map((field) => ({ label: field.label, value: field.value })),
@@ -233,6 +249,10 @@ async function buildRecipeWriteData(
     select: { id: true },
   })
   if (!product) return { error: 'That product no longer exists' }
+
+  if (input.variantId && !await prisma.productVariant.findFirst({ where: { id: input.variantId, productId: input.productId } })) return { error: 'Choose a variant belonging to this product' }
+  if (input.colorId && !await prisma.productColor.findFirst({ where: { id: input.colorId, productId: input.productId } })) return { error: 'Choose a color belonging to this product' }
+  if (new Set(input.ingredients.map(line => line.materialId)).size !== input.ingredients.length) return { error: 'Use one line per material; combine its amounts' }
 
   const materials = await prisma.material.findMany({
     where: { id: { in: input.ingredients.map((line) => line.materialId) } },
@@ -456,7 +476,7 @@ export async function adminRoutes(app: FastifyInstance) {
     const { customer, shipping, items, notes, sendInvoiceEmail, date, pricesIncludeVat } = parsed.data
     const orderDate = date ? new Date(date + 'T00:00:00.000Z') : new Date()
 
-    const lines = []
+    const lines: Prisma.OrderItemCreateManyOrderInput[] = []
     for (const item of items) {
       if (!item.productId) {
         lines.push({ productId: 'custom', name: item.name!, variantId: null, variantLabel: null,
@@ -588,14 +608,17 @@ export async function adminRoutes(app: FastifyInstance) {
         omit: { invoicePdf: true as const },
         include: { customer: true as const, items: { orderBy: { position: 'asc' as const } } },
       }
-      const order = id
-        ? await prisma.order.update({ where: { id }, data: { ...data, items: { deleteMany: {}, create: lines }, invoicePdf: null, invoiceSentAt: null }, ...selection })
-        : await prisma.order.create({
-        data: { ...data, orderNumber, items: { create: lines } },
-        // The PDF is archived after this insert, so `omit` also keeps the
-        // response free of the bytea column.
-        omit: { invoicePdf: true },
-        include: { customer: true, items: { orderBy: [{ position: 'asc' }, { id: 'asc' }] } },
+      const order = await prisma.$transaction(async tx => {
+        const saved = id
+          ? await tx.order.update({ where: { id }, data: { ...data, items: { deleteMany: {}, create: lines }, invoicePdf: null, invoiceSentAt: null }, ...selection })
+          : await tx.order.create({
+              data: { ...data, orderNumber, items: { create: lines } },
+              // Keep the archived PDF bytes out of the response.
+              ...selection,
+            })
+
+        await deductOrderMaterials(tx, saved.id, Boolean(id))
+        return saved
       })
 
       // Archive before replying so the row is downloadable the moment the admin
@@ -842,34 +865,52 @@ export async function adminRoutes(app: FastifyInstance) {
     const productionCosts = async (gte: Date, lt?: Date) => {
       const [sales, recipes] = await Promise.all([
         prisma.orderItem.groupBy({
-          by: ['productId'],
+          by: ['productId', 'name', 'variantId', 'colorId'],
           where: { order: { status: 'paid', paidAt: { gte, lt } } },
           _sum: { quantity: true },
         }),
         prisma.recipe.findMany({
-          select: { productId: true, costCents: true },
+          select: { productId: true, costCents: true, variantId: true, colorId: true },
           orderBy: [{ updatedAt: 'desc' }, { id: 'asc' }],
         }),
       ])
-      // Legacy data permits multiple recipes: the most recently updated is used.
-      const costs = new Map<string, number | null>()
-      for (const recipe of recipes) {
-        if (!costs.has(recipe.productId)) costs.set(recipe.productId, recipe.costCents)
-      }
       let costCents = 0
       let missingCostUnits = 0
+      const soldByKey = new Map<string, SoldItem>()
       for (const sale of sales) {
         const quantity = sale._sum.quantity ?? 0
-        const cost = costs.get(sale.productId)
-        if (cost == null) missingCostUnits += quantity
-        else costCents += cost * quantity
+        const isCustom = sale.productId === 'custom'
+        const matching = recipes.filter(recipe => recipe.productId === sale.productId &&
+          (!recipe.variantId || recipe.variantId === sale.variantId) &&
+          (!recipe.colorId || recipe.colorId === sale.colorId))
+        // Exact combination, then variant, then color, then the product default.
+        matching.sort((a, b) => (Number(!!b.variantId) * 2 + Number(!!b.colorId)) - (Number(!!a.variantId) * 2 + Number(!!a.colorId)))
+        const hasRecipe = matching.length > 0
+        const cost = matching[0]?.costCents
+        if (!isCustom) {
+          if (cost == null) missingCostUnits += quantity
+          else costCents += cost * quantity
+        }
+        const key = isCustom ? `custom:${sale.name}` : sale.productId
+        const existing = soldByKey.get(key)
+        if (existing) {
+          existing.quantity += quantity
+          if (!isCustom && cost == null) existing.recipeStatus = hasRecipe ? 'no-cost' : 'missing'
+        }
+        else soldByKey.set(key, {
+          productId: sale.productId,
+          name: sale.name,
+          quantity,
+          recipeStatus: isCustom ? 'custom' : !hasRecipe ? 'missing' : cost == null ? 'no-cost' : 'ready',
+        })
       }
-      return { costCents, missingCostUnits }
+      const soldItems = [...soldByKey.values()].sort((left, right) =>
+        right.quantity - left.quantity || left.name.localeCompare(right.name),
+      )
+      return { costCents, missingCostUnits, soldItems }
     }
-    const [production, previousProduction] = await Promise.all([
-      productionCosts(periodStart, periodEnd),
-      productionCosts(previousPeriodStart, periodStart),
-    ])
+    const production = await productionCosts(periodStart, periodEnd)
+    const previousProduction = await productionCosts(previousPeriodStart, periodStart)
 
     const cachedIds = recent.map((order) => order.id)
     const archivedIds = new Set(
@@ -910,6 +951,7 @@ export async function adminRoutes(app: FastifyInstance) {
       previousProductionCostCents: previousProduction.costCents,
       missingCostUnits: production.missingCostUnits,
       previousMissingCostUnits: previousProduction.missingCostUnits,
+      soldItems: production.soldItems,
       profitCents: revenueCents - production.costCents,
       previousProfitCents: previousRevenueCents - previousProduction.costCents,
       profitAfterPurchasesCents: revenueCents - expensesCents,
@@ -1442,16 +1484,23 @@ export async function adminRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: built.error })
     }
 
-    const recipe = await prisma.recipe.create({
-      data: {
-        productId: built.data.productId,
-        costCents: parsed.data.cost === undefined ? undefined : Math.round(Number(parsed.data.cost.replace(',', '.')) * 100),
-        ingredients: { create: built.data.ingredients },
-        fields: { create: built.data.fields },
-      },
-      include: RECIPE_INCLUDE,
-    })
-    return { recipe: serializeRecipe(recipe) }
+    try {
+      const recipe = await prisma.recipe.create({
+        data: {
+          productId: built.data.productId,
+          variantId: parsed.data.variantId ?? null,
+          colorId: parsed.data.colorId ?? null,
+          costCents: parsed.data.cost === undefined ? undefined : Math.round(Number(parsed.data.cost.replace(',', '.')) * 100),
+          ingredients: { create: built.data.ingredients },
+          fields: { create: built.data.fields },
+        },
+        include: RECIPE_INCLUDE,
+      })
+      return { recipe: serializeRecipe(recipe) }
+    } catch (error) {
+      if ((error as { code?: string }).code === 'P2002') return reply.code(409).send({ error: 'A recipe already exists for this variant/color. Edit that recipe instead.' })
+      throw error
+    }
   })
 
   // Edits a recipe in place. The old ingredient and field rows are replaced in
@@ -1478,6 +1527,8 @@ export async function adminRoutes(app: FastifyInstance) {
           where: { id: params.id },
           data: {
             productId: built.data.productId,
+            variantId: parsed.data.variantId ?? null,
+            colorId: parsed.data.colorId ?? null,
             costCents: parsed.data.cost === undefined ? undefined : Math.round(Number(parsed.data.cost.replace(',', '.')) * 100),
             ingredients: { deleteMany: {}, create: built.data.ingredients },
             fields: { deleteMany: {}, create: built.data.fields },
@@ -1485,7 +1536,8 @@ export async function adminRoutes(app: FastifyInstance) {
           include: RECIPE_INCLUDE,
         })
         return { recipe: serializeRecipe(recipe) }
-      } catch {
+      } catch (error) {
+        if ((error as { code?: string }).code === 'P2002') return reply.code(409).send({ error: 'A recipe already exists for this variant/color. Edit that recipe instead.' })
         return reply.code(404).send({ error: 'Recipe not found' })
       }
     },
@@ -1498,7 +1550,8 @@ export async function adminRoutes(app: FastifyInstance) {
       const params = request.params as { id: string }
       try {
         await prisma.recipe.delete({ where: { id: params.id } })
-      } catch {
+      } catch (error) {
+        if ((error as { code?: string }).code === 'P2002') return reply.code(409).send({ error: 'A recipe already exists for this variant/color. Edit that recipe instead.' })
         return reply.code(404).send({ error: 'Recipe not found' })
       }
       return { ok: true }

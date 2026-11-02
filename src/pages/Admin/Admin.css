@@ -1617,11 +1617,12 @@
    opens the full recipe in the reusable admin modal. */
 .admin-yield-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
   gap: 1rem;
 }
 
 .admin-yield-card {
+  min-width: 0;
   display: flex;
   align-items: flex-start;
   gap: 0.8rem;
@@ -1641,8 +1642,8 @@
 
 .admin-yield-card-img {
   flex-shrink: 0;
-  width: 64px;
-  height: 64px;
+  width: 48px;
+  height: 48px;
   object-fit: cover;
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -1650,16 +1651,23 @@
 }
 
 .admin-yield-card-body {
+  flex: 1;
+  overflow-wrap: anywhere;
   display: grid;
   gap: 0.4rem;
   min-width: 0;
 }
 
 .admin-yield-card-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.75rem;
+  display: grid;
+  gap: 0.2rem;
+  color: var(--body);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.admin-yield-cost {
+  color: var(--beige-deep);
 }
 
 .admin-yield-card-head strong {
@@ -1668,9 +1676,11 @@
 }
 
 .admin-yield-figure {
-  display: grid;
-  justify-items: end;
-  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem;
+  padding: 0.4rem 0;
 }
 
 .admin-yield-figure .admin-yield {
@@ -1684,7 +1694,6 @@
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  white-space: nowrap;
 }
 
 /* The recipe modal: photo + options on the left, the workings on the right. */
@@ -2043,3 +2052,18 @@
   text-underline-offset: 3px;
 }
 .admin-order-edit:hover { color: var(--text, #332b25); }
+
+.admin-card-action {
+  justify-self: start;
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+}
+
+.admin-sold-items {
+  display: grid;
+  gap: 1rem;
+}
+
+.admin-sold-items h3 {
+  margin: 0 0 0.5rem;
+}

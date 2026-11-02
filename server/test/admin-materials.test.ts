@@ -499,3 +499,35 @@ test('recipe costs reject negative, malformed and fractional-cent amounts', asyn
   }
   await app.close()
 })
+
+test('variant/color recipes persist their scope on create and edit and reject mismatched options', async (t) => {
+  stub(t, prisma.product, 'findUnique', async () => ({ id: 'floral-box' }))
+  stub(t, prisma.productVariant, 'findFirst', async ({ where }: { where: { id: string } }) => where.id === 'large' ? { id: 'large' } : null)
+  stub(t, prisma.productColor, 'findFirst', async ({ where }: { where: { id: string } }) => where.id === 'pink' ? { id: 'pink' } : null)
+  stub(t, prisma.material, 'findMany', async () => [materialRow()])
+  const writes: Record<string, unknown>[] = []
+  const write = async ({ data }: { data: Record<string, unknown> }) => {
+    writes.push(data)
+    return recipeRow({ variantId: data.variantId, colorId: data.colorId, costCents: data.costCents })
+  }
+  stub(t, prisma.recipe, 'create', write)
+  stub(t, prisma.recipe, 'update', write)
+  const { app, token } = await authedApp()
+  t.after(() => app.close())
+  const payload = { productId: 'floral-box', variantId: 'large', colorId: 'pink', cost: '6,25', ingredients: [{ materialId: 'material-wax', amount: '0.1' }] }
+  for (const method of ['POST', 'PATCH'] as const) {
+    const response = await app.inject({ method, url: `/api/admin/recipes${method === 'PATCH' ? '/recipe-1' : ''}`, headers: { authorization: `Bearer ${token}` }, payload })
+    assert.equal(response.statusCode, 200)
+    assert.equal(response.json().recipe.variantId, 'large')
+    assert.equal(response.json().recipe.colorId, 'pink')
+    assert.equal(response.json().recipe.costCents, 625)
+  }
+  for (const patch of [{ variantId: 'wrong' }, { colorId: 'wrong' }]) {
+    const response = await app.inject({ method: 'POST', url: '/api/admin/recipes', headers: { authorization: `Bearer ${token}` }, payload: { ...payload, ...patch } })
+    assert.equal(response.statusCode, 400)
+  }
+  assert.equal(writes.length, 2)
+  stub(t, prisma.recipe, 'create', async () => { throw { code: 'P2002' } })
+  const duplicate = await app.inject({ method: 'POST', url: '/api/admin/recipes', headers: { authorization: `Bearer ${token}` }, payload })
+  assert.equal(duplicate.statusCode, 409)
+})

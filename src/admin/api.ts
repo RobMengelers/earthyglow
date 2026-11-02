@@ -114,11 +114,20 @@ export type AdminOrdersQuery = {
   limit?: number
 }
 
+export type AdminSoldItem = {
+  productId: string
+  name: string
+  quantity: number
+  recipeStatus: 'ready' | 'missing' | 'no-cost' | 'custom'
+}
+
 export type AdminOverview = {
   productionCostCents: number
   previousProductionCostCents: number
   missingCostUnits: number
   previousMissingCostUnits: number
+  /** Products sold in the selected period and whether they have a usable recipe. */
+  soldItems: AdminSoldItem[]
   /** revenueCents − expensesCents for the selected period. */
   profitAfterPurchasesCents: number
   stats: Record<string, number>
@@ -546,6 +555,8 @@ export type AdminRecipeField = {
 }
 
 export type AdminRecipe = {
+  variantId: string | null
+  colorId: string | null
   costCents: number | null
   id: string
   product: { id: string; name: string }
@@ -646,6 +657,8 @@ export async function deleteAdminMaterial(token: string, id: string): Promise<vo
 }
 
 export type AdminRecipeInput = {
+  variantId?: string | null
+  colorId?: string | null
   cost: string
   productId: string
   ingredients: { materialId: string; amount: string }[]

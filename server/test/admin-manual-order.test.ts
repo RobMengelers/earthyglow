@@ -87,6 +87,11 @@ function stubFlow(
   }
   t.after(() => { for (const undo of restore) undo() })
 
+  stub(prisma, '$transaction', async (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma))
+  stub(prisma.order, 'updateMany', async () => ({ count: 1 }))
+  stub(prisma.order, 'findUniqueOrThrow', async () => ({ items: [], materialDeductions: {} }))
+  stub(prisma.recipe, 'findMany', async () => [])
+
   const created: Record<string, unknown>[] = []
   const customerUpserts: Record<string, unknown>[] = []
   const customerCreates: Record<string, unknown>[] = []

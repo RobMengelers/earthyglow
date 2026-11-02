@@ -152,6 +152,8 @@ model Order {
   country                String
   notes                  String?
   paidAt                 DateTime?
+  materialsDeductedAt    DateTime?
+  materialDeductions     Json              @default("{}")
   invoiceSentAt          DateTime?
   // The exact bytes of the PDF that was emailed, archived so the invoice can be
   // re-downloaded verbatim. Null for orders invoiced before this column existed.
@@ -200,7 +202,7 @@ model OrderItem {
 
 // A raw material kept in stock for making candles (wax, scent, …). The
 // quantity is stored as a float in `unit` (kg, g, …) and only ever changes
-// through recorded stock additions, so the shop can see what is left.
+// through stock adjustments and paid-order recipe deductions.
 model Material {
   id        String   @id @default(uuid())
   name      String
@@ -215,6 +217,8 @@ model Material {
 }
 
 model Recipe {
+  variantId String?
+  colorId String?
   // VAT-inclusive production cost for one finished product; null means not entered.
   costCents Int?
   id        String   @id @default(uuid())
