@@ -1,5 +1,6 @@
 import { Prisma, type OrderStatus } from '@prisma/client'
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
+import { gzipSync, gunzipSync } from 'node:zlib'
 import { z } from 'zod'
 import {
   adminJwtSecret,
@@ -325,6 +326,56 @@ function safeFileName(name: string): string {
   return cleaned.length > 0 ? cleaned.slice(0, 120) : 'document'
 }
 
+const COMPANY_DOCUMENT_MAX_BYTES = 10 * 1024 * 1024
+const COMPANY_DOCUMENT_MAX_BATCH_BYTES = 25 * 1024 * 1024
+const COMPANY_DOCUMENT_STORAGE_LIMIT_BYTES = 250 * 1024 * 1024
+
+const companyDocumentSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+  type: z.string().trim().max(120).default('application/octet-stream'),
+  data: z.string().min(1).max(14 * 1024 * 1024)
+    .refine((value) => Buffer.from(value, 'base64').toString('base64') === value, 'Invalid document encoding'),
+})
+
+const companyDocumentsSchema = z.object({
+  documents: z.array(companyDocumentSchema).min(1).max(20),
+}).refine(
+  (input) => input.documents.every(
+    (doc) => Buffer.from(doc.data, 'base64').length <= COMPANY_DOCUMENT_MAX_BYTES,
+  ),
+  `Each document must be ${COMPANY_DOCUMENT_MAX_BYTES / 1024 / 1024} MB or less`,
+).refine(
+  (input) => input.documents.reduce(
+    (sum, doc) => sum + Buffer.from(doc.data, 'base64').length,
+    0,
+  ) <= COMPANY_DOCUMENT_MAX_BATCH_BYTES,
+  `Documents must total ${COMPANY_DOCUMENT_MAX_BATCH_BYTES / 1024 / 1024} MB or less per upload`,
+)
+
+const companyDocumentSelect = {
+  id: true,
+  name: true,
+  mime: true,
+  sizeBytes: true,
+  storedBytes: true,
+  compressed: true,
+  createdAt: true,
+} as const
+
+function prepareCompanyDocument(document: z.infer<typeof companyDocumentSchema>) {
+  const bytes = Buffer.from(document.data, 'base64')
+  const zipped = gzipSync(bytes, { level: 9 })
+  const compressed = zipped.length < bytes.length
+  return {
+    name: safeFileName(document.name),
+    mime: document.type,
+    bytes: compressed ? zipped : bytes,
+    sizeBytes: bytes.length,
+    storedBytes: compressed ? zipped.length : bytes.length,
+    compressed,
+  }
+}
+
 export async function adminRoutes(app: FastifyInstance) {
   // Admin auth is only available when an ADMIN_PASSWORD is configured.
   const enabled = env.ADMIN_PASSWORD.length > 0
@@ -627,8 +678,13 @@ export async function adminRoutes(app: FastifyInstance) {
           : undefined
 
       const where: Prisma.OrderWhereInput = {}
-      if (statusFilter) where.status = statusFilter
-      if (onlyOpen) where.fulfillmentStatus = 'open'
+      if (onlyOpen) {
+        // The fulfilment to-do is only meaningful for orders that were paid.
+        where.status = 'paid'
+        where.fulfillmentStatus = 'open'
+      } else if (statusFilter) {
+        where.status = statusFilter
+      }
       if (search !== '') {
         where.OR = [
           { orderNumber: { contains: search, mode: 'insensitive' } },
@@ -647,8 +703,9 @@ export async function adminRoutes(app: FastifyInstance) {
         ]
       }
 
-      const [counts, matched, paid, rows] = await Promise.all([
+      const [counts, todoCount, matched, paid, rows] = await Promise.all([
         prisma.order.groupBy({ by: ['status'], _count: true }),
+        prisma.order.count({ where: { status: 'paid', fulfillmentStatus: 'open' } }),
         prisma.order.aggregate({ where, _count: true }),
         // "€X paid" in the header: the paid value of everything matching the
         // current filters, not just the page that happens to be loaded.
@@ -701,6 +758,7 @@ export async function adminRoutes(app: FastifyInstance) {
 
       return {
         stats,
+        todoCount,
         orders: page.map((order) => ({
           ...order,
           hasInvoicePdf: archivedIds.has(order.id),
@@ -712,21 +770,38 @@ export async function adminRoutes(app: FastifyInstance) {
     },
   )
 
-  // Calendar month by default; quarter/year retain their rolling windows.
+  // Calendar periods, optionally anchored to a specific date. The frontend
+  // sends the first day of the selected month/quarter/year.
   app.get('/api/admin/overview', { preHandler: requireAdmin }, async (request) => {
-    const query = request.query as { period?: string }
-    const now = Date.now()
-    const DAY = 24 * 60 * 60 * 1000
-    const days = query.period === 'quarter' ? 90 : query.period === 'year' ? 365 : null
+    const query = request.query as { period?: string; anchor?: string }
+    const period: 'month' | 'quarter' | 'year' =
+      query.period === 'quarter' || query.period === 'year' ? query.period : 'month'
     // Date-only sales and purchases are stored at UTC midnight. Choose the
     // shop's calendar month independently of the server's timezone.
     const shopDate = new Intl.DateTimeFormat('en-CA', {
       timeZone: 'Europe/Amsterdam', year: 'numeric', month: '2-digit', day: '2-digit',
-    }).format(new Date(now))
-    const [year, month] = shopDate.split('-').map(Number)
-    const periodStart = days ? new Date(now - days * DAY) : new Date(Date.UTC(year, month - 1, 1))
-    const previousPeriodStart = days ? new Date(now - 2 * days * DAY) : new Date(Date.UTC(year, month - 2, 1))
-    const periodEnd = days ? undefined : new Date(Date.UTC(year, month, 1))
+    }).format(new Date())
+    const [currentYear, currentMonth] = shopDate.split('-').map(Number)
+    const anchor = /^\d{4}-\d{2}-\d{2}$/.test(query.anchor ?? '')
+      ? new Date(`${query.anchor}T00:00:00.000Z`)
+      : null
+    const validAnchor = anchor && !Number.isNaN(anchor.getTime()) ? anchor : null
+    const year = validAnchor ? validAnchor.getUTCFullYear() : currentYear
+    const month = validAnchor ? validAnchor.getUTCMonth() : currentMonth - 1
+
+    // Calendar quarter starts are 0, 3, 6 and 9; month is zero-indexed.
+    const quarterStartMonth = Math.floor(month / 3) * 3
+    const periodStart = new Date(Date.UTC(year, period === 'year' ? 0 : period === 'quarter' ? quarterStartMonth : month, 1))
+    const periodEnd = new Date(Date.UTC(
+      year,
+      period === 'year' ? 12 : period === 'quarter' ? quarterStartMonth + 3 : month + 1,
+      1,
+    ))
+    const previousPeriodStart = new Date(Date.UTC(
+      year,
+      period === 'year' ? -12 : period === 'quarter' ? quarterStartMonth - 3 : month - 1,
+      1,
+    ))
 
     const [counts, revenue, previousRevenue, expenses, previousExpenses, unfulfilledCount, customerCount, recent] =
       await Promise.all([
@@ -837,7 +912,7 @@ export async function adminRoutes(app: FastifyInstance) {
       previousMissingCostUnits: previousProduction.missingCostUnits,
       profitCents: revenueCents - production.costCents,
       previousProfitCents: previousRevenueCents - previousProduction.costCents,
-      profitAfterPurchasesCents: expensesCents - revenueCents,
+      profitAfterPurchasesCents: revenueCents - expensesCents,
       unfulfilledCount,
       customerCount,
       recentOrders: recent.map((order) => ({
@@ -1000,6 +1075,89 @@ export async function adminRoutes(app: FastifyInstance) {
         .type(document.mime)
         .header('Content-Disposition', `attachment; filename="${document.name}"`)
         .send(Buffer.from(document.bytes))
+    },
+  )
+
+  app.get('/api/admin/documents', { preHandler: requireAdmin }, async () => {
+    const [documents, storage] = await Promise.all([
+      prisma.companyDocument.findMany({
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        select: companyDocumentSelect,
+      }),
+      prisma.companyDocument.aggregate({ _sum: { storedBytes: true } }),
+    ])
+    return {
+      documents,
+      usedBytes: storage._sum.storedBytes ?? 0,
+      limitBytes: COMPANY_DOCUMENT_STORAGE_LIMIT_BYTES,
+    }
+  })
+
+  app.post(
+    '/api/admin/documents',
+    { preHandler: requireAdmin, bodyLimit: 41 * 1024 * 1024 },
+    async (request, reply) => {
+      const body = request.body as Record<string, unknown>
+      const parsed = companyDocumentsSchema.safeParse(body)
+      if (!parsed.success) {
+        return reply.code(400).send({ error: parsed.error.issues[0]?.message ?? 'Invalid documents' })
+      }
+
+      const prepared = parsed.data.documents.map(prepareCompanyDocument)
+      const addedBytes = prepared.reduce((sum, document) => sum + document.storedBytes, 0)
+      const storage = await prisma.companyDocument.aggregate({ _sum: { storedBytes: true } })
+      const usedBytes = storage._sum.storedBytes ?? 0
+      if (usedBytes + addedBytes > COMPANY_DOCUMENT_STORAGE_LIMIT_BYTES) {
+        return reply.code(413).send({
+          error: `Document storage is full (${COMPANY_DOCUMENT_STORAGE_LIMIT_BYTES / 1024 / 1024} MB). Delete a document first.`,
+        })
+      }
+
+      await prisma.companyDocument.createMany({ data: prepared })
+      const documents = await prisma.companyDocument.findMany({
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        select: companyDocumentSelect,
+      })
+      return {
+        documents,
+        usedBytes: usedBytes + addedBytes,
+        limitBytes: COMPANY_DOCUMENT_STORAGE_LIMIT_BYTES,
+      }
+    },
+  )
+
+  app.get(
+    '/api/admin/documents/:id/download',
+    { preHandler: requireAdmin },
+    async (request, reply) => {
+      const params = request.params as { id: string }
+      const document = await prisma.companyDocument.findUnique({
+        where: { id: params.id },
+        select: { name: true, mime: true, bytes: true, compressed: true },
+      })
+      if (!document) {
+        return reply.code(404).send({ error: 'Document not found' })
+      }
+      const stored = Buffer.from(document.bytes)
+      const bytes = document.compressed ? gunzipSync(stored) : stored
+      return reply
+        .type(document.mime)
+        .header('Content-Disposition', `attachment; filename="${document.name}"`)
+        .send(bytes)
+    },
+  )
+
+  app.delete(
+    '/api/admin/documents/:id',
+    { preHandler: requireAdmin },
+    async (request, reply) => {
+      const params = request.params as { id: string }
+      try {
+        await prisma.companyDocument.delete({ where: { id: params.id } })
+      } catch {
+        return reply.code(404).send({ error: 'Document not found' })
+      }
+      return { ok: true }
     },
   )
 

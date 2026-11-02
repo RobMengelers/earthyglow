@@ -283,3 +283,16 @@ model PurchaseDocument {
 
   @@index([purchaseId])
 }
+
+model CompanyDocument {
+  id          String   @id @default(uuid())
+  name        String
+  mime        String
+  bytes       Bytes
+  sizeBytes   Int
+  storedBytes Int
+  compressed  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+}

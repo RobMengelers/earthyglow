@@ -1,9 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import {
-  formatDateTime,
   formatEuros,
-  formatRelativeTime,
   splitIncludedVat,
   type AdminOverview,
   type OverviewPeriod,
@@ -16,26 +14,105 @@ export function meta() {
 }
 
 const PERIODS: { value: OverviewPeriod; label: string }[] = [
-  { value: 'month', label: 'This month' },
+  { value: 'month', label: 'Month' },
   { value: 'quarter', label: 'Quarter' },
   { value: 'year', label: 'Year' },
 ]
 
-function periodTitle(period: OverviewPeriod): string {
-  return period === 'quarter' ? 'last quarter' : period === 'year' ? 'last year' : 'this month'
+// The shop's reporting data starts here; older periods have nothing to show.
+const EARLIEST_OVERVIEW_ANCHOR = '2026-05-01'
+
+function isoDate(year: number, month: number, day: number): string {
+  return new Date(Date.UTC(year, month, day)).toISOString().slice(0, 10)
 }
 
-function previousPeriodTitle(period: OverviewPeriod): string {
-  return period === 'quarter' ? 'previous quarter' : period === 'year' ? 'previous year' : 'previous month'
+function anchorParts(anchor: string): { year: number; month: number } {
+  const date = new Date(`${anchor}T00:00:00.000Z`)
+  return { year: date.getUTCFullYear(), month: date.getUTCMonth() }
+}
+
+function startOfPeriod(period: OverviewPeriod, anchor: string): string {
+  const { year, month } = anchorParts(anchor)
+  if (period === 'year') return isoDate(year, 0, 1)
+  if (period === 'quarter') return isoDate(year, Math.floor(month / 3) * 3, 1)
+  return isoDate(year, month, 1)
+}
+
+function currentPeriodAnchor(period: OverviewPeriod): string {
+  const shopDate = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Amsterdam',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date())
+  return startOfPeriod(period, shopDate)
+}
+
+function addPeriods(period: OverviewPeriod, anchor: string, amount: number): string {
+  const { year, month } = anchorParts(anchor)
+  if (period === 'year') return isoDate(year + amount, 0, 1)
+  if (period === 'quarter') return isoDate(year, month + amount * 3, 1)
+  return isoDate(year, month + amount, 1)
+}
+
+function periodLabel(period: OverviewPeriod, anchor: string): string {
+  const date = new Date(`${anchor}T00:00:00.000Z`)
+  if (period === 'year') return String(date.getUTCFullYear())
+  if (period === 'quarter') {
+    return `Q${Math.floor(date.getUTCMonth() / 3) + 1} ${date.getUTCFullYear()}`
+  }
+  return new Intl.DateTimeFormat('en-GB', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(date)
+}
+
+function periodOptions(period: OverviewPeriod, selected: string): string[] {
+  const options = new Set<string>([selected])
+  const earliest = startOfPeriod(period, EARLIEST_OVERVIEW_ANCHOR)
+  let cursor = currentPeriodAnchor(period)
+  while (cursor >= earliest) {
+    options.add(cursor)
+    cursor = addPeriods(period, cursor, -1)
+  }
+  return [...options].sort((left, right) => right.localeCompare(left))
 }
 
 export default function OverviewPage() {
-  const { overview, overviewError, overviewLoading, refreshOverview, overviewPeriod, setOverviewPeriod } =
-    useAdmin()
+  const {
+    overview,
+    overviewError,
+    overviewLoading,
+    refreshOverview,
+    overviewPeriod,
+    overviewAnchor,
+    setOverviewRange,
+  } = useAdmin()
   const [vatMode, setVatMode] = useState<'incl' | 'excl'>('incl')
   const excl = vatMode === 'excl'
   const vatLabel = excl ? 'excl. VAT' : 'incl. VAT'
-  const title = periodTitle(overviewPeriod)
+  const selectedAnchor = overviewAnchor
+    ? startOfPeriod(overviewPeriod, overviewAnchor)
+    : currentPeriodAnchor(overviewPeriod)
+  const title = periodLabel(overviewPeriod, selectedAnchor)
+  const previousLabel = periodLabel(
+    overviewPeriod,
+    addPeriods(overviewPeriod, selectedAnchor, -1),
+  )
+  const earliestAnchor = startOfPeriod(overviewPeriod, EARLIEST_OVERVIEW_ANCHOR)
+  const canGoBackward = selectedAnchor > earliestAnchor
+  const canGoForward = selectedAnchor < currentPeriodAnchor(overviewPeriod)
+
+  function changePeriod(period: OverviewPeriod) {
+    setOverviewRange(period, startOfPeriod(period, selectedAnchor))
+  }
+
+  function stepPeriod(amount: number) {
+    const next = addPeriods(overviewPeriod, selectedAnchor, amount)
+    if (next < earliestAnchor) return
+    setOverviewRange(overviewPeriod, next)
+  }
 
   return (
     <div className="admin-page">
@@ -46,18 +123,51 @@ export default function OverviewPage() {
         </div>
         {overview && (
           <div className="admin-page-actions">
-            <div className="admin-segmented" role="group" aria-label="Overview window">
-              {PERIODS.map((period) => (
+            <div className="admin-period-controls">
+              <div className="admin-segmented" role="group" aria-label="Overview window">
+                {PERIODS.map((period) => (
+                  <button
+                    key={period.value}
+                    type="button"
+                    className={overviewPeriod === period.value ? 'is-active' : ''}
+                    onClick={() => changePeriod(period.value)}
+                    aria-pressed={overviewPeriod === period.value}
+                  >
+                    {period.label}
+                  </button>
+                ))}
+              </div>
+              <div className="admin-period-picker">
                 <button
-                  key={period.value}
                   type="button"
-                  className={overviewPeriod === period.value ? 'is-active' : ''}
-                  onClick={() => setOverviewPeriod(period.value)}
-                  aria-pressed={overviewPeriod === period.value}
+                  className="admin-period-step"
+                  onClick={() => stepPeriod(-1)}
+                  disabled={!canGoBackward}
+                  aria-label={`Previous ${overviewPeriod}`}
                 >
-                  {period.label}
+                  ‹
                 </button>
-              ))}
+                <select
+                  value={selectedAnchor}
+                  onChange={(event) => setOverviewRange(overviewPeriod, event.target.value)}
+                  aria-label={`Choose ${overviewPeriod}`}
+                >
+                  {periodOptions(overviewPeriod, selectedAnchor).map((anchor) => (
+                    <option key={anchor} value={anchor}>
+                      {periodLabel(overviewPeriod, anchor)}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="admin-period-step"
+                  onClick={() => stepPeriod(1)}
+                  disabled={!canGoForward}
+                  aria-label={`Next ${overviewPeriod}`}
+                >
+                  ›
+                </button>
+              </div>
             </div>
             <div className="admin-segmented" role="group" aria-label="Show amounts with or without VAT">
               <button
@@ -99,7 +209,7 @@ export default function OverviewPage() {
           excl={excl}
           vatLabel={vatLabel}
           title={title}
-          previousTitle={previousPeriodTitle(overviewPeriod)}
+          previousLabel={previousLabel}
         />
       )}
     </div>
@@ -112,14 +222,14 @@ function OverviewBody({
   excl,
   vatLabel,
   title,
-  previousTitle,
+  previousLabel,
 }: {
   overview: AdminOverview
   loading: boolean
   excl: boolean
   vatLabel: string
   title: string
-  previousTitle: string
+  previousLabel: string
 }) {
   const netRevenue = overview.netRevenueCents
   const netExpenses = splitIncludedVat(overview.expensesCents).netCents
@@ -151,7 +261,7 @@ function OverviewBody({
         <MoneyCard
           label={`Revenue · ${title} · ${vatLabel}`}
           value={revenue}
-          hint={<>{formatEuros(prevRevenue)} in the {previousTitle}</>}
+          hint={<>{formatEuros(prevRevenue)} in {previousLabel}</>}
           loading={loading}
         />
         <SpendingCard
@@ -160,11 +270,11 @@ function OverviewBody({
           hint="Add a purchase"
         />
         <MoneyCard
-          label={`Profit after purchases · ${title} · ${vatLabel}`}
-          value={spent - revenue}
+          label={`Revenue against purchases · ${title} · ${vatLabel}`}
+          value={revenue - spent}
           hint={
             <>
-              {formatEuros(spent)} purchases − {formatEuros(revenue)} revenue.
+              {formatEuros(revenue)} revenue − {formatEuros(spent)} purchases.
             </>
           }
           tone="profit"
@@ -193,46 +303,6 @@ function OverviewBody({
 
       <section className="admin-panel">
         <header className="admin-panel-head">
-          <h2>Latest orders</h2>
-          <Link to="/admin/orders" className="admin-panel-link">
-            View all orders →
-          </Link>
-        </header>
-
-        {overview.recentOrders.length === 0 ? (
-          <p className="admin-empty-inline">
-            Nothing yet. Record a sale in the shop or wait for the first online order.
-          </p>
-        ) : (
-          <ul className="admin-recent">
-            {overview.recentOrders.map((order) => (
-              <li key={order.id} className="admin-recent-item">
-                <div>
-                  <Link to="/admin/orders" className="admin-recent-number">
-                    {order.orderNumber}
-                  </Link>
-                  <p className="admin-recent-meta">
-                    {order.customer.email ?? `${order.customer.firstName} ${order.customer.lastName}`}
-                  </p>
-                </div>
-                <div className="admin-recent-side">
-                  <span className={`admin-badge is-${order.status}`}>{order.status}</span>
-                  <span className="admin-recent-total">{formatEuros(order.totalCents)}</span>
-                  <time
-                    dateTime={order.createdAt}
-                    title={formatDateTime(order.createdAt)}
-                  >
-                    {formatRelativeTime(order.createdAt)}
-                  </time>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section className="admin-panel">
-        <header className="admin-panel-head">
           <h2>Needs attention</h2>
         </header>
         <AttentionList overview={overview} />
@@ -240,8 +310,6 @@ function OverviewBody({
     </>
   )
 }
-
-
 
 function MoneyCard({
   label,

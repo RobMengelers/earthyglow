@@ -12,7 +12,9 @@ export type AdminContextValue = {
   overviewLoading: boolean
   /** Which window the overview is currently showing. */
   overviewPeriod: OverviewPeriod
-  setOverviewPeriod: (period: OverviewPeriod) => void
+  /** First day of the selected month/quarter/year; null means the current one. */
+  overviewAnchor: string | null
+  setOverviewRange: (period: OverviewPeriod, anchor: string | null) => void
   signIn: (username: string, password: string) => Promise<void>
   signOut: () => void
   /** Re-runs the overview fetch; used by the dashboard's retry button. */

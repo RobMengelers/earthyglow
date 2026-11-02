@@ -136,6 +136,7 @@ test('orders list reports hasInvoicePdf without leaking pdf bytes', async (t) =>
 
   const archiveQueries: { where?: { id?: { in?: string[] } } }[] = []
   stub('groupBy', async () => [{ status: 'paid', _count: 2 }])
+  stub('count', async () => 1)
   stub('aggregate', async (args: { _sum?: unknown }) =>
     args._sum ? { _sum: { totalCents: 9500 } } : { _count: 2 },
   )
@@ -194,6 +195,7 @@ test('orders list skips the archive lookup when there are no orders', async (t) 
 
   let findManyCalls = 0
   stub('groupBy', async () => [])
+  stub('count', async () => 0)
   stub('aggregate', async (args: { _sum?: unknown }) =>
     args._sum ? { _sum: { totalCents: null } } : { _count: 0 },
   )
@@ -225,6 +227,7 @@ test('orders list pages with an opaque cursor', async (t) => {
   t.after(() => { for (const undo of restore) undo() })
 
   stub('groupBy', async () => [])
+  stub('count', async () => 1)
   stub('aggregate', async (args: { _sum?: unknown }) =>
     args._sum ? { _sum: { totalCents: 0 } } : { _count: 3 },
   )
@@ -272,3 +275,40 @@ test('orders list pages with an opaque cursor', async (t) => {
   assert.equal(pageQueries[1]?.skip, 1)
 })
 
+test('the fulfilment to-do filter only lists paid, unprocessed orders', async (t) => {
+  const restore: (() => void)[] = []
+  const stub = (key: string, impl: unknown) => {
+    const original = Reflect.get(prisma.order, key)
+    Reflect.set(prisma.order, key, impl)
+    restore.push(() => { Reflect.set(prisma.order, key, original) })
+  }
+  t.after(() => { for (const undo of restore) undo() })
+
+  const pageWhere: { status?: string; fulfillmentStatus?: string }[] = []
+  stub('groupBy', async () => [{ status: 'paid', _count: 4 }])
+  stub('count', async () => 3)
+  stub('aggregate', async (args: { _sum?: unknown; where?: { status?: string; fulfillmentStatus?: string } }) => {
+    if (!args._sum) pageWhere.push(args.where ?? {})
+    return args._sum ? { _sum: { totalCents: 9500 } } : { _count: 3 }
+  })
+  stub('findMany', async (args: { select?: unknown; where?: { status?: string; fulfillmentStatus?: string } }) => {
+    if (args.select) return []
+    pageWhere.push(args.where ?? {})
+    return [makeOrder({ fulfillmentStatus: 'open' })]
+  })
+
+  const { app, token } = await authedApp()
+  const response = await app.inject({
+    method: 'GET',
+    url: '/api/admin/orders?fulfilment=open',
+    headers: { authorization: `Bearer ${token}` },
+  })
+
+  assert.equal(response.statusCode, 200)
+  assert.equal(response.json().todoCount, 3)
+  assert.equal(pageWhere.length, 2)
+  for (const where of pageWhere) {
+    assert.equal(where.status, 'paid')
+    assert.equal(where.fulfillmentStatus, 'open')
+  }
+})

@@ -135,7 +135,7 @@ function stubOverview(
   return { findManyCalls, dateWindows }
 }
 
-async function fetchOverview(period = '') {
+async function fetchOverview(period = '', anchor = '') {
   const app = Fastify()
   await app.register(adminRoutes)
   const login = await app.inject({
@@ -143,9 +143,13 @@ async function fetchOverview(period = '') {
     url: '/api/admin/login',
     payload: { username: 'naomi', password: 'hunter2' },
   })
+  const params = new URLSearchParams()
+  if (period) params.set('period', period)
+  if (anchor) params.set('anchor', anchor)
+  const query = params.toString()
   const response = await app.inject({
     method: 'GET',
-    url: `/api/admin/overview${period ? `?period=${period}` : ''}`,
+    url: `/api/admin/overview${query ? `?${query}` : ''}`,
     headers: { authorization: `Bearer ${login.json().token}` },
   })
   return { app, response }
@@ -166,7 +170,7 @@ test('overview reports status counts, revenue and work waiting', async (t) => {
   assert.equal(body.previousProfitCents, 8000 - 242)
   assert.equal(body.productionCostCents, 363)
   assert.equal(body.previousProductionCostCents, 242)
-  assert.equal(body.profitAfterPurchasesCents, 3500 - 12500)
+  assert.equal(body.profitAfterPurchasesCents, 12500 - 3500)
   assert.equal(body.missingCostUnits, 3)
   assert.equal(body.previousMissingCostUnits, 3)
   assert.equal(body.unfulfilledCount, 3)
@@ -221,8 +225,7 @@ test('overview requires an admin token', async (t) => {
   assert.equal(response.statusCode, 401)
 })
 
-test('overview compares the same window before it for the requested period', async (t) => {
-  const DAY = 24 * 60 * 60 * 1000
+test('overview compares the same calendar window before it for the requested period', async (t) => {
   const { dateWindows } = stubOverview(t)
   await fetchOverview()
   await fetchOverview('quarter')
@@ -239,18 +242,29 @@ test('overview compares the same window before it for the requested period', asy
   assert.equal(defaultPrevious.revenue.lt!.toISOString(), new Date(Date.UTC(year, month - 1, 1)).toISOString())
   assert.equal(dateWindows[0].revenue.lt!.toISOString(), new Date(Date.UTC(year, month, 1)).toISOString())
 
-  const quarterGap = quarterPrevious.revenue.lt!.getTime() - quarterPrevious.revenue.gte!.getTime()
-  assert.ok(
-    Math.abs(quarterGap - 90 * DAY) < 2000,
-    `quarter window should be 90 days, got ${quarterGap / DAY}`,
-  )
+  const quarterStartMonth = Math.floor((month - 1) / 3) * 3
+  assert.equal(dateWindows[2].revenue.gte!.toISOString(), new Date(Date.UTC(year, quarterStartMonth, 1)).toISOString())
+  assert.equal(dateWindows[2].revenue.lt!.toISOString(), new Date(Date.UTC(year, quarterStartMonth + 3, 1)).toISOString())
+  assert.equal(quarterPrevious.revenue.gte!.toISOString(), new Date(Date.UTC(year, quarterStartMonth - 3, 1)).toISOString())
+  assert.equal(quarterPrevious.revenue.lt!.toISOString(), new Date(Date.UTC(year, quarterStartMonth, 1)).toISOString())
+})
 
-  // The previous quarter should sit right before "now − 180 days".
-  const quarterStart = quarterPrevious.revenue.gte!.getTime()
-  assert.ok(
-    Math.abs(quarterStart + 180 * DAY - Date.now()) < 5000,
-    'previous quarter should start ~180 days ago',
-  )
+test('overview can be anchored to a specific month or quarter', async (t) => {
+  const { dateWindows } = stubOverview(t)
+  await fetchOverview('month', '2026-02-01')
+  await fetchOverview('quarter', '2026-11-01')
+
+  // February 2026, compared with January 2026.
+  assert.equal(dateWindows[0].revenue.gte!.toISOString(), '2026-02-01T00:00:00.000Z')
+  assert.equal(dateWindows[0].revenue.lt!.toISOString(), '2026-03-01T00:00:00.000Z')
+  assert.equal(dateWindows[1].revenue.gte!.toISOString(), '2026-01-01T00:00:00.000Z')
+  assert.equal(dateWindows[1].revenue.lt!.toISOString(), '2026-02-01T00:00:00.000Z')
+
+  // An anchor in November resolves to Q4 2026, compared with Q3 2026.
+  assert.equal(dateWindows[2].revenue.gte!.toISOString(), '2026-10-01T00:00:00.000Z')
+  assert.equal(dateWindows[2].revenue.lt!.toISOString(), '2027-01-01T00:00:00.000Z')
+  assert.equal(dateWindows[3].revenue.gte!.toISOString(), '2026-07-01T00:00:00.000Z')
+  assert.equal(dateWindows[3].revenue.lt!.toISOString(), '2026-10-01T00:00:00.000Z')
 })
 
 test('this month handles year rollover and leap-year February', async (t) => {

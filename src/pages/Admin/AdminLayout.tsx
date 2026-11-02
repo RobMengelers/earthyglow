@@ -40,6 +40,7 @@ function AdminProvider({ children }: { children: React.ReactNode }) {
   const [overviewError, setOverviewError] = useState('')
   const [overviewKey, setOverviewKey] = useState(0)
   const [overviewPeriod, setOverviewPeriod] = useState<OverviewPeriod>('month')
+  const [overviewAnchor, setOverviewAnchor] = useState<string | null>(null)
   // True while a fetch is in flight so the dashboard can dim its cards while
   // the window (or the retry button) reloads the numbers.
   const [overviewBusy, setOverviewBusy] = useState(false)
@@ -88,7 +89,7 @@ function AdminProvider({ children }: { children: React.ReactNode }) {
     if (status !== 'signed-in' || !token) return
     let cancelled = false
 
-    fetchAdminOverview(token, overviewPeriod)
+    fetchAdminOverview(token, overviewPeriod, overviewAnchor)
       .then((next) => {
         if (cancelled) return
         setOverview(next)
@@ -109,7 +110,7 @@ function AdminProvider({ children }: { children: React.ReactNode }) {
       })
 
     return () => { cancelled = true }
-  }, [status, token, overviewKey, overviewPeriod, expireSession])
+  }, [status, token, overviewKey, overviewPeriod, overviewAnchor, expireSession])
 
   async function signIn(username: string, password: string) {
     const result = await adminLogin(username, password)
@@ -126,8 +127,9 @@ function AdminProvider({ children }: { children: React.ReactNode }) {
     setOverviewBusy(false)
   }
 
-  function changeOverviewPeriod(period: OverviewPeriod) {
+  function changeOverviewRange(period: OverviewPeriod, anchor: string | null) {
     setOverviewPeriod(period)
+    setOverviewAnchor(anchor)
     setOverviewBusy(true)
   }
 
@@ -141,7 +143,8 @@ function AdminProvider({ children }: { children: React.ReactNode }) {
         // Nothing to show yet and nothing wrong: the dashboard is loading.
         overviewLoading: status === 'signed-in' && overviewBusy,
         overviewPeriod,
-        setOverviewPeriod: changeOverviewPeriod,
+        overviewAnchor,
+        setOverviewRange: changeOverviewRange,
         signIn,
         signOut,
         refreshOverview: () => {
@@ -204,6 +207,9 @@ function AdminShell() {
                 {toFulfil}
               </span>
             )}
+          </NavLink>
+          <NavLink to="/admin/documents" end className="admin-nav-link">
+            Documents
           </NavLink>
         </nav>
 

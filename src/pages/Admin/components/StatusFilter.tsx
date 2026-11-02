@@ -4,30 +4,41 @@ import { ADMIN_STATUSES } from '../../../admin/api'
 // filtered view can be bookmarked and the back button works.
 export function StatusFilter({
   value,
+  onlyOpen,
   counts,
+  todoCount,
   onChange,
 }: {
   value: string
+  onlyOpen: boolean
   counts: Record<string, number>
-  onChange: (status: string) => void
+  todoCount: number
+  onChange: (next: { status: string; onlyOpen: boolean }) => void
 }) {
   const total = Object.values(counts).reduce((sum, count) => sum + count, 0)
+  const isTodo = value === 'paid' && onlyOpen
 
   return (
-    <div className="admin-filters" role="group" aria-label="Filter by status">
+    <div className="admin-filters" role="group" aria-label="Filter orders">
+      <FilterPill
+        label="To do"
+        count={todoCount}
+        active={isTodo}
+        onClick={() => onChange({ status: 'paid', onlyOpen: true })}
+      />
       <FilterPill
         label="All"
         count={total}
-        active={value === 'all'}
-        onClick={() => onChange('all')}
+        active={value === 'all' && !onlyOpen}
+        onClick={() => onChange({ status: 'all', onlyOpen: false })}
       />
       {ADMIN_STATUSES.map((status) => (
         <FilterPill
           key={status}
           label={status}
           count={counts[status] ?? 0}
-          active={value === status}
-          onClick={() => onChange(status)}
+          active={value === status && !onlyOpen}
+          onClick={() => onChange({ status, onlyOpen: false })}
         />
       ))}
     </div>

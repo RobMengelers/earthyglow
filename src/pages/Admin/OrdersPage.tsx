@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router'
 import {
+  ADMIN_STATUSES,
   fetchAdminOrders,
   formatEuros,
   refundAdminOrder,
@@ -22,6 +23,7 @@ type OrdersView = {
   key: string
   orders: AdminOrder[]
   stats: Record<string, number>
+  todoCount: number
   total: number
   paidTotalCents: number
   nextCursor: string | null
@@ -38,10 +40,19 @@ export default function OrdersPage() {
   const [searchParams, setSearchParams] = useSearchParams()
 
   // The whole view lives in the URL so a filtered list can be shared and the
-  // back button behaves.
-  const status = searchParams.get('status') ?? 'all'
-  const onlyOpen = searchParams.get('fulfilment') === 'open'
+  // back button behaves. With no filter in the URL, the fulfilment to-do is
+  // the default view.
+  const statusParam = searchParams.get('status')
+  const onlyOpen = searchParams.has('fulfilment')
+    ? searchParams.get('fulfilment') === 'open'
+    : !searchParams.has('status')
+  const status = onlyOpen
+    ? 'paid'
+    : statusParam !== null && ADMIN_STATUSES.includes(statusParam)
+      ? statusParam
+      : 'all'
   const query = searchParams.get('q') ?? ''
+  const isTodo = status === 'paid' && onlyOpen
 
   const [reloadKey, setReloadKey] = useState(0)
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -75,6 +86,7 @@ export default function OrdersPage() {
             key: filtersKey,
             orders: result.orders,
             stats: result.stats,
+            todoCount: result.todoCount,
             total: result.total,
             paidTotalCents: result.paidTotalCents,
             nextCursor: result.nextCursor,
@@ -105,7 +117,7 @@ export default function OrdersPage() {
   const data = view?.key === filtersKey ? view : null
   const loadError = failure?.key === filtersKey ? failure.message : ''
   const loading = data === null && loadError === ''
-  const hasFilters = status !== 'all' || onlyOpen || query !== ''
+  const hasFilters = query !== '' || (!isTodo && status !== 'all')
 
   async function loadMore() {
     if (!token || !data || !data.nextCursor || loadingMore) return
@@ -219,8 +231,10 @@ export default function OrdersPage() {
           <h1>Orders</h1>
           <p className="admin-page-sub">
             {loading || !data
-              ? 'Everything bought online and in the shop.'
-              : `${count} in view · ${formatEuros(data.paidTotalCents)} paid${
+              ? isTodo
+                ? 'Paid orders still waiting to be sent.'
+                : 'Everything bought online and in the shop.'
+              : `${count} ${isTodo ? 'to send' : 'in view'} · ${formatEuros(data.paidTotalCents)} paid${
                   loaded < count ? ` · showing ${loaded}` : ''
                 }`}
           </p>
@@ -235,18 +249,17 @@ export default function OrdersPage() {
       <div className="admin-toolbar">
         <StatusFilter
           value={status}
+          onlyOpen={onlyOpen}
           counts={data?.stats ?? {}}
-          onChange={(next) => updateParams({ status: next === 'all' ? null : next })}
+          todoCount={data?.todoCount ?? 0}
+          onChange={(next) =>
+            updateParams({
+              status: next.status,
+              fulfilment: next.onlyOpen ? 'open' : null,
+            })
+          }
         />
         <div className="admin-toolbar-right">
-          <button
-            type="button"
-            className={`admin-filter${onlyOpen ? ' is-active' : ''}`}
-            aria-pressed={onlyOpen}
-            onClick={() => updateParams({ fulfilment: onlyOpen ? null : 'open' })}
-          >
-            To fulfil
-          </button>
           <div className="admin-search">
             <input
               type="search"
@@ -297,13 +310,21 @@ export default function OrdersPage() {
 
       {data && data.orders.length === 0 && (
         <div className="admin-empty">
-          <h2>{hasFilters ? 'Nothing matches' : 'No orders here yet'}</h2>
+          <h2>
+            {isTodo && query === ''
+              ? 'Nothing to send'
+              : hasFilters
+                ? 'Nothing matches'
+                : 'No orders here yet'}
+          </h2>
           <p>
-            {hasFilters
-              ? 'Try another status, or clear the search and the “to fulfil” filter.'
-              : 'Online orders and sales recorded in the shop both land here.'}
+            {isTodo && query === ''
+              ? 'Paid orders that still need sending will appear here.'
+              : hasFilters
+                ? 'Try another filter, or clear the search.'
+                : 'Online orders and sales recorded in the shop both land here.'}
           </p>
-          {!hasFilters && (
+          {!hasFilters && !isTodo && (
             <Link to="/admin/orders/new" className="btn btn-primary">
               Record a sale
             </Link>

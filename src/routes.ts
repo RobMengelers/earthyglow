@@ -19,6 +19,7 @@ export default [
     route('recipes/:id/edit', './pages/Admin/EditRecipePage.tsx'),
     route('orders', './pages/Admin/OrdersPage.tsx'),
     route('coupons', './pages/Admin/CouponsPage.tsx'),
+    route('documents', './pages/Admin/DocumentsPage.tsx'),
     route('orders/:id/edit', './pages/Admin/EditOrderPage.tsx'),
     route('orders/new', './pages/Admin/NewOrderPage.tsx'),
   ]),

@@ -92,6 +92,8 @@ export type AdminOrder = {
 
 export type AdminOrdersResponse = {
   stats: Record<string, number>
+  /** Paid orders still waiting to be sent. */
+  todoCount: number
   orders: AdminOrder[]
   /** Opaque id to pass back as `cursor` for the next page, or null at the end. */
   nextCursor: string | null
@@ -117,19 +119,21 @@ export type AdminOverview = {
   previousProductionCostCents: number
   missingCostUnits: number
   previousMissingCostUnits: number
+  /** revenueCents − expensesCents for the selected period. */
   profitAfterPurchasesCents: number
   stats: Record<string, number>
-  /** Paid order value in the last 30 days. */
+  /** Paid order value in the selected period, including VAT where charged. */
   revenueCents: number
-  /** The 30 days before that, for the trend arrow. */
+  /** The same period before it, for comparison. */
   previousRevenueCents: number
+  /** Paid order value with VAT removed from orders that include it. */
   netRevenueCents: number
   previousNetRevenueCents: number
-  /** Purchase (materials) cost in the last 30 days, VAT-inclusive. */
+  /** Purchase (materials) cost in the selected period, VAT-inclusive. */
   expensesCents: number
-  /** The 30 days before that, for the trend arrow. */
+  /** The same period before it, for comparison. */
   previousExpensesCents: number
-  /** revenueCents − productionCostCents over the last 30 days. */
+  /** revenueCents − productionCostCents for the selected period. */
   profitCents: number
   /** previousRevenueCents − previousProductionCostCents. */
   previousProfitCents: number
@@ -265,8 +269,11 @@ export type OverviewPeriod = 'month' | 'quarter' | 'year'
 export async function fetchAdminOverview(
   token: string,
   period: OverviewPeriod = 'month',
+  anchor: string | null = null,
 ): Promise<AdminOverview> {
-  const response = await fetch(`${API_URL}/api/admin/overview?period=${period}`, {
+  const params = new URLSearchParams({ period })
+  if (anchor) params.set('anchor', anchor)
+  const response = await fetch(`${API_URL}/api/admin/overview?${params}`, {
     headers: { Authorization: `Bearer ${token}` },
   })
   if (!response.ok) {
@@ -413,6 +420,94 @@ export async function downloadAdminPurchaseDocument(
     throw new Error(
       (await response.json().catch(() => null) as { error?: string } | null)
         ?.error ?? 'Could not download the document',
+    )
+  }
+
+  const url = URL.createObjectURL(await response.blob())
+  const link = document.createElement('a')
+  link.href = url
+  link.download = attachment.name
+  document.body.append(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
+}
+
+export type AdminCompanyDocument = {
+  id: string
+  name: string
+  mime: string
+  sizeBytes: number
+  storedBytes: number
+  compressed: boolean
+  createdAt: string
+}
+
+export type AdminDocumentsResponse = {
+  documents: AdminCompanyDocument[]
+  usedBytes: number
+  limitBytes: number
+}
+
+export async function fetchAdminDocuments(token: string): Promise<AdminDocumentsResponse> {
+  const response = await fetch(`${API_URL}/api/admin/documents`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!response.ok) {
+    if (response.status === 401) throw new Error('Session expired')
+    throw new Error(`Failed to load documents (${response.status})`)
+  }
+  return (await response.json()) as AdminDocumentsResponse
+}
+
+export async function uploadAdminDocuments(
+  token: string,
+  files: File[],
+): Promise<AdminDocumentsResponse> {
+  const response = await fetch(`${API_URL}/api/admin/documents`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      documents: await Promise.all(files.map(async (file) => ({
+        name: file.name,
+        type: file.type || 'application/octet-stream',
+        data: await fileToBase64(file),
+      }))),
+    }),
+  })
+  const body = (await response.json().catch(() => null)) as
+    | (AdminDocumentsResponse & { error?: string })
+    | null
+  if (!response.ok) {
+    throw new Error(body?.error ?? 'Could not upload the documents')
+  }
+  return body as AdminDocumentsResponse
+}
+
+export async function deleteAdminDocument(token: string, id: string): Promise<void> {
+  const response = await fetch(`${API_URL}/api/admin/documents/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!response.ok) {
+    throw new Error(
+      (await response.json().catch(() => null) as { error?: string } | null)?.error
+        ?? 'Could not delete the document',
+    )
+  }
+}
+
+export async function downloadAdminDocument(
+  token: string,
+  attachment: AdminCompanyDocument,
+): Promise<void> {
+  const response = await fetch(`${API_URL}/api/admin/documents/${attachment.id}/download`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!response.ok) {
+    throw new Error(
+      (await response.json().catch(() => null) as { error?: string } | null)?.error
+        ?? 'Could not download the document',
     )
   }
 
