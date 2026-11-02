@@ -1284,21 +1284,25 @@ export async function adminRoutes(app: FastifyInstance) {
   })
 
   app.patch('/api/admin/orders/:id/fulfillment', { preHandler: requireAdmin }, async (request, reply) => {
-    const body = request.body as { status?: unknown; carrier?: unknown; trackingCode?: unknown }
+    const body = request.body as { status?: unknown; carrier?: unknown; trackingCode?: unknown; skipEmail?: unknown }
     const status = body.status === 'processed' ? 'processed' : body.status === 'open' ? 'open' : null
     if (!status) return reply.code(400).send({ error: 'Invalid fulfillment status' })
-    if (status === 'processed' && (typeof body.carrier !== 'string' || !body.carrier.trim() || typeof body.trackingCode !== 'string' || !body.trackingCode.trim())) {
-      return reply.code(400).send({ error: 'Carrier and tracking code are required' })
+    if (body.skipEmail !== undefined && typeof body.skipEmail !== 'boolean') {
+      return reply.code(400).send({ error: 'Invalid skip email flag' })
+    }
+    const skipEmail = body.skipEmail === true
+    if (status === 'processed' && !skipEmail && (typeof body.carrier !== 'string' || !['PostNL', 'DHL'].includes(body.carrier.trim()) || typeof body.trackingCode !== 'string' || !body.trackingCode.trim())) {
+      return reply.code(400).send({ error: 'Select PostNL or DHL and provide a tracking code' })
     }
     const params = request.params as { id: string }
     const order = await prisma.order.findUnique({ where: { id: params.id }, include: { customer: true } })
     if (!order) return reply.code(404).send({ error: 'Order not found' })
     const updated = await prisma.order.update({
       where: { id: order.id },
-      data: { fulfillmentStatus: status, carrier: typeof body.carrier === 'string' && body.carrier.trim() ? body.carrier.trim() : order.carrier, trackingCode: typeof body.trackingCode === 'string' && body.trackingCode.trim() ? body.trackingCode.trim() : order.trackingCode, fulfilledAt: status === 'processed' ? new Date() : null, fulfillmentEmailSentAt: status === 'open' ? null : order.fulfillmentEmailSentAt },
+      data: { fulfillmentStatus: status, carrier: !skipEmail && typeof body.carrier === 'string' && body.carrier.trim() ? body.carrier.trim() : order.carrier, trackingCode: !skipEmail && typeof body.trackingCode === 'string' && body.trackingCode.trim() ? body.trackingCode.trim() : order.trackingCode, fulfilledAt: status === 'processed' ? new Date() : null, fulfillmentEmailSentAt: status === 'open' ? null : order.fulfillmentEmailSentAt },
       include: { customer: true, items: true },
     })
-    if (status === 'processed' && !order.fulfillmentEmailSentAt) {
+    if (status === 'processed' && !skipEmail && !order.fulfillmentEmailSentAt) {
       try {
         const emailSent = await sendFulfillmentEmail(updated)
         if (emailSent) {

@@ -2,8 +2,7 @@ import { type FormEvent, useState } from 'react'
 import type { AdminOrder } from '../../../admin/api'
 import { Modal } from './Modal'
 
-// Marking an order as sent emails the customer and cannot be undone from here,
-// so the dialog asks twice and shows exactly what will go out.
+// Confirm the dispatch details and whether the customer will receive an email.
 export function FulfillmentDialog({
   order,
   busy,
@@ -13,16 +12,17 @@ export function FulfillmentDialog({
   order: AdminOrder
   busy: boolean
   onClose: () => void
-  onConfirm: (input: { carrier: string; trackingCode: string }) => void
+  onConfirm: (input: { carrier: string; trackingCode: string; skipEmail: boolean }) => void
 }) {
-  const [carrier, setCarrier] = useState('')
+  const [carrier, setCarrier] = useState('PostNL')
   const [trackingCode, setTrackingCode] = useState('')
+  const [skipEmail, setSkipEmail] = useState(false)
   const [confirming, setConfirming] = useState(false)
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
     if (confirming) {
-      onConfirm({ carrier: carrier.trim(), trackingCode: trackingCode.trim() })
+      onConfirm({ carrier: skipEmail ? '' : carrier, trackingCode: skipEmail ? '' : trackingCode.trim(), skipEmail })
       return
     }
     setConfirming(true)
@@ -32,21 +32,35 @@ export function FulfillmentDialog({
     <Modal
       title={confirming ? 'Confirm dispatch' : 'Mark as sent'}
       description={
-        confirming
+        skipEmail
+          ? 'The order will be marked as sent without sending an email.'
+          : confirming
           ? 'The customer receives a shipping email with these details.'
           : 'These details are emailed to the customer and stored on the order.'
       }
       onClose={onClose}
     >
       <form className="admin-form" onSubmit={handleSubmit}>
-        <label>
-          Transporter
+        <label className="admin-manual-checkbox">
           <input
+            type="checkbox"
+            checked={skipEmail}
+            onChange={(event) => setSkipEmail(event.target.checked)}
+            disabled={busy}
+          />
+          <span>Don’t send an email</span>
+        </label>
+        <label>
+          Carrier
+          <select
             value={carrier}
             onChange={(event) => setCarrier(event.target.value)}
-            placeholder="e.g. PostNL"
-            required
-          />
+            disabled={skipEmail || busy}
+            required={!skipEmail}
+          >
+            <option value="PostNL">PostNL</option>
+            <option value="DHL">DHL</option>
+          </select>
         </label>
         <label>
           Track &amp; trace code
@@ -54,7 +68,8 @@ export function FulfillmentDialog({
             value={trackingCode}
             onChange={(event) => setTrackingCode(event.target.value)}
             placeholder="3SABC123456789"
-            required
+            disabled={skipEmail || busy}
+            required={!skipEmail}
           />
         </label>
 
@@ -62,7 +77,7 @@ export function FulfillmentDialog({
           <div className="admin-confirmation">
             <strong>{order.orderNumber} will be marked as sent</strong>
             <span>
-              {carrier.trim()} · {trackingCode.trim()}
+              {skipEmail ? 'No email will be sent.' : `${carrier} · ${trackingCode.trim()}`}
             </span>
           </div>
         )}
@@ -72,7 +87,7 @@ export function FulfillmentDialog({
             Cancel
           </button>
           <button type="submit" className="btn btn-primary" disabled={busy}>
-            {busy ? 'Sending…' : confirming ? 'Confirm and send' : 'Continue'}
+            {busy ? 'Saving…' : confirming ? (skipEmail ? 'Confirm and mark as sent' : 'Confirm and send') : 'Continue'}
           </button>
         </div>
       </form>

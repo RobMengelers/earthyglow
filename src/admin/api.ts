@@ -292,7 +292,7 @@ export async function fetchAdminOverview(
   return (await response.json()) as AdminOverview
 }
 
-export async function updateFulfillment(token: string, orderId: string, input: { status: 'open' | 'processed'; carrier?: string; trackingCode?: string }): Promise<AdminOrder> {
+export async function updateFulfillment(token: string, orderId: string, input: { status: 'open' | 'processed'; carrier?: string; trackingCode?: string; skipEmail?: boolean }): Promise<AdminOrder> {
   const response = await fetch(`${API_URL}/api/admin/orders/${orderId}/fulfillment`, { method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(input) })
   if (!response.ok) throw new Error((await response.json().catch(() => null) as { error?: string } | null)?.error ?? 'Could not update fulfillment')
   return (await response.json()) as AdminOrder

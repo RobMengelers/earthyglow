@@ -175,7 +175,7 @@ export default function OrdersPage() {
     )
   }
 
-  async function sendOrder(order: AdminOrder, carrier: string, trackingCode: string) {
+  async function sendOrder(order: AdminOrder, carrier: string, trackingCode: string, skipEmail: boolean) {
     if (!token) return
     setBusy(true)
     try {
@@ -184,6 +184,7 @@ export default function OrdersPage() {
           status: 'processed',
           carrier,
           trackingCode,
+          skipEmail,
         }),
       )
       setDialog(null)
@@ -368,8 +369,8 @@ export default function OrdersPage() {
               order={dialog.order}
               busy={busy}
               onClose={() => setDialog(null)}
-              onConfirm={({ carrier, trackingCode }) =>
-                void sendOrder(dialog.order, carrier, trackingCode)
+              onConfirm={({ carrier, trackingCode, skipEmail }) =>
+                void sendOrder(dialog.order, carrier, trackingCode, skipEmail)
               }
             />
           )}
