@@ -2,8 +2,9 @@ import { useEffect, useRef, type RefObject } from 'react'
 import { useLocale } from './hooks'
 
 // Entry animations of the page (see Hero.css) that replay on a language switch:
-// the hero text rising in and the hero image scaling in.
-const REPLAYED_ANIMATIONS = new Set(['riseUp', 'visualIn'])
+// the hero text rising in and the hero image scaling (desktop) or settling
+// (mobile) in.
+const REPLAYED_ANIMATIONS = new Set(['riseUp', 'visualIn', 'visualInSoft'])
 
 /**
  * Replays the page's entry animations when the visitor switches language, so
