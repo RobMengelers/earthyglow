@@ -1,4 +1,4 @@
-import { formatPrice } from '../lib/price.ts'
+import { formatPriceFor, type Locale } from '../i18n/locales.ts'
 
 export type Product = {
   id: string
@@ -48,7 +48,17 @@ export type Collection = {
   products: Product[]
 }
 
-export function productPriceLabel(product: Product): string {
+const FROM: Record<Locale, string> = { en: 'From', nl: 'Vanaf', de: 'Ab' }
+
+/** The lowest price of a product, written "From €9,95" when its options cost different amounts. */
+export function productLowestCents(product: Product): number {
+  return Math.min(
+    product.priceCents,
+    ...(product.variants ?? []).map((variant) => variant.priceCents ?? product.priceCents),
+  )
+}
+
+export function productPriceLabel(product: Product, locale: Locale): string {
   const prices = [
     product.priceCents,
     ...(product.variants ?? []).map(
@@ -57,7 +67,8 @@ export function productPriceLabel(product: Product): string {
   ]
   const hasPriceRange = new Set(prices).size > 1
 
-  return `${hasPriceRange ? 'From ' : ''}${formatPrice(Math.min(...prices))}`
+  const price = formatPriceFor(locale, Math.min(...prices))
+  return hasPriceRange ? `${FROM[locale]} ${price}` : price
 }
 
 // The Natural Glow candles all share one colour range. White is the basic
@@ -89,8 +100,8 @@ function naturalGlowColors(
 export const collections: Collection[] = [
   {
     id: 'little-glow',
-    eyebrow: 'Scented Thealights',
-    title: 'Little Glow Thealights',
+    eyebrow: 'Scented Tealights',
+    title: 'Little Glow Tealights',
     blurb:
       'Hand-poured flower candles, arranged in boxes and baskets. A bouquet with a little something different.',
     products: [

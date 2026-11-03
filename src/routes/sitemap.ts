@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process'
 import { collections, heroImage, products } from '../data/products'
-import { absoluteUrl, canonicalUrl } from '../lib/seo'
+import { absoluteUrl, localizedUrl } from '../lib/seo'
+import { DEFAULT_LOCALE, LOCALES } from '../i18n/locales'
 
 type Page = {
   path: string
@@ -81,9 +82,19 @@ export function loader() {
 
   const xml =
     '<?xml version="1.0" encoding="UTF-8"?>\n' +
-    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n' +
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n' +
     pages
-      .map((page) => {
+      .flatMap((page) => LOCALES.map((locale) => ({ page, locale })))
+      .map(({ page, locale }) => {
+        // Every language version lists all of them, so search engines pair
+        // them up and show each visitor their own language.
+        const alternates = [
+          ...LOCALES.map(
+            (alternate) =>
+              `    <xhtml:link rel="alternate" hreflang="${alternate}" href="${localizedUrl(alternate, page.path)}"/>`,
+          ),
+          `    <xhtml:link rel="alternate" hreflang="x-default" href="${localizedUrl(DEFAULT_LOCALE, page.path)}"/>`,
+        ].join('\n')
         const images = (page.images ?? [])
           .map(
             (image) =>
@@ -92,8 +103,9 @@ export function loader() {
           .join('\n')
         return (
           `  <url>\n` +
-          `    <loc>${canonicalUrl(page.path)}</loc>\n` +
-          `    <lastmod>${lastmod(page.sources)}</lastmod>` +
+          `    <loc>${localizedUrl(locale, page.path)}</loc>\n` +
+          `    <lastmod>${lastmod(page.sources)}</lastmod>\n` +
+          alternates +
           (images ? `\n${images}` : '') +
           `\n  </url>`
         )

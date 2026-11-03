@@ -11,6 +11,7 @@ import {
 } from 'pdf-lib'
 import { env } from './env.js'
 import { describeLine } from './order-line.js'
+import { EMAIL, formatDateFor, formatEuroFor, INVOICE, LANGUAGE_NAMES, toLocale, type Locale } from './i18n.js'
 import { prisma } from './prisma.js'
 
 const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null
@@ -114,22 +115,11 @@ type InvoiceFonts = {
 }
 
 function formatEuro(cents: number): string {
-  return `€ ${(cents / 100).toLocaleString('nl-NL', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`
+  return formatEuroFor('en', cents)
 }
 
 function includedVatCents(totalCents: number): number {
   return Math.round((totalCents * 21) / 121)
-}
-
-function formatDate(date: Date): string {
-  return date.toLocaleDateString('nl-NL', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  })
 }
 
 type InvoiceLine = {
@@ -140,6 +130,7 @@ type InvoiceLine = {
 }
 
 type InvoiceData = {
+  locale: Locale
   orderNumber: string
   paidAt: Date
   customerName: string
@@ -164,6 +155,8 @@ type InvoiceData = {
 // result straight in.
 type InvoiceOrder = {
   orderNumber: string
+  // The storefront language of the order; older orders are English.
+  locale?: string
   paidAt: Date | null
   updatedAt: Date
   address: string
@@ -326,7 +319,9 @@ async function generateInvoicePdf(
   const wordmarkW = fonts.display.widthOfTextAtSize(wordmarkText, wordmarkSize)
   draw(wordmarkText, center - wordmarkW / 2, 790, wordmarkSize, INK, fonts.display)
 
-  eyebrowCentered('HAND-POURED CANDLES · INVOICE', 760, CLAY)
+  const t = INVOICE[data.locale]
+  const euro = (cents: number) => formatEuroFor(data.locale, cents)
+  eyebrowCentered(t.tagline, 760, CLAY)
   page.drawRectangle({
     x: center - 10,
     y: 770.5,
@@ -338,7 +333,7 @@ async function generateInvoicePdf(
 
   // ---- Billed to / invoice meta ----
   const yBill = 712
-  eyebrow('BILLED TO', contentLeft, yBill, CLAY)
+  eyebrow(t.billedTo, contentLeft, yBill, CLAY)
   draw(data.customerName, contentLeft, yBill - 18, 13, INK, fonts.display)
   draw(data.customerAddress, contentLeft, yBill - 38, 9.5, BODY, fonts.body)
   draw(
@@ -353,11 +348,11 @@ async function generateInvoicePdf(
   draw(data.customerEmail, contentLeft, yBill - 77, 9.5, BODY, fonts.body)
 
   const metaRight = contentRight
-  eyebrowRight('INVOICE', metaRight, yBill, CLAY, 2.5, 7.5)
+  eyebrowRight(t.invoice, metaRight, yBill, CLAY, 2.5, 7.5)
   const invSize = 20
   drawRight(data.orderNumber, metaRight, yBill - 24, invSize, INK, fonts.display)
   drawRight(
-    `Paid on ${formatDate(data.paidAt)}`,
+    t.paidOn(formatDateFor(data.locale, data.paidAt)),
     metaRight,
     yBill - 44,
     9.5,
@@ -365,7 +360,7 @@ async function generateInvoicePdf(
     fonts.body,
   )
   drawRight(
-    `Order ${data.orderNumber}`,
+    t.order(data.orderNumber),
     metaRight,
     yBill - 57,
     9.5,
@@ -383,10 +378,10 @@ async function generateInvoicePdf(
   const unitRight = contentLeft + columnWidth * 3
 
   const tableHeader = (yy: number) => {
-    eyebrow('DESCRIPTION', contentLeft, yy, CLAY, 1.8)
-    eyebrowRight('QTY', qtyRight, yy, CLAY, 1.8)
-    eyebrowRight('UNIT PRICE', unitRight, yy, CLAY, 1.8)
-    eyebrowRight('AMOUNT', amountRight, yy, CLAY, 1.8)
+    eyebrow(t.description, contentLeft, yy, CLAY, 1.8)
+    eyebrowRight(t.qty, qtyRight, yy, CLAY, 1.8)
+    eyebrowRight(t.unitPrice, unitRight, yy, CLAY, 1.8)
+    eyebrowRight(t.amount, amountRight, yy, CLAY, 1.8)
   }
 
   let y = 596
@@ -406,9 +401,9 @@ async function generateInvoicePdf(
     }
     draw(line.name, contentLeft, y, 10, INK, fonts.body)
     drawRight(String(line.quantity), qtyRight, y, 10, INK, fonts.body)
-    drawRight(formatEuro(line.unitPriceCents), unitRight, y, 10, INK, fonts.body)
+    drawRight(euro(line.unitPriceCents), unitRight, y, 10, INK, fonts.body)
     drawRight(
-      formatEuro(line.lineTotalCents),
+      euro(line.lineTotalCents),
       amountRight,
       y,
       10,
@@ -422,15 +417,15 @@ async function generateInvoicePdf(
   // ---- Totals ----
   const labelRight = amountRight - 150
   y -= 14
-  drawRight(data.pricesIncludeVat === false ? 'Subtotal excl. VAT' : 'Subtotal', labelRight, y, 10, BODY, fonts.body)
-  drawRight(formatEuro(data.subtotalCents), amountRight, y, 10, INK, fonts.body)
+  drawRight(data.pricesIncludeVat === false ? t.subtotalExVat : t.subtotal, labelRight, y, 10, BODY, fonts.body)
+  drawRight(euro(data.subtotalCents), amountRight, y, 10, INK, fonts.body)
   y -= 20
-  drawRight('Shipping', labelRight, y, 10, BODY, fonts.body)
-  drawRight(formatEuro(data.shippingCents), amountRight, y, 10, INK, fonts.body)
+  drawRight(t.shipping, labelRight, y, 10, BODY, fonts.body)
+  drawRight(euro(data.shippingCents), amountRight, y, 10, INK, fonts.body)
   y -= 20
   if (data.discountCents > 0) {
     drawRight(
-      `Discount (${data.couponCode ?? 'coupon'})`,
+      t.discount(data.couponCode ?? '—'),
       labelRight,
       y,
       10,
@@ -438,7 +433,7 @@ async function generateInvoicePdf(
       fonts.body,
     )
     drawRight(
-      `-${formatEuro(data.discountCents)}`,
+      `-${euro(data.discountCents)}`,
       amountRight,
       y,
       10,
@@ -449,11 +444,11 @@ async function generateInvoicePdf(
   }
   y -= 10
   rule(y + 18, 0.8)
-  drawRight('Total', labelRight, y, 14, INK, fonts.displaySemibold)
-  drawRight(formatEuro(data.totalCents), amountRight, y, 14, CLAY, fonts.displaySemibold)
+  drawRight(t.total, labelRight, y, 14, INK, fonts.displaySemibold)
+  drawRight(euro(data.totalCents), amountRight, y, 14, CLAY, fonts.displaySemibold)
   y -= 17
   drawRight(
-    data.pricesIncludeVat === false ? 'Without VAT' : `(incl. 21% VAT: ${formatEuro(includedVatCents(data.totalCents))})`,
+    data.pricesIncludeVat === false ? t.withoutVat : t.inclVat(euro(includedVatCents(data.totalCents))),
     amountRight,
     y,
     8.5,
@@ -465,7 +460,7 @@ async function generateInvoicePdf(
   if (data.couponCode && data.discountCents === 0) {
     y -= 14
     drawRight(
-      `Coupon ${data.couponCode} applied — free shipping`,
+      t.freeShippingCoupon(data.couponCode),
       amountRight,
       y,
       8.5,
@@ -498,7 +493,7 @@ async function generateInvoicePdf(
     color: CLAY_SOFT,
   })
 
-  const thanks = 'Thank you for your order.'
+  const thanks = t.thanks
   const thanksSize = 11
   const thanksW = fonts.displayItalic.widthOfTextAtSize(thanks, thanksSize)
   draw(
@@ -510,7 +505,7 @@ async function generateInvoicePdf(
     fonts.displayItalic,
   )
 
-  const foot = 'Questions about this invoice?'
+  const foot = t.questions
   const footSize = 9
   const footW = fonts.body.widthOfTextAtSize(foot, footSize)
   draw(foot, center - footW / 2, 42, footSize, BODY, fonts.body)
@@ -518,10 +513,11 @@ async function generateInvoicePdf(
   return doc.save()
 }
 
-function renderCustomerEmail(content: string): string {
+function renderCustomerEmail(content: string, locale: Locale): string {
+  const t = EMAIL[locale]
   return `
     <!doctype html>
-    <html>
+    <html lang="${locale}">
       <body style="margin:0; background:#fbf7f0; font-family:Arial,Helvetica,sans-serif; color:#2e2a25;">
         <div style="max-width:620px; margin:0 auto; padding:32px 22px;">
           <div style="padding:18px 0 22px; border-bottom:1px solid #e3d8c8;">
@@ -530,9 +526,9 @@ function renderCustomerEmail(content: string): string {
           </div>
           ${content}
           <div style="margin-top:30px; padding-top:22px; border-top:1px solid #e3d8c8; color:#6b6157; line-height:1.6;">
-            With love,<br />
+            ${t.signoff}<br />
             <strong style="font-family:Georgia,serif; font-size:18px; color:#5f3b25;">Naomi</strong><br />
-            <span style="font-size:13px;">Founder of EarthyGlow</span>
+            <span style="font-size:13px;">${t.role}</span>
           </div>
         </div>
       </body>
@@ -561,7 +557,9 @@ function customerDisplayName(customer: {
 // emailed to the customer and the PDF downloaded from the admin portal are
 // always identical.
 function buildInvoiceData(order: InvoiceOrder): InvoiceData {
+  const locale = toLocale(order.locale)
   return {
+    locale,
     orderNumber: order.orderNumber,
     paidAt: order.paidAt ?? order.updatedAt,
     customerName: customerDisplayName(order.customer),
@@ -578,7 +576,7 @@ function buildInvoiceData(order: InvoiceOrder): InvoiceData {
     couponCode: order.couponCode ?? null,
     couponType: order.couponType ?? null,
     lines: order.items.map((item) => ({
-      name: describeLine(item.name, item.variantLabel, item.colorLabel),
+      name: describeLine(item.name, item.variantLabel, item.colorLabel, locale),
       quantity: item.quantity,
       unitPriceCents: item.unitPriceCents,
       lineTotalCents: item.lineTotalCents,
@@ -650,44 +648,47 @@ export async function sendOrderInvoice(
   }
 
   const pdf = await archiveInvoicePdf(order)
+  const locale = toLocale(order.locale)
+  const t = EMAIL[locale]
+  const euro = (cents: number) => formatEuroFor(locale, cents)
 
   const productRows = order.items
     .map(
       (item) =>
         `<tr>
-          <td style="padding:11px 16px; color:#2e2a25;">${escapeHtml(describeLine(item.name, item.variantLabel, item.colorLabel))}</td>
+          <td style="padding:11px 16px; color:#2e2a25;">${escapeHtml(describeLine(item.name, item.variantLabel, item.colorLabel, locale))}</td>
           <td style="padding:11px 16px; text-align:right; color:#6b6157; white-space:nowrap;">${item.quantity}</td>
-          <td style="padding:11px 16px; text-align:right; color:#6b6157; white-space:nowrap;">${formatEuro(item.unitPriceCents)}</td>
-          <td style="padding:11px 16px; text-align:right; color:#5f3b25; font-weight:bold; white-space:nowrap;">${formatEuro(item.lineTotalCents)}</td>
+          <td style="padding:11px 16px; text-align:right; color:#6b6157; white-space:nowrap;">${euro(item.unitPriceCents)}</td>
+          <td style="padding:11px 16px; text-align:right; color:#5f3b25; font-weight:bold; white-space:nowrap;">${euro(item.lineTotalCents)}</td>
         </tr>`,
     )
     .join('')
 
   const html = renderCustomerEmail(`
           <div style="padding:34px 0 12px;">
-            <p style="margin:0 0 10px; color:#5f3b25; font-size:12px; font-weight:bold; letter-spacing:2px; text-transform:uppercase;">A little note from EarthyGlow</p>
-            <h2 style="margin:0 0 18px; font-family:Georgia,serif; font-size:30px; font-weight:normal; color:#2e2a25;">Thank you, ${escapeHtml(order.customer.firstName)}.</h2>
-            <p style="color:#6b6157; line-height:1.7;">Your order <strong>${order.orderNumber}</strong> is safely paid and your invoice is attached. I’ll get your candles ready and pack them with care.</p>
-            <p style="color:#6b6157; line-height:1.7;">Here’s what you ordered:</p>
+            <p style="margin:0 0 10px; color:#5f3b25; font-size:12px; font-weight:bold; letter-spacing:2px; text-transform:uppercase;">${t.eyebrow}</p>
+            <h2 style="margin:0 0 18px; font-family:Georgia,serif; font-size:30px; font-weight:normal; color:#2e2a25;">${t.invoice.title(escapeHtml(order.customer.firstName))}</h2>
+            <p style="color:#6b6157; line-height:1.7;">${t.invoice.paid(escapeHtml(order.orderNumber))}</p>
+            <p style="color:#6b6157; line-height:1.7;">${t.invoice.ordered}</p>
           </div>
           <table style="border-collapse:collapse; width:100%; margin:0 0 24px; background:#fffdf8; border:1px solid #e3d8c8; border-radius:12px; overflow:hidden;">
             <thead>
               <tr>
-                <th style="padding:10px 16px; text-align:left; color:#5f3b25; font-size:11px; font-weight:bold; letter-spacing:1.5px; text-transform:uppercase; background:#f4ecdd;">Description</th>
-                <th style="padding:10px 16px; text-align:right; color:#5f3b25; font-size:11px; font-weight:bold; letter-spacing:1.5px; text-transform:uppercase; background:#f4ecdd;">Qty</th>
-                <th style="padding:10px 16px; text-align:right; color:#5f3b25; font-size:11px; font-weight:bold; letter-spacing:1.5px; text-transform:uppercase; background:#f4ecdd;">Unit price</th>
-                <th style="padding:10px 16px; text-align:right; color:#5f3b25; font-size:11px; font-weight:bold; letter-spacing:1.5px; text-transform:uppercase; background:#f4ecdd;">Amount</th>
+                <th style="padding:10px 16px; text-align:left; color:#5f3b25; font-size:11px; font-weight:bold; letter-spacing:1.5px; text-transform:uppercase; background:#f4ecdd;">${t.invoice.description}</th>
+                <th style="padding:10px 16px; text-align:right; color:#5f3b25; font-size:11px; font-weight:bold; letter-spacing:1.5px; text-transform:uppercase; background:#f4ecdd;">${t.invoice.qty}</th>
+                <th style="padding:10px 16px; text-align:right; color:#5f3b25; font-size:11px; font-weight:bold; letter-spacing:1.5px; text-transform:uppercase; background:#f4ecdd;">${t.invoice.unitPrice}</th>
+                <th style="padding:10px 16px; text-align:right; color:#5f3b25; font-size:11px; font-weight:bold; letter-spacing:1.5px; text-transform:uppercase; background:#f4ecdd;">${t.invoice.amount}</th>
               </tr>
             </thead>
             <tbody>${productRows}</tbody>
           </table>
-          <p style="color:#6b6157; line-height:1.6;">Your invoice PDF is attached.</p>
-  `)
+          <p style="color:#6b6157; line-height:1.6;">${t.invoice.attached}</p>
+  `, locale)
 
   const { error } = await resend!.emails.send({
     from: env.EMAIL_FROM,
     to: [order.customer.email],
-    subject: 'Your EarthyGlow invoice',
+    subject: t.invoice.subject,
     html,
     attachments: [
       {
@@ -718,7 +719,7 @@ export async function sendNewOrderNotification(orderNumber: string): Promise<boo
     from: env.EMAIL_FROM,
     to: ['earthyglowcandles@gmail.com'],
     subject: 'New EarthyGlow order',
-    html: `<div style="font-family:Arial,sans-serif;color:#2e2a25;max-width:620px;padding:28px"><h2 style="font-family:Georgia,serif;color:#5f3b25">A new order has arrived</h2><p>Order <strong>${escapeHtml(order.orderNumber)}</strong> has been paid.</p><p><strong>${escapeHtml(customerDisplayName(order.customer))}</strong><br />${escapeHtml(order.customer.email ?? MISSING_DETAIL)}</p><ul>${lines}</ul><p><strong>Total: ${formatEuro(order.totalCents)}</strong></p></div>`,
+    html: `<div style="font-family:Arial,sans-serif;color:#2e2a25;max-width:620px;padding:28px"><h2 style="font-family:Georgia,serif;color:#5f3b25">A new order has arrived</h2><p>Order <strong>${escapeHtml(order.orderNumber)}</strong> has been paid.</p><p><strong>${escapeHtml(customerDisplayName(order.customer))}</strong><br />${escapeHtml(order.customer.email ?? MISSING_DETAIL)}<br />Language: ${LANGUAGE_NAMES[toLocale(order.locale)]}</p><ul>${lines}</ul><p><strong>Total: ${formatEuro(order.totalCents)}</strong></p></div>`,
   })
   if (error) throw new Error(`Resend rejected new-order notification: ${error.message}`)
   return true
@@ -736,12 +737,14 @@ export async function sendContactMessage(input: {
   name: string
   email: string
   message: string
+  locale?: Locale
 }): Promise<void> {
   if (!emailEnabled) {
     throw new Error('Email is not configured')
   }
 
-  const text = `Name: ${input.name}\nEmail: ${input.email}\n\nMessage:\n${input.message}`
+  const language = LANGUAGE_NAMES[input.locale ?? 'en']
+  const text = `Name: ${input.name}\nEmail: ${input.email}\nLanguage: ${language}\n\nMessage:\n${input.message}`
   const html = `
     <p style="color:#6b6157;">New message from the contact form:</p>
     <table style="border-collapse: collapse; color:#2e2a25; font-size:14px;">
@@ -749,6 +752,8 @@ export async function sendContactMessage(input: {
           <td style="padding:4px 0;">${escapeHtml(input.name)}</td></tr>
       <tr><td style="padding:4px 16px 4px 0; color:#6b6157;">Email</td>
           <td style="padding:4px 0;">${escapeHtml(input.email)}</td></tr>
+      <tr><td style="padding:4px 16px 4px 0; color:#6b6157;">Language</td>
+          <td style="padding:4px 0;">${language}</td></tr>
     </table>
     <blockquote style="margin:16px 0; padding:12px 16px; border-left:3px solid #5f3b25;
       background:#f4ecdd; color:#2e2a25; white-space:pre-wrap;">
@@ -772,52 +777,57 @@ export async function sendContactMessage(input: {
 
 export async function sendFulfillmentEmail(order: {
   orderNumber: string
+  locale?: string
   carrier: string | null
   trackingCode: string | null
   customer: { firstName: string; email: string | null }
 }): Promise<boolean> {
   if (!resend || !emailEnabled) return false
   if (!order.customer.email) return false
+  const locale = toLocale(order.locale)
+  const t = EMAIL[locale]
+  const f = t.fulfillment
   const { error } = await resend.emails.send({
     from: env.EMAIL_FROM,
     to: [order.customer.email],
-    subject: 'Your EarthyGlow order is on its way',
+    subject: f.subject,
     html: renderCustomerEmail(`
           <div style="padding:34px 0 12px;">
-            <p style="margin:0 0 10px; color:#5f3b25; font-size:12px; font-weight:bold; letter-spacing:2px; text-transform:uppercase;">A little note from EarthyGlow</p>
-            <h2 style="margin:0 0 18px; font-family:Georgia,serif; font-size:30px; font-weight:normal; color:#2e2a25;">Your glow is on its way.</h2>
-            <p style="color:#6b6157; line-height:1.7;">Hi ${escapeHtml(order.customer.firstName)},</p>
-            <p style="color:#6b6157; line-height:1.7;">Your order <strong>${escapeHtml(order.orderNumber)}</strong> has been packed with care and handed to the carrier. I hope you enjoy your candles.</p>
+            <p style="margin:0 0 10px; color:#5f3b25; font-size:12px; font-weight:bold; letter-spacing:2px; text-transform:uppercase;">${t.eyebrow}</p>
+            <h2 style="margin:0 0 18px; font-family:Georgia,serif; font-size:30px; font-weight:normal; color:#2e2a25;">${f.title}</h2>
+            <p style="color:#6b6157; line-height:1.7;">${f.hi(escapeHtml(order.customer.firstName))}</p>
+            <p style="color:#6b6157; line-height:1.7;">${f.body(escapeHtml(order.orderNumber))}</p>
           </div>
           <table style="border-collapse:collapse; width:100%; margin:16px 0 24px; background:#fffdf8; border:1px solid #e3d8c8; border-radius:12px;">
-            <tr><td style="padding:12px 16px; color:#6b6157;">Order</td><td style="padding:12px 16px; text-align:right;"><strong>${escapeHtml(order.orderNumber)}</strong></td></tr>
-            <tr><td style="padding:12px 16px; color:#6b6157;">Carrier</td><td style="padding:12px 16px; text-align:right;">${escapeHtml(order.carrier ?? 'Not provided')}</td></tr>
-            <tr><td style="padding:12px 16px; color:#6b6157;">Track &amp; trace</td><td style="padding:12px 16px; text-align:right; color:#5f3b25; overflow-wrap:anywhere; word-break:break-all;"><strong>${escapeHtml(order.trackingCode ?? 'Not provided')}</strong></td></tr>
+            <tr><td style="padding:12px 16px; color:#6b6157;">${f.order}</td><td style="padding:12px 16px; text-align:right;"><strong>${escapeHtml(order.orderNumber)}</strong></td></tr>
+            <tr><td style="padding:12px 16px; color:#6b6157;">${f.carrier}</td><td style="padding:12px 16px; text-align:right;">${escapeHtml(order.carrier ?? f.notProvided)}</td></tr>
+            <tr><td style="padding:12px 16px; color:#6b6157;">${f.tracking}</td><td style="padding:12px 16px; text-align:right; color:#5f3b25; overflow-wrap:anywhere; word-break:break-all;"><strong>${escapeHtml(order.trackingCode ?? f.notProvided)}</strong></td></tr>
           </table>
-          <p style="color:#6b6157; line-height:1.6;">Use your tracking code on the carrier’s website to follow your parcel. Tracking updates may take a little time to appear.</p>
-          <p style="color:#6b6157; line-height:1.6;">Thank you for supporting my small business.</p>
-    `),
+          <p style="color:#6b6157; line-height:1.6;">${f.trackingNote}</p>
+          <p style="color:#6b6157; line-height:1.6;">${f.thanks}</p>
+    `, locale),
   })
   if (error) throw new Error(`Resend rejected fulfillment email: ${error.message}`)
   return true
 }
 
-export async function sendRefundEmail(order: { orderNumber: string; totalCents: number; customer: { firstName: string; email: string | null } }): Promise<boolean> {
+export async function sendRefundEmail(order: { orderNumber: string; locale?: string; totalCents: number; customer: { firstName: string; email: string | null } }): Promise<boolean> {
   if (!resend || !emailEnabled) return false
   if (!order.customer.email) return false
+  const locale = toLocale(order.locale)
+  const t = EMAIL[locale]
   const { error } = await resend.emails.send({
     from: env.EMAIL_FROM,
     to: [order.customer.email],
-    subject: 'Your EarthyGlow refund',
+    subject: t.refund.subject,
     html: renderCustomerEmail(`
           <div style="padding:34px 0 12px;">
-            <p style="margin:0 0 10px; color:#5f3b25; font-size:12px; font-weight:bold; letter-spacing:2px; text-transform:uppercase;">A little note from EarthyGlow</p>
-            <h2 style="margin:0 0 18px; font-family:Georgia,serif; font-size:30px; font-weight:normal; color:#2e2a25;">Your refund has been arranged.</h2>
-            <p style="color:#6b6157; line-height:1.7;">Hi ${escapeHtml(order.customer.firstName)},</p>
-            <p style="color:#6b6157; line-height:1.7;">We’ve sent a full refund of <strong>${formatEuro(order.totalCents)}</strong> for order <strong>${escapeHtml(order.orderNumber)}</strong> to Mollie. The time it takes to appear depends on your bank or payment provider.</p>
+            <p style="margin:0 0 10px; color:#5f3b25; font-size:12px; font-weight:bold; letter-spacing:2px; text-transform:uppercase;">${t.eyebrow}</p>
+            <h2 style="margin:0 0 18px; font-family:Georgia,serif; font-size:30px; font-weight:normal; color:#2e2a25;">${t.refund.title}</h2>
+            <p style="color:#6b6157; line-height:1.7;">${t.refund.hi(escapeHtml(order.customer.firstName))}</p>
+            <p style="color:#6b6157; line-height:1.7;">${t.refund.body(formatEuroFor(locale, order.totalCents), escapeHtml(order.orderNumber))}</p>
           </div>
-          <p style="color:#6b6157; line-height:1.6;">With love,<br /><strong>Naomi</strong><br /><small>Founder of EarthyGlow</small></p>
-    `),
+    `, locale),
   })
   if (error) throw new Error(`Resend rejected refund email: ${error.message}`)
   return true

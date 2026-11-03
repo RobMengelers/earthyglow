@@ -7,6 +7,7 @@ import {
   normalizeCouponCode,
 } from '../coupon.js'
 import { prisma } from '../prisma.js'
+import { MESSAGES, toLocale } from '../i18n.js'
 
 const bodySchema = z.object({
   code: z.string().trim().min(1).max(COUPON_CODE_MAX_LENGTH),
@@ -21,18 +22,20 @@ export async function couponRoutes(app: FastifyInstance) {
     '/api/coupons/validate',
     { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } },
     async (request, reply) => {
+      const locale = toLocale((request.body as { locale?: unknown } | null)?.locale)
+      const t = MESSAGES[locale]
       const parsed = bodySchema.safeParse(request.body)
       if (!parsed.success) {
-        return reply.code(400).send({ error: 'Enter a coupon code.' })
+        return reply.code(400).send({ error: t.couponEnter })
       }
 
       const code = normalizeCouponCode(parsed.data.code)
       const coupon = await prisma.coupon.findUnique({ where: { code } })
       if (!coupon) {
-        return reply.code(404).send({ error: 'That coupon code is not valid.' })
+        return reply.code(404).send({ error: t.couponInvalid })
       }
 
-      const problem = couponProblem(coupon)
+      const problem = couponProblem(coupon, new Date(), locale)
       if (problem) {
         return reply.code(400).send({ error: problem })
       }
@@ -41,6 +44,7 @@ export async function couponRoutes(app: FastifyInstance) {
         code: coupon.code,
         type: coupon.type,
         percentOff: coupon.percentOff,
+        amountOffCents: coupon.amountOffCents,
         description: coupon.description,
         summary: couponSummary(coupon),
       })

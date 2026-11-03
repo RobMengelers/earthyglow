@@ -1,5 +1,6 @@
-import { Link } from 'react-router'
-import { formatPrice, type CartItem } from '../CartContext'
+import type { CartItem } from '../CartContext'
+import { defineCopy, Link, useCopy, useFormatPrice, useLocale } from '../../i18n'
+import { optionLabel } from '../../i18n/options'
 import { useCart } from '../useCart'
 import { imageAttrs, SIZES } from '../../lib/images'
 
@@ -10,8 +11,32 @@ type CartLineProps = {
   onNavigate?: () => void
 }
 
+const lineCopy = defineCopy({
+  en: {
+    remove: 'Remove',
+    removeItem: (name: string) => `Remove ${name}`,
+    decrease: (name: string) => `Decrease quantity of ${name}`,
+    increase: (name: string) => `Increase quantity of ${name}`,
+  },
+  nl: {
+    remove: 'Verwijderen',
+    removeItem: (name: string) => `${name} verwijderen`,
+    decrease: (name: string) => `Aantal van ${name} verlagen`,
+    increase: (name: string) => `Aantal van ${name} verhogen`,
+  },
+  de: {
+    remove: 'Entfernen',
+    removeItem: (name: string) => `${name} entfernen`,
+    decrease: (name: string) => `Menge von ${name} verringern`,
+    increase: (name: string) => `Menge von ${name} erhöhen`,
+  },
+})
+
 export function CartLine({ item, compact = false, tabIndex, onNavigate }: CartLineProps) {
   const { updateQuantity, removeItem } = useCart()
+  const copy = useCopy(lineCopy)
+  const locale = useLocale()
+  const formatPrice = useFormatPrice()
 
   return (
     <li className="cart-line">
@@ -36,17 +61,17 @@ export function CartLine({ item, compact = false, tabIndex, onNavigate }: CartLi
             onClick={onNavigate}
           >
             {item.name}
-            {item.variantLabel && <small className="cart-line-variant">{item.variantLabel}</small>}
-            {item.colorLabel && <small className="cart-line-variant">{item.colorLabel}</small>}
+            {item.variantLabel && <small className="cart-line-variant">{optionLabel(item.variantLabel, locale)}</small>}
+            {item.colorLabel && <small className="cart-line-variant">{optionLabel(item.colorLabel, locale)}</small>}
           </Link>
           <button
             type="button"
             className="cart-line-remove"
-            aria-label={`Remove ${item.name}`}
+            aria-label={copy.removeItem(item.name)}
             tabIndex={tabIndex}
             onClick={() => removeItem(item.id)}
           >
-            {compact ? '\u00d7' : 'Remove'}
+            {compact ? '\u00d7' : copy.remove}
           </button>
         </div>
         <p className="cart-line-collection">{item.collectionTitle}</p>
@@ -54,7 +79,7 @@ export function CartLine({ item, compact = false, tabIndex, onNavigate }: CartLi
           <div className="qty-stepper">
             <button
               type="button"
-              aria-label={`Decrease quantity of ${item.name}`}
+              aria-label={copy.decrease(item.name)}
               tabIndex={tabIndex}
               onClick={() => updateQuantity(item.id, item.quantity - 1)}
             >
@@ -63,7 +88,7 @@ export function CartLine({ item, compact = false, tabIndex, onNavigate }: CartLi
             <span aria-live="polite">{item.quantity}</span>
             <button
               type="button"
-              aria-label={`Increase quantity of ${item.name}`}
+              aria-label={copy.increase(item.name)}
               tabIndex={tabIndex}
               onClick={() => updateQuantity(item.id, item.quantity + 1)}
             >

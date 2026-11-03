@@ -47,6 +47,29 @@ its `white/` folder. `src/data/products.ts` holds the palette and points every
 colour at its pictures; the backend mirrors the palette in the `ProductColor`
 table, so add a colour there with a migration as well.
 
+## Languages
+
+The storefront speaks Dutch, English and German. Every public page lives under
+its language: `/nl/…`, `/en/…`, `/de/…`. Opening `/` or a link from before the
+site had languages (`/shop`, `/product/…`) redirects to the same page in the
+visitor's language: a flag picked in the switcher (the `lang` cookie) wins, then
+the browser's languages, then English. The admin is not translated.
+
+- Page text lives next to each component in a `defineCopy({ en, nl, de })`
+  table (`src/i18n`). TypeScript fails the build when a language is missing.
+- Use `Link`/`NavLink` from `src/i18n`, not from `react-router`: they keep
+  absolute paths (`to="/shop"`) in the current language.
+- Product names, collection titles and fragrance names are names and are never
+  translated. Product descriptions, collection eyebrows/blurbs and seasons are
+  translated in `src/data/catalog-i18n.ts`; a new product needs a Dutch and a
+  German description there (`npm --prefix server test` checks this).
+- Option labels (colours, sizes, shapes) stay English in carts and orders and
+  are translated for display in `src/i18n/options.ts`, mirrored by
+  `server/src/i18n.ts` for emails and invoices.
+- Every order stores its `locale`; the customer's invoice, emails and the Mollie
+  payment page follow it. Orders recorded in the admin pick an invoice language
+  (Dutch by default).
+
 ## Frontend structure
 
 ```text

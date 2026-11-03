@@ -1,5 +1,6 @@
 import type { CartItem } from './CartContext'
 import { API_URL } from './catalog'
+import type { Locale } from '../i18n/locales'
 
 type CheckoutDetails = {
   firstName: string
@@ -20,6 +21,8 @@ export type OrderPayload = {
   paymentMethod?: string
   // The coupon code the customer entered. The API checks it again.
   couponCode?: string
+  /** The language the customer shopped in: it picks the Mollie page, emails and invoice language. */
+  locale: Locale
 }
 
 export type PaymentMethodOption = {
@@ -84,6 +87,7 @@ async function postToApi(payload: OrderPayload): Promise<OrderResult> {
       },
       notes: details.notes,
       paymentMethod: payload.paymentMethod,
+      locale: payload.locale,
       ...(payload.couponCode ? { couponCode: payload.couponCode } : {}),
     }),
   })
@@ -94,7 +98,7 @@ async function postToApi(payload: OrderPayload): Promise<OrderResult> {
       couponInvalid?: boolean
     } | null
     throw new CheckoutError(
-      body?.error ?? 'We could not start your payment.',
+      body?.error ?? PAYMENT_FAILED[payload.locale],
       Boolean(body?.couponInvalid),
     )
   }
@@ -154,9 +158,15 @@ export const KLARNA_COUNTRIES = new Set([
   'HU', 'IE', 'IT', 'NL', 'NO', 'PL', 'PT', 'RO', 'SE', 'SK', 'CH',
 ])
 
-export async function fetchPaymentMethods(): Promise<PaymentMethodOption[]> {
+const PAYMENT_FAILED: Record<Locale, string> = {
+  en: 'We could not start your payment.',
+  nl: 'We konden je betaling niet starten.',
+  de: 'Wir konnten deine Zahlung nicht starten.',
+}
+
+export async function fetchPaymentMethods(locale: Locale): Promise<PaymentMethodOption[]> {
   try {
-    const response = await fetch(`${API_URL}/api/payment-methods`)
+    const response = await fetch(`${API_URL}/api/payment-methods?locale=${locale}`)
     if (!response.ok) return FALLBACK_PAYMENT_METHODS
     const data = (await response.json()) as { methods?: PaymentMethodOption[] }
     return Array.isArray(data.methods) && data.methods.length > 0

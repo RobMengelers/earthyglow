@@ -1,22 +1,94 @@
 import { useEffect, useRef } from 'react'
-import { Link, useParams, useSearchParams } from 'react-router'
+import { useParams, useSearchParams } from 'react-router'
 import { collections, getCollection } from '../../data/products'
 import { filterProducts, getSeason, seasons, holidays } from '../../data/seasons'
 import { ProductCard } from '../../components/catalog/ProductCard'
 import { Reveal } from '../../components/ui/Reveal'
 import { JsonLd } from '../../components/seo/JsonLd'
-import { breadcrumbLd, canonicalUrl, siteMeta } from '../../lib/seo'
+import { breadcrumbLd, localizedUrl, siteMeta } from '../../lib/seo'
+import { localizedCollection, localizedSeason } from '../../data/catalog-i18n'
+import { defineCopy, Link, localeFromParams, useCopy, useLocale } from '../../i18n'
 import type { Route } from './+types/Shop'
 
+const shopCopy = defineCopy({
+  en: {
+    metaTitle: 'Shop · Hand-poured Soy Candles · EarthyGlow',
+    description: 'Browse hand-poured soy wax candles from EarthyGlow: flower candle gifts, seasonal scents and sculptural shapes, made by hand in the Netherlands.',
+    home: 'Home',
+    shop: 'Shop',
+    breadcrumb: 'Breadcrumb',
+    favourites: (_id: string, label: string) => `${label} favourites`,
+    heading: 'Find your next little glow',
+    lede: 'Browse by season, or take a look at everything I’ve been making.',
+    eyebrow: 'Made by hand, chosen by you',
+    caption: 'A glow for every season',
+    bySeason: 'Shop by season',
+    all: 'All candles',
+    holidays: 'Holidays',
+    emptyEyebrow: 'A different little glow',
+    emptyTitle: 'No candles in this season just yet, check back in after November 1st',
+  },
+  nl: {
+    metaTitle: 'Shop · Handgegoten sojawaskaarsen · EarthyGlow',
+    description: 'Bekijk de handgegoten sojawaskaarsen van EarthyGlow: bloemkaarsjes als cadeau, seizoensgeuren en sculpturale vormen, met de hand gemaakt in Nederland.',
+    home: 'Home',
+    shop: 'Shop',
+    breadcrumb: 'Kruimelpad',
+    favourites: (id: string, label: string) =>
+      ({
+        summer: 'Zomerfavorieten',
+        spring: 'Lentefavorieten',
+        autumn: 'Herfstfavorieten',
+        winter: 'Winterfavorieten',
+        halloween: 'Halloweenfavorieten',
+        christmas: 'Kerstfavorieten',
+      } as Record<string, string>)[id] ?? `Favorieten: ${label}`,
+    heading: 'Vind jouw volgende kleine gloed',
+    lede: 'Kies per seizoen, of bekijk alles wat ik heb gemaakt.',
+    eyebrow: 'Met de hand gemaakt, door jou gekozen',
+    caption: 'Een gloed voor elk seizoen',
+    bySeason: 'Shop per seizoen',
+    all: 'Alle kaarsen',
+    holidays: 'Feestdagen',
+    emptyEyebrow: 'Een andere kleine gloed',
+    emptyTitle: 'Nog geen kaarsen voor dit seizoen, kijk na 1 november nog eens',
+  },
+  de: {
+    metaTitle: 'Shop · Handgegossene Sojawachskerzen · EarthyGlow',
+    description: 'Entdecke die handgegossenen Sojawachskerzen von EarthyGlow: Blumenkerzen als Geschenk, saisonale Düfte und skulpturale Formen, von Hand gemacht in den Niederlanden.',
+    home: 'Start',
+    shop: 'Shop',
+    breadcrumb: 'Brotkrümelnavigation',
+    favourites: (id: string, label: string) =>
+      ({
+        summer: 'Sommerlieblinge',
+        spring: 'Frühlingslieblinge',
+        autumn: 'Herbstlieblinge',
+        winter: 'Winterlieblinge',
+        halloween: 'Halloween-Lieblinge',
+        christmas: 'Weihnachtslieblinge',
+      } as Record<string, string>)[id] ?? `Lieblinge: ${label}`,
+    heading: 'Finde deinen nächsten kleinen Glanz',
+    lede: 'Stöbere nach Jahreszeit oder schau dir alles an, was ich gemacht habe.',
+    eyebrow: 'Von Hand gemacht, von dir ausgewählt',
+    caption: 'Ein Glanz für jede Jahreszeit',
+    bySeason: 'Nach Jahreszeit shoppen',
+    all: 'Alle Kerzen',
+    holidays: 'Feiertage',
+    emptyEyebrow: 'Ein anderer kleiner Glanz',
+    emptyTitle: 'Noch keine Kerzen für diese Saison, schau nach dem 1. November wieder vorbei',
+  },
+})
+
 export function meta({ params }: Route.MetaArgs) {
-  const collection = getCollection(params.collectionId)
+  const locale = localeFromParams(params)
+  const copy = shopCopy[locale]
+  const base = getCollection(params.collectionId)
+  const collection = base && localizedCollection(base, locale)
   return siteMeta({
-    title: collection
-      ? `${collection.title} · Shop · EarthyGlow`
-      : 'Shop · Hand-poured Soy Candles · EarthyGlow',
-    description:
-      collection?.blurb ??
-      'Browse hand-poured soy wax candles from EarthyGlow: flower candle gifts, seasonal scents and sculptural shapes, made by hand in the Netherlands.',
+    locale,
+    title: collection ? `${collection.title} · Shop · EarthyGlow` : copy.metaTitle,
+    description: collection?.blurb ?? copy.description,
     path: collection ? `/shop/${collection.id}` : '/shop',
   })
 }
@@ -24,8 +96,12 @@ export function meta({ params }: Route.MetaArgs) {
 export function Shop() {
   const { collectionId } = useParams()
   const [params] = useSearchParams()
-  const activeCollection = getCollection(collectionId)
-  const activeSeason = getSeason(params.get('season'))
+  const locale = useLocale()
+  const copy = useCopy(shopCopy)
+  const baseCollection = getCollection(collectionId)
+  const activeCollection = baseCollection && localizedCollection(baseCollection, locale)
+  const baseSeason = getSeason(params.get('season'))
+  const activeSeason = baseSeason && localizedSeason(baseSeason, locale)
   const seasonNavRef = useRef<HTMLElement>(null)
   useEffect(() => {
     const nav = seasonNavRef.current
@@ -126,16 +202,15 @@ export function Shop() {
   const groups = grouped
     ? collections
         .map((collection) => ({
-          collection,
+          collection: localizedCollection(collection, locale),
           products: shown.filter((product) => product.collectionId === collection.id),
         }))
         .filter((group) => group.products.length > 0)
     : []
   const heading = activeSeason
-    ? `${activeSeason.label} favourites`
-    : activeCollection?.title ?? 'Find your next little glow'
-  const lede = activeSeason?.description ?? activeCollection?.blurb ??
-    'Browse by season, or take a look at everything I’ve been making.'
+    ? copy.favourites(activeSeason.id, activeSeason.label)
+    : activeCollection?.title ?? copy.heading
+  const lede = activeSeason?.description ?? activeCollection?.blurb ?? copy.lede
 
   function filterUrl(seasonId?: string, glowId?: string) {
     const path = glowId ? `/shop/${glowId}` : '/shop'
@@ -143,8 +218,8 @@ export function Shop() {
   }
 
   const breadcrumbs = [
-    { name: 'Home', path: '/' },
-    { name: 'Shop', path: '/shop' },
+    { name: copy.home, path: '/' },
+    { name: copy.shop, path: '/shop' },
     ...(activeSeason || activeCollection
       ? [{ name: (activeSeason?.label ?? activeCollection?.eyebrow) as string }]
       : []),
@@ -152,7 +227,7 @@ export function Shop() {
 
   return (
     <>
-      <JsonLd data={breadcrumbLd(breadcrumbs)} />
+      <JsonLd data={breadcrumbLd(breadcrumbs, locale)} />
       {shown.length > 0 && (
         <JsonLd
           data={{
@@ -162,7 +237,7 @@ export function Shop() {
               '@type': 'ListItem',
               position: index + 1,
               name: product.name,
-              url: canonicalUrl(`/product/${product.id}`),
+              url: localizedUrl(locale, `/product/${product.id}`),
             })),
           }}
         />
@@ -170,10 +245,10 @@ export function Shop() {
       <section className="page-hero shop-hero">
         <div className="container">
           <Reveal>
-            <nav className="breadcrumb" aria-label="Breadcrumb">
-              <Link to="/" prefetch="intent">Home</Link>
+            <nav className="breadcrumb" aria-label={copy.breadcrumb}>
+              <Link to="/" prefetch="intent">{copy.home}</Link>
               <span aria-hidden="true">/</span>
-              <Link to="/shop" prefetch="intent">Shop</Link>
+              <Link to="/shop" prefetch="intent">{copy.shop}</Link>
               {(activeSeason || activeCollection) && (
                 <>
                   <span aria-hidden="true">/</span>
@@ -181,7 +256,7 @@ export function Shop() {
                 </>
               )}
             </nav>
-            <p className="eyebrow">Made by hand, chosen by you</p>
+            <p className="eyebrow">{copy.eyebrow}</p>
             <h1>{heading}</h1>
             <p className="section-lede">{lede}</p>
           </Reveal>
@@ -193,9 +268,9 @@ export function Shop() {
       <section className="shop-body">
         <div className="container">
           <Reveal className="shop-filters">
-            <p className="shop-filter-caption">A glow for every season</p>
-            <nav ref={seasonNavRef} className="season-nav" aria-label="Shop by season">
-              {[{ id: '', label: 'All candles' }, ...seasons].map((season) => {
+            <p className="shop-filter-caption">{copy.caption}</p>
+            <nav ref={seasonNavRef} className="season-nav" aria-label={copy.bySeason}>
+              {[{ id: '', label: copy.all }, ...seasons.map((season) => localizedSeason(season, locale))].map((season) => {
                 const selected = (activeSeason?.id ?? '') === season.id
                 const count = filterProducts(season.id || undefined).length
                 return (
@@ -220,7 +295,7 @@ export function Shop() {
                   aria-haspopup="true"
                   aria-expanded="false"
                 >
-                  <span>Holidays</span>
+                  <span>{copy.holidays}</span>
                   <svg className="season-chevron" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
                     <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
@@ -253,7 +328,7 @@ export function Shop() {
                   prefetch="intent"
                   preventScrollReset
                 >
-                  <span>{holiday.label}</span>
+                  <span>{localizedSeason(holiday, locale).label}</span>
                   <span className="season-count" aria-hidden="true">{String(count).padStart(2, '0')}</span>
                 </Link>
               )
@@ -295,8 +370,8 @@ export function Shop() {
             )
           ) : (
             <div className="shop-empty">
-              <p className="eyebrow">A different little glow</p>
-              <h2>No candles in this season just yet, check back in after november 1st</h2>
+              <p className="eyebrow">{copy.emptyEyebrow}</p>
+              <h2>{copy.emptyTitle}</h2>
             </div>
           )}
         </div>

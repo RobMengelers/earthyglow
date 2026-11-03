@@ -1,60 +1,65 @@
-import { Link } from 'react-router'
 import { Reveal } from '../../components/ui/Reveal'
 import { Divider } from '../../components/ui/Divider'
 import { JsonLd } from '../../components/seo/JsonLd'
 import { breadcrumbLd, siteMeta } from '../../lib/seo'
+import { defineCopy, Link, localeFromParams, useCopy, useLocale } from '../../i18n'
+import { policyLinks } from './policy-links'
+import type { Route } from './+types/PoliciesIndex'
 
-const policies = [
-  {
-    label: 'Privacy Policy',
-    to: '/policies/privacy-policy',
-    summary: 'what I collect, why, and how your data is handled.',
+const indexCopy = defineCopy({
+  en: {
+    title: 'Policies',
+    home: 'Home',
+    breadcrumb: 'Breadcrumb',
+    lede: 'How EarthyGlow handles your data, orders, returns and enquiries.',
+    description: 'EarthyGlow policies: privacy, refunds and returns, terms of service and contact information.',
   },
-  {
-    label: 'Refund Policy',
-    to: '/policies/refund-policy',
-    summary: 'how problems with handmade, made-to-order candles are resolved.',
+  nl: {
+    title: 'Beleid',
+    home: 'Home',
+    breadcrumb: 'Kruimelpad',
+    lede: 'Hoe EarthyGlow omgaat met je gegevens, bestellingen, retouren en vragen.',
+    description: 'Het beleid van EarthyGlow: privacy, terugbetalingen en retouren, algemene voorwaarden en contactgegevens.',
   },
-  {
-    label: 'Terms of Service',
-    to: '/policies/terms-of-service',
-    summary: 'the terms that apply when you order from EarthyGlow.',
+  de: {
+    title: 'Richtlinien',
+    home: 'Start',
+    breadcrumb: 'Brotkrümelnavigation',
+    lede: 'Wie EarthyGlow mit deinen Daten, Bestellungen, Rücksendungen und Anfragen umgeht.',
+    description: 'Richtlinien von EarthyGlow: Datenschutz, Erstattungen und Rücksendungen, AGB und Kontaktinformationen.',
   },
-  {
-    label: 'Contact Information',
-    to: '/policies/contact-information',
-    summary: 'business details and how to reach me.',
-  },
-]
+})
 
-export function meta() {
+export function meta({ params }: Route.MetaArgs) {
+  const locale = localeFromParams(params)
+  const copy = indexCopy[locale]
   return siteMeta({
-    title: 'Policies · EarthyGlow',
-    description:
-      'EarthyGlow policies: privacy, refunds and returns, terms of service and contact information.',
+    locale,
+    title: `${copy.title} · EarthyGlow`,
+    description: copy.description,
     path: '/policies',
   })
 }
 
 export function PoliciesIndex() {
+  const locale = useLocale()
+  const copy = useCopy(indexCopy)
   return (
     <>
       <JsonLd
-        data={breadcrumbLd([{ name: 'Home', path: '/' }, { name: 'Policies' }])}
+        data={breadcrumbLd([{ name: copy.home, path: '/' }, { name: copy.title }], locale)}
       />
       <section className="page-hero">
         <div className="container">
           <Reveal>
-            <nav className="breadcrumb" aria-label="Breadcrumb">
-              <Link to="/" prefetch="intent">Home</Link>
+            <nav className="breadcrumb" aria-label={copy.breadcrumb}>
+              <Link to="/" prefetch="intent">{copy.home}</Link>
               <span aria-hidden="true">/</span>
-              <span aria-current="page">Policies</span>
+              <span aria-current="page">{copy.title}</span>
             </nav>
-            <p className="eyebrow">Policies</p>
-            <h1>Policies</h1>
-            <p className="section-lede">
-              How EarthyGlow handles your data, orders, returns and enquiries.
-            </p>
+            <p className="eyebrow">{copy.title}</p>
+            <h1>{copy.title}</h1>
+            <p className="section-lede">{copy.lede}</p>
           </Reveal>
         </div>
       </section>
@@ -65,7 +70,7 @@ export function PoliciesIndex() {
         <div className="container">
           <div className="policy-prose">
             <ul>
-              {policies.map((policy) => (
+              {policyLinks[locale].map((policy) => (
                 <li key={policy.to}>
                   <Link to={policy.to} prefetch="intent">{policy.label}</Link> — {policy.summary}
                 </li>

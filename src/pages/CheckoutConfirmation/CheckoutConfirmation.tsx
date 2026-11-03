@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { Link, useSearchParams } from 'react-router'
-import { formatPrice } from '../../cart/CartContext'
+import { useSearchParams } from 'react-router'
 import { API_URL } from '../../cart/catalog'
 import { useCart } from '../../cart/useCart'
 import { Reveal } from '../../components/ui/Reveal'
 import { siteMeta } from '../../lib/seo'
+import { defineCopy, Link, localeFromParams, useCopy, useFormatPrice } from '../../i18n'
+import type { Route } from './+types/CheckoutConfirmation'
 
 type OrderStatus =
   | 'pending'
@@ -21,9 +22,127 @@ type OrderStatusResponse = {
   currency: string
 }
 
-export function meta() {
+type Node = ReactNode
+
+const confirmationCopy = defineCopy({
+  en: {
+    metaTitle: 'Order confirmation · EarthyGlow',
+    status: 'Order status',
+    missingTitle: 'We couldn’t find that order',
+    missingLede: 'The link you followed doesn’t include an order number.',
+    backToShop: 'Back to the shop',
+    checkingTitle: 'Checking your payment…',
+    checkingLede: 'This only takes a moment. Please don’t close this page.',
+    loadFailedTitle: 'We couldn’t load your order',
+    loadFailedLede: 'If a payment appears on your account, please contact me with your order number so I can check it for you.',
+    contact: 'Contact us',
+    paidEyebrow: 'Payment received',
+    paidBadge: 'Paid',
+    paidTitle: 'Thank you for your order',
+    paidLede: (number: Node, total: Node) => (
+      <>Your order {number} is confirmed for {total}. Your invoice will arrive by email. I’ll get your candles ready and send your tracking details when they’re on their way.</>
+    ),
+    keepShopping: 'Keep shopping',
+    backHome: 'Back home',
+    pendingBadge: 'Awaiting payment',
+    pendingTitle: 'Almost there',
+    pendingLede: (number: Node) => (
+      <>We’re waiting for your payment for order {number}. This page updates automatically once it’s confirmed.</>
+    ),
+    refundedBadge: 'Refunded',
+    failedBadge: 'Not completed',
+    refundedTitle: 'Your refund has been arranged',
+    failedTitle: 'Your payment wasn’t completed',
+    refundedLede: (number: Node) => (
+      <>A refund has been arranged for order {number}. The time it takes to appear depends on your bank or payment provider.</>
+    ),
+    failedLede: (number: Node) => (
+      <>Payment for order {number} hasn’t completed. If you see a charge on your account, please contact me before trying again.</>
+    ),
+    tryAgain: 'Try payment again',
+    backToCart: 'Back to cart',
+  },
+  nl: {
+    metaTitle: 'Orderbevestiging · EarthyGlow',
+    status: 'Bestelstatus',
+    missingTitle: 'We konden die bestelling niet vinden',
+    missingLede: 'De link die je hebt gevolgd bevat geen bestelnummer.',
+    backToShop: 'Terug naar de shop',
+    checkingTitle: 'Je betaling wordt gecontroleerd…',
+    checkingLede: 'Dit duurt maar even. Sluit deze pagina niet.',
+    loadFailedTitle: 'We konden je bestelling niet laden',
+    loadFailedLede: 'Zie je een betaling op je rekening? Neem dan contact met me op met je bestelnummer, dan zoek ik het voor je uit.',
+    contact: 'Neem contact op',
+    paidEyebrow: 'Betaling ontvangen',
+    paidBadge: 'Betaald',
+    paidTitle: 'Dankjewel voor je bestelling',
+    paidLede: (number: Node, total: Node) => (
+      <>Je bestelling {number} is bevestigd voor {total}. Je factuur komt per e-mail. Ik maak je kaarsen klaar en stuur je de track-and-tracegegevens zodra ze onderweg zijn.</>
+    ),
+    keepShopping: 'Verder winkelen',
+    backHome: 'Terug naar home',
+    pendingBadge: 'Wacht op betaling',
+    pendingTitle: 'Bijna klaar',
+    pendingLede: (number: Node) => (
+      <>We wachten op je betaling voor bestelling {number}. Deze pagina werkt zichzelf bij zodra de betaling is bevestigd.</>
+    ),
+    refundedBadge: 'Terugbetaald',
+    failedBadge: 'Niet afgerond',
+    refundedTitle: 'Je terugbetaling is geregeld',
+    failedTitle: 'Je betaling is niet afgerond',
+    refundedLede: (number: Node) => (
+      <>Er is een terugbetaling geregeld voor bestelling {number}. Hoe snel die zichtbaar is, hangt af van je bank of betaalprovider.</>
+    ),
+    failedLede: (number: Node) => (
+      <>De betaling voor bestelling {number} is niet afgerond. Zie je toch een afschrijving op je rekening? Neem dan contact met me op voordat je het opnieuw probeert.</>
+    ),
+    tryAgain: 'Opnieuw betalen',
+    backToCart: 'Terug naar winkelmand',
+  },
+  de: {
+    metaTitle: 'Bestellbestätigung · EarthyGlow',
+    status: 'Bestellstatus',
+    missingTitle: 'Wir konnten diese Bestellung nicht finden',
+    missingLede: 'Der Link, dem du gefolgt bist, enthält keine Bestellnummer.',
+    backToShop: 'Zurück zum Shop',
+    checkingTitle: 'Deine Zahlung wird geprüft…',
+    checkingLede: 'Das dauert nur einen Moment. Bitte schließe diese Seite nicht.',
+    loadFailedTitle: 'Wir konnten deine Bestellung nicht laden',
+    loadFailedLede: 'Wenn eine Zahlung auf deinem Konto erscheint, kontaktiere mich bitte mit deiner Bestellnummer, damit ich das für dich prüfen kann.',
+    contact: 'Kontakt aufnehmen',
+    paidEyebrow: 'Zahlung erhalten',
+    paidBadge: 'Bezahlt',
+    paidTitle: 'Danke für deine Bestellung',
+    paidLede: (number: Node, total: Node) => (
+      <>Deine Bestellung {number} über {total} ist bestätigt. Deine Rechnung kommt per E-Mail. Ich mache deine Kerzen fertig und schicke dir die Sendungsverfolgung, sobald sie unterwegs sind.</>
+    ),
+    keepShopping: 'Weiter einkaufen',
+    backHome: 'Zur Startseite',
+    pendingBadge: 'Zahlung ausstehend',
+    pendingTitle: 'Fast geschafft',
+    pendingLede: (number: Node) => (
+      <>Wir warten auf deine Zahlung für Bestellung {number}. Diese Seite aktualisiert sich automatisch, sobald sie bestätigt ist.</>
+    ),
+    refundedBadge: 'Erstattet',
+    failedBadge: 'Nicht abgeschlossen',
+    refundedTitle: 'Deine Erstattung ist veranlasst',
+    failedTitle: 'Deine Zahlung wurde nicht abgeschlossen',
+    refundedLede: (number: Node) => (
+      <>Für Bestellung {number} wurde eine Erstattung veranlasst. Wie lange es dauert, bis sie erscheint, hängt von deiner Bank oder deinem Zahlungsanbieter ab.</>
+    ),
+    failedLede: (number: Node) => (
+      <>Die Zahlung für Bestellung {number} wurde nicht abgeschlossen. Wenn du trotzdem eine Abbuchung auf deinem Konto siehst, kontaktiere mich bitte, bevor du es noch einmal versuchst.</>
+    ),
+    tryAgain: 'Zahlung erneut versuchen',
+    backToCart: 'Zurück zum Warenkorb',
+  },
+})
+
+export function meta({ params }: Route.MetaArgs) {
+  const locale = localeFromParams(params)
   return siteMeta({
-    title: 'Order confirmation · EarthyGlow',
+    locale,
+    title: confirmationCopy[locale].metaTitle,
     robots: 'noindex, nofollow',
   })
 }
@@ -33,6 +152,8 @@ export function CheckoutConfirmation() {
   const orderNumber = params.get('order')
   const isMock = params.get('mock') === '1'
   const { clearCart, removeCoupon } = useCart()
+  const copy = useCopy(confirmationCopy)
+  const formatPrice = useFormatPrice()
   const [order, setOrder] = useState<OrderStatusResponse | null>(null)
   const [failed, setFailed] = useState(false)
   const clearedRef = useRef(false)
@@ -79,14 +200,12 @@ export function CheckoutConfirmation() {
 
   if (!orderNumber) {
     return (
-      <ConfirmationShell eyebrow="Order status">
-        <h1>We couldn&rsquo;t find that order</h1>
-        <p className="checkout-done-lede">
-          The link you followed doesn&rsquo;t include an order number.
-        </p>
+      <ConfirmationShell eyebrow={copy.status}>
+        <h1>{copy.missingTitle}</h1>
+        <p className="checkout-done-lede">{copy.missingLede}</p>
         <div className="hero-actions">
           <Link to="/shop" className="btn btn-primary" prefetch="intent">
-            Back to the shop
+            {copy.backToShop}
           </Link>
         </div>
       </ConfirmationShell>
@@ -95,48 +214,43 @@ export function CheckoutConfirmation() {
 
   if (!order && !failed) {
     return (
-      <ConfirmationShell eyebrow="Order status">
-        <h1>Checking your payment…</h1>
-        <p className="checkout-done-lede">
-          This only takes a moment. Please don&rsquo;t close this page.
-        </p>
+      <ConfirmationShell eyebrow={copy.status}>
+        <h1>{copy.checkingTitle}</h1>
+        <p className="checkout-done-lede">{copy.checkingLede}</p>
       </ConfirmationShell>
     )
   }
 
   if (failed || !order) {
     return (
-      <ConfirmationShell eyebrow="Order status">
-        <h1>We couldn&rsquo;t load your order</h1>
-        <p className="checkout-done-lede">
-          If a payment appears on your account, please contact me with your
-          order number so I can check it for you.
-        </p>
+      <ConfirmationShell eyebrow={copy.status}>
+        <h1>{copy.loadFailedTitle}</h1>
+        <p className="checkout-done-lede">{copy.loadFailedLede}</p>
         <div className="hero-actions">
           <Link to="/contact" className="btn btn-primary" prefetch="intent">
-            Contact us
+            {copy.contact}
           </Link>
         </div>
       </ConfirmationShell>
     )
   }
 
+  const number = <strong>{order.orderNumber}</strong>
+
   if (order.status === 'paid') {
     return (
-      <ConfirmationShell eyebrow="Payment received">
-        <span className="order-status-badge is-paid">Paid</span>
-        <h1>Thank you for your order</h1>
+      <ConfirmationShell eyebrow={copy.paidEyebrow}>
+        <span className="order-status-badge is-paid">{copy.paidBadge}</span>
+        <h1>{copy.paidTitle}</h1>
         <p className="checkout-done-lede">
-          Your order <strong>{order.orderNumber}</strong> is confirmed for{' '}
-          <strong>{formatPrice(order.totalCents)}</strong>. Your invoice will arrive by email. I’ll get your candles ready
-          and send your tracking details when they’re on their way.
+          {copy.paidLede(number, <strong>{formatPrice(order.totalCents)}</strong>)}
         </p>
         <div className="hero-actions">
           <Link to="/shop" className="btn btn-primary" prefetch="intent">
-            Keep shopping
+            {copy.keepShopping}
           </Link>
           <Link to="/" className="btn btn-ghost" prefetch="intent">
-            Back home
+            {copy.backHome}
           </Link>
         </div>
       </ConfirmationShell>
@@ -145,37 +259,30 @@ export function CheckoutConfirmation() {
 
   if (order.status === 'pending') {
     return (
-      <ConfirmationShell eyebrow="Order status">
-        <span className="order-status-badge is-pending">Awaiting payment</span>
-        <h1>Almost there</h1>
-        <p className="checkout-done-lede">
-          We&rsquo;re waiting for your payment for order{' '}
-          <strong>{order.orderNumber}</strong>. This page updates automatically
-          once it&rsquo;s confirmed.
-        </p>
+      <ConfirmationShell eyebrow={copy.status}>
+        <span className="order-status-badge is-pending">{copy.pendingBadge}</span>
+        <h1>{copy.pendingTitle}</h1>
+        <p className="checkout-done-lede">{copy.pendingLede(number)}</p>
       </ConfirmationShell>
     )
   }
 
+  const refunded = order.status === 'refunded'
   return (
-    <ConfirmationShell eyebrow="Order status">
+    <ConfirmationShell eyebrow={copy.status}>
       <span className="order-status-badge is-failed">
-        {order.status === 'refunded' ? 'Refunded' : 'Not completed'}
+        {refunded ? copy.refundedBadge : copy.failedBadge}
       </span>
-      <h1>{order.status === 'refunded' ? 'Your refund has been arranged' : 'Your payment wasn’t completed'}</h1>
+      <h1>{refunded ? copy.refundedTitle : copy.failedTitle}</h1>
       <p className="checkout-done-lede">
-        {order.status === 'refunded' ? (
-          <>A refund has been arranged for order <strong>{order.orderNumber}</strong>. The time it takes to appear depends on your bank or payment provider.</>
-        ) : (
-          <>Payment for order <strong>{order.orderNumber}</strong> hasn’t completed. If you see a charge on your account, please contact me before trying again.</>
-        )}
+        {refunded ? copy.refundedLede(number) : copy.failedLede(number)}
       </p>
       <div className="hero-actions">
-        <Link to={order.status === 'refunded' ? '/shop' : '/checkout'} className="btn btn-primary" prefetch="intent">
-          {order.status === 'refunded' ? 'Back to the shop' : 'Try payment again'}
+        <Link to={refunded ? '/shop' : '/checkout'} className="btn btn-primary" prefetch="intent">
+          {refunded ? copy.backToShop : copy.tryAgain}
         </Link>
         <Link to="/cart" className="btn btn-ghost" prefetch="intent">
-          Back to cart
+          {copy.backToCart}
         </Link>
       </div>
     </ConfirmationShell>

@@ -10,6 +10,8 @@ export type CouponType = 'free_shipping' | 'percent' | 'fixed_amount'
 
 // The shape of a coupon row. Kept structural so a Prisma result can be passed
 // straight in.
+import { MESSAGES, type Locale } from './i18n.js'
+
 export type Coupon = {
   id: string
   code: string
@@ -47,16 +49,18 @@ export function normalizeCouponCode(code: string): string {
 export function couponProblem(
   coupon: Coupon,
   now: Date = new Date(),
+  locale: Locale = 'en',
 ): string | null {
-  if (!coupon.active) return 'This coupon code is not active.'
+  const t = MESSAGES[locale]
+  if (!coupon.active) return t.couponInactive
   if (coupon.startsAt && coupon.startsAt > now) {
-    return 'This coupon code is not active yet.'
+    return t.couponNotYet
   }
   if (coupon.expiresAt && coupon.expiresAt <= now) {
-    return 'This coupon code has expired.'
+    return t.couponExpired
   }
   if (coupon.maxUses !== null && coupon.usedCount >= coupon.maxUses) {
-    return 'This coupon code has already been used.'
+    return t.couponUsed
   }
   return null
 }

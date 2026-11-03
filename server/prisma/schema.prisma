@@ -144,6 +144,9 @@ model Order {
   couponType             CouponType?
   discountCents          Int               @default(0)
   currency               String            @default("EUR")
+  // The storefront language of the order (nl, en or de): it picks the language
+  // of the customer's emails and invoice.
+  locale                 String            @default("en")
   paymentMethod          String?
   molliePaymentId        String?           @unique
   address                String

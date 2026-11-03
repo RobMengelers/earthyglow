@@ -1,6 +1,5 @@
 import {
   index,
-  layout,
   route,
   type RouteConfig,
 } from '@react-router/dev/routes'
@@ -23,7 +22,10 @@ export default [
     route('orders/:id/edit', './pages/Admin/EditOrderPage.tsx'),
     route('orders/new', './pages/Admin/NewOrderPage.tsx'),
   ]),
-  layout('./components/layout/Layout.tsx', [
+  // The home page and every URL from before the site had languages: sends the
+  // visitor on to the same page in their language.
+  index('./routes/language-redirect.ts', { id: 'language-redirect' }),
+  route(':lang', './components/layout/Layout.tsx', [
     index('./pages/Home/Home.tsx'),
     route('shop/:collectionId?', './pages/Shop/Shop.tsx'),
     route('product/:productId', './pages/ProductPage/ProductPage.tsx'),

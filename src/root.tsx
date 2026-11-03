@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react'
 import {
-  Link,
   Links,
   Meta,
   Outlet,
@@ -14,10 +13,12 @@ import {
 } from 'react-router'
 import { CartProvider } from './cart/CartProvider'
 import { siteMeta } from './lib/seo'
+import { defineCopy, Link, useCopy, useLocale } from './i18n'
 import './index.css'
 
+// Fallback for routes without their own meta; it claims no canonical URL.
 export function meta() {
-  return siteMeta({ path: '/' })
+  return siteMeta({})
 }
 
 export function links() {
@@ -50,8 +51,9 @@ export function links() {
 }
 
 export function Layout({ children }: { children: ReactNode }) {
+  const locale = useLocale()
   return (
-    <html lang="en">
+    <html lang={locale}>
       <head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -100,25 +102,55 @@ export default function Root() {
   )
 }
 
+const errorCopy = defineCopy({
+  en: {
+    notFound: 'This page drifted away',
+    failed: 'Something went wrong',
+    fallback: 'Something went wrong.',
+    serverError: 'Something went wrong on our side. Please try again.',
+    home: 'Back home',
+    shop: 'Shop the collection',
+  },
+  nl: {
+    notFound: 'Deze pagina is weggedreven',
+    failed: 'Er ging iets mis',
+    fallback: 'Er ging iets mis.',
+    serverError: 'Er ging aan onze kant iets mis. Probeer het nog eens.',
+    home: 'Terug naar home',
+    shop: 'Bekijk de collectie',
+  },
+  de: {
+    notFound: 'Diese Seite ist davongeschwebt',
+    failed: 'Etwas ist schiefgelaufen',
+    fallback: 'Etwas ist schiefgelaufen.',
+    serverError: 'Bei uns ist etwas schiefgelaufen. Bitte versuche es noch einmal.',
+    home: 'Zur Startseite',
+    shop: 'Zur Kollektion',
+  },
+})
+
 export function ErrorBoundary() {
   const error = useRouteError()
+  const copy = useCopy(errorCopy)
   const status = isRouteErrorResponse(error) ? error.status : 500
   const message = isRouteErrorResponse(error)
-    ? error.statusText || 'Something went wrong.'
-    : 'Something went wrong on our side. Please try again.'
+    ? status === 404
+      ? copy.fallback
+      : error.statusText || copy.fallback
+    : copy.serverError
 
   return (
     <section className="not-found">
       <div className="container">
         <p className="eyebrow">{status}</p>
-        <h1>{status === 404 ? 'This page drifted away' : 'Something went wrong'}</h1>
+        <h1>{status === 404 ? copy.notFound : copy.failed}</h1>
         <p>{message}</p>
         <div className="hero-actions">
           <Link to="/" className="btn btn-primary">
-            Back home
+            {copy.home}
           </Link>
           <Link to="/shop" className="btn btn-ghost">
-            Shop the collection
+            {copy.shop}
           </Link>
         </div>
       </div>

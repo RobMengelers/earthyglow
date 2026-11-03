@@ -1,3 +1,6 @@
+import { formatEuroCents } from '../i18n/locales'
+
+// One price format across the storefront: €14.95.
 export function formatPrice(cents: number): string {
-  return `€${(cents / 100).toFixed(2).replace('.', ',')}`
+  return formatEuroCents(cents)
 }
