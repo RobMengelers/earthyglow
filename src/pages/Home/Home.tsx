@@ -60,7 +60,11 @@ export function Home() {
                     </div>
                     <div className="collection-card-body">
                       <p className="eyebrow">{season.label}</p>
-                      <h3>{season.label} candles</h3>
+                      {/* Phones show just the season in the compact tile. */}
+                      <h3>
+                        <span className="collection-card-title">{season.label} candles</span>
+                        <span className="collection-card-title-short">{season.label}</span>
+                      </h3>
                       <p>{season.description}</p>
                       <span className="product-cta">Explore {season.label}<span aria-hidden="true">→</span></span>
                     </div>
