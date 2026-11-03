@@ -198,3 +198,10 @@
     display: none;
   }
 }
+
+/* The narrowest phones keep the policy links whole in a single column. */
+@media (max-width: 360px) {
+  .footer-col:last-child ul {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
