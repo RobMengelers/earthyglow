@@ -115,7 +115,7 @@
 }
 
 /* Phones: the brand sits centred on top, Shop and Explore share a row, and
-   the policy links fill a two-column block below, rather than every column
+   the policy links follow full width below, rather than every column
    stacking into one long list. */
 @media (max-width: 640px) {
   .footer {
@@ -158,22 +158,15 @@
     gap: 0.55rem;
   }
 
-  /* Long single words (German compounds) break at a hyphen, not off-screen. */
+  /* A very long single word wraps rather than running off-screen. */
   .footer-col a {
-    hyphens: auto;
     overflow-wrap: break-word;
   }
 
-  /* The last column (Information) spans the width with its links in two
-     columns. */
+  /* The last column (Information) spans the full width below, so its long
+     policy names always fit on one line. */
   .footer-col:last-child {
     grid-column: 1 / -1;
-  }
-
-  .footer-col:last-child ul {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 0.55rem 1.4rem;
   }
 
   .footer-bottom .container {
@@ -196,12 +189,5 @@
 
   .footer-legal span + span::before {
     display: none;
-  }
-}
-
-/* The narrowest phones keep the policy links whole in a single column. */
-@media (max-width: 360px) {
-  .footer-col:last-child ul {
-    grid-template-columns: minmax(0, 1fr);
   }
 }
