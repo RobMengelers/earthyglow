@@ -59,16 +59,18 @@
   gap: 0.65rem;
 }
 
-.footer-col a {
+.footer-col a,
+.footer-col .footer-cookie-settings {
   font-size: 0.93rem;
   transition: color 0.25s ease;
 }
 
-.footer-col a:hover {
+.footer-col a:hover,
+.footer-col .footer-cookie-settings:hover {
   color: var(--amber);
 }
 
-.footer-col li:not(:has(a)) {
+.footer-col li:not(:has(a, button)) {
   font-size: 0.93rem;
   opacity: 0.85;
 }

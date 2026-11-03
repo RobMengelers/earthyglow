@@ -1,5 +1,5 @@
 import { Link, useParams } from 'react-router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { getCollection, getProduct, getRelated, productPriceLabel, type ProductColor, type ProductVariant } from '../../data/products'
 import { ProductCard } from '../../components/catalog/ProductCard'
 import { Reveal } from '../../components/ui/Reveal'
@@ -10,6 +10,7 @@ import { seasonForProduct } from '../../data/seasons'
 import { JsonLd } from '../../components/seo/JsonLd'
 import { imageAttrs, SIZES } from '../../lib/images'
 import { absoluteUrl, breadcrumbLd, canonicalUrl, merchantReturnPolicy, offerShippingDetails, siteMeta } from '../../lib/seo'
+import { centsToEuros, trackEvent } from '../../lib/analytics'
 import type { Route } from './+types/ProductPage'
 
 const perks = [
@@ -69,6 +70,22 @@ export function ProductPage() {
   // Holds the image that is fading out on top of the incoming one so switching
   // a variant crossfades instead of swapping the hero shot in a single frame.
   const [fadeImage, setFadeImage] = useState<{ src: string; id: number } | null>(null)
+
+  useEffect(() => {
+    if (!product) return
+    const price = centsToEuros(product.priceCents)
+    trackEvent('view_item', {
+      currency: 'EUR',
+      value: price,
+      items: [{
+        item_id: product.id,
+        item_name: product.name,
+        item_category: getCollection(product.collectionId)?.title,
+        price,
+        quantity: 1,
+      }],
+    })
+  }, [product?.id]) // eslint-disable-line react-hooks/exhaustive-deps -- once per product shown
 
   if (!product) {
     return <NotFound />
