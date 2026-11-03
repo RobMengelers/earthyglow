@@ -27,11 +27,47 @@ export function Shop() {
   const activeCollection = getCollection(collectionId)
   const activeSeason = getSeason(params.get('season'))
   const seasonNavRef = useRef<HTMLElement>(null)
+  const scrollThumbRef = useRef<HTMLSpanElement>(null)
+
+  // The season row scrolls sideways on small screens. Its edge fades and the
+  // scroll indicator below follow the scroll position: a side only fades when
+  // there is more to see that way. Written straight to the DOM so scrolling
+  // never re-renders the product grid.
+  useEffect(() => {
+    const nav = seasonNavRef.current
+    const thumb = scrollThumbRef.current
+    if (!nav || !thumb) return
+    const update = () => {
+      const max = nav.scrollWidth - nav.clientWidth
+      const scrollable = max > 1
+      nav.dataset.scrollable = String(scrollable)
+      nav.dataset.atStart = String(!scrollable || nav.scrollLeft <= 1)
+      nav.dataset.atEnd = String(!scrollable || nav.scrollLeft >= max - 1)
+      if (scrollable) {
+        const width = (nav.clientWidth / nav.scrollWidth) * 100
+        thumb.style.width = `${width}%`
+        thumb.style.transform = `translateX(${(nav.scrollLeft / max) * (100 / width) * (100 - width)}%)`
+      }
+    }
+    update()
+    nav.addEventListener('scroll', update, { passive: true })
+    const observer = new ResizeObserver(update)
+    observer.observe(nav)
+    return () => {
+      nav.removeEventListener('scroll', update)
+      observer.disconnect()
+    }
+  }, [])
   useEffect(() => {
     const nav = seasonNavRef.current
     const selected = nav?.querySelector<HTMLElement>('.is-active')
     if (nav && selected) {
-      nav.scrollTo({ left: Math.max(0, selected.offsetLeft - (nav.clientWidth - selected.offsetWidth) / 2) })
+      // Centre the active season, but land exactly on an end when it is that
+      // close, so the row is not left a few pixels off its start or end.
+      const max = nav.scrollWidth - nav.clientWidth
+      const centred = selected.offsetLeft - (nav.clientWidth - selected.offsetWidth) / 2
+      const left = centred < 32 ? 0 : centred > max - 32 ? max : centred
+      nav.scrollTo({ left })
     }
   }, [activeSeason?.id])
 
@@ -227,6 +263,9 @@ export function Shop() {
                 </button>
               </div>
             </nav>
+            <div className="season-scrollbar" aria-hidden="true">
+              <span ref={scrollThumbRef} />
+            </div>
 
           </Reveal>
 
