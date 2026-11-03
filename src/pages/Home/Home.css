@@ -59,14 +59,15 @@
     display: none;
   }
 
-  /* Long one-word titles (Dutch and German compounds) shrink beside the
-     arrow and hyphenate rather than pushing it out of the tile. */
+  /* Titles shrink beside the arrow instead of pushing it out of the tile.
+     Long one-word titles break only where the copy marks it with a soft
+     hyphen (hyphens: manual), never at an arbitrary letter. */
   .collection-card-grid .collection-card-body h3 {
     min-width: 0;
     font-size: clamp(0.88rem, 4.2vw, 1.02rem);
     line-height: 1.2;
     margin: 0;
-    hyphens: auto;
+    hyphens: manual;
     overflow-wrap: break-word;
   }
 
