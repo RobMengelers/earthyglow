@@ -27,6 +27,8 @@ const shopCopy = defineCopy({
     holidays: 'Holidays',
     emptyEyebrow: 'A different little glow',
     emptyTitle: 'No candles in this season just yet, check back in after November 1st',
+    earlierSeasons: 'Show earlier seasons',
+    moreSeasons: 'Show more seasons',
   },
   nl: {
     metaTitle: 'Shop · Handgegoten sojawaskaarsen · EarthyGlow',
@@ -52,6 +54,8 @@ const shopCopy = defineCopy({
     holidays: 'Feestdagen',
     emptyEyebrow: 'Een andere kleine gloed',
     emptyTitle: 'Nog geen kaarsen voor dit seizoen, kijk na 1 november nog eens',
+    earlierSeasons: 'Toon vorige seizoenen',
+    moreSeasons: 'Toon meer seizoenen',
   },
   de: {
     metaTitle: 'Shop · Handgegossene Sojawachskerzen · EarthyGlow',
@@ -77,6 +81,8 @@ const shopCopy = defineCopy({
     holidays: 'Feiertage',
     emptyEyebrow: 'Ein anderer kleiner Glanz',
     emptyTitle: 'Noch keine Kerzen für diese Saison, schau nach dem 1. November wieder vorbei',
+    earlierSeasons: 'Vorherige Jahreszeiten zeigen',
+    moreSeasons: 'Weitere Jahreszeiten zeigen',
   },
 })
 
@@ -340,7 +346,7 @@ export function Shop() {
             <button
               type="button"
               className="season-arrow season-arrow-prev"
-              aria-label="Show earlier seasons"
+              aria-label={copy.earlierSeasons}
               tabIndex={-1}
               onClick={() => scrollSeasons(-1)}
             >
@@ -351,7 +357,7 @@ export function Shop() {
             <button
               type="button"
               className="season-arrow season-arrow-next"
-              aria-label="Show more seasons"
+              aria-label={copy.moreSeasons}
               tabIndex={-1}
               onClick={() => scrollSeasons(1)}
             >
