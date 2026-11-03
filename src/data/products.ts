@@ -102,7 +102,7 @@ export const collections: Collection[] = [
         images: Array.from({ length: 10 }, (_, index) => `/images/products/floral-box/image-${index + 1}.webp`),
         collectionId: 'little-glow',
         description:
-          'A beautiful collection of nine individually hand-poured flower candles, carefully arranged in an elegant gift box and delicately scented with Bluebell. \n\n Made with approximately 220g of 100% natural soy wax, each flower is poured by hand, making every box unique. \n\n The Bluebell fragrance is fresh, floral and elegant, opening with notes of bluebell and hyacinth, followed by a soft floral heart of lavender, galbanum, rose and jasmine, and finished with a warm touch of musk. \n\n Choose from soft pink, baby blue or purple and give someone special a gift that looks almost too beautiful to burn or simply treat yourself. ♡',
+          'Bring a soft floral touch into your home with our Bluebell Floral Box. The box contains 9 handmade flower candles, delicately scented with Bluebell. \n\n The fragrance is fresh, floral and elegant, opening with notes of bluebell and hyacinth, followed by a soft floral heart of lavender, galbanum, rose and jasmine, and finished with a warm touch of musk. \n\n The candles are made with approximately 220 g of 100% natural soy wax in total. Each flower is poured by hand, making every box unique. \n\n Important: Always remove the candles from the box before lighting. Never burn the candles while they are still inside the gift box. \n\n 9 candles | Approx. 220 g soy wax | Bluebell fragrance',
         variants: [
           { id: 'pink', label: 'Pink', swatch: '#e8a1b5', priceCents: 1495, image: '/images/products/floral-box/image-4.webp' },
           { id: 'baby-blue', label: 'Baby blue', swatch: '#9fc9e8', priceCents: 1495, image: '/images/products/floral-box/image-5.webp' },
@@ -117,7 +117,7 @@ export const collections: Collection[] = [
         images: Array.from({ length: 5 }, (_, index) => `/images/products/floral-basket/image-${index + 1}.webp`),
         collectionId: 'little-glow',
         description:
-          'A charming basket filled with eight individually hand-poured flower candles, carefully arranged and delicately scented with English Rose. \n\n Made with approximately 150g of 100% natural soy wax, each flower is poured by hand, making every basket unique. \n\n The English Rose fragrance is soft, warm and elegant, opening with sweet notes of vanilla and citrus, followed by a green, fruity and slightly spicy heart, and finished with a warm base of musk, woody notes and balsamic tones. \n\n Available in pink or red, this little floral bouquet is perfect to enjoy at home or to give as a thoughtful gift. ♡',
+          'Bring a soft floral touch into your home with our English Rose Floral Basket. The basket contains 8 handmade flower candles, delicately scented with English Rose. \n\n The fragrance is soft, warm and elegant, opening with sweet notes of vanilla and citrus, followed by a green, fruity and slightly spicy heart, and finished with a warm base of musk, woody notes and balsamic tones. \n\n The candles are made with approximately 150 g of 100% natural soy wax in total. Each flower is poured by hand, making every basket unique. \n\n Important: Always remove the candles from the basket before lighting. Never burn the candles while they are still inside the basket. \n\n 8 candles | Approx. 150 g soy wax | English Rose fragrance',
         variants: [
           { id: 'floral-basket-pink', label: 'Pink', priceCents: 1295, swatch: '#e8a1b5', image: '/images/products/floral-basket/image-1.webp' },
           { id: 'floral-basket-red', label: 'Red', priceCents: 1295, swatch: '#c94c55', image: '/images/products/floral-basket/image-3.webp' },
@@ -150,7 +150,7 @@ export const collections: Collection[] = [
         images: Array.from({ length: 5 }, (_, index) => `/images/products/coconut-beach/image-${index + 1}.webp`),
         collectionId: 'scented-glow',
         description:
-          'A little beach scene, poured by hand with soy wax and scented with Coconut Island. Pineapple and orange meet creamy coconut, almond and peach. Choose your favourite of the four seaside shapes.',
+          'Bring a little piece of summer into your home with our Coconut Island Candles. Each candle is individually hand-poured in one of four seaside-inspired shapes and scented with Coconut Island. \n\n The fragrance is fresh, creamy and tropical, opening with juicy notes of pineapple and orange, followed by a smooth heart of creamy coconut, and finished with soft almond and peach. \n\n Because each design has a different size, the candles contain approximately 75 g to 250 g of 100% natural soy wax. The largest design is approximately 7 cm high. \n\n Each candle is poured and finished by hand, making every piece unique. \n\n Approx. 75–250 g soy wax | Up to approx. 7 cm high | Coconut Island fragrance',
         variants: [
           { id: 'oyster', label: 'Oyster', priceCents: 1495, image: '/images/products/coconut-beach/image-5.webp' },
           { id: 'coconut', label: 'Coconut', priceCents: 1795, image: '/images/products/coconut-beach/image-2.webp' },
@@ -166,7 +166,7 @@ export const collections: Collection[] = [
         images: Array.from({ length: 2 }, (_, index) => `/images/products/autumn-ember/image-${index + 1}.webp`),
         collectionId: 'scented-glow',
         description:
-          'A cozy autumn candle finished with delicate, hand-poured wax details inspired by the season. Its Vanilla & Cinders fragrance combines smoky vanilla, clove, cedarwood, amber and musk, creating a warm and inviting scent for slow evenings at home.',
+          'Bring the warmth of autumn into your home with this cozy seasonal candle, finished with delicate, hand-poured wax details inspired by the season. \n\n The Vanilla & Cinders fragrance is warm, rich and comforting, combining smoky vanilla, soft clove, cedarwood, glowing amber and musk. It creates the cozy feeling of a crisp autumn evening spent indoors. \n\n The candle contains approximately 500 g of wax and the jar is approximately 15 cm high. Each candle is finished by hand, making every piece unique. \n\n Approx. 500 g wax | Approx. 15 cm high | Vanilla & Cinders fragrance',
       },
       {
         id: 'pumpkin-spice',
@@ -187,7 +187,7 @@ export const collections: Collection[] = [
         images: Array.from({ length: 2 }, (_, index) => `/images/products/pumpkin-spice-latte/image-${index + 1}.webp`),
         collectionId: 'scented-glow',
         description:
-          'A candle inspired by a favourite autumn drink, with whipped wax and handmade seasonal details. Poured with soy wax and scented with Pumpkin Spice. For your shelf, not your coffee cup.',
+          'Bring the cozy feeling of your favourite autumn drink into your home with our Pumpkin Spice Latte Candle. Finished with whipped wax and handmade seasonal details, this candle is designed to look almost good enough to drink. \n\n The Pumpkin Spice fragrance is warm, sweet and comforting, with the familiar cozy character of autumn spices and a soft, creamy sweetness. \n\n The candle contains approximately 150 g of soy wax and the jar is approximately 9 cm high. Each candle is poured and finished by hand, making every piece unique. \n\n Approx. 150 g soy wax | Approx. 9 cm high | Pumpkin Spice fragrance',
       },
       {
         id: 'pumpkin-boo',
@@ -197,7 +197,7 @@ export const collections: Collection[] = [
         images: Array.from({ length: 2 }, (_, index) => `/images/products/pumpkin-boo/image-${index + 1}.webp`),
         collectionId: 'scented-glow',
         description:
-          'A playful autumn candle featuring a little ghost and pumpkin, carefully finished by hand in soy wax. Scented with warm Pumpkin Spice, Pumpkin Boo brings a cozy seasonal feel to your home and is perfect for crisp autumn evenings.',
+          'Bring a playful autumn touch into your home with our Pumpkin Boo Candle. Featuring a cute ghost and pumpkin-inspired design, this little candle is full of cozy seasonal charm. \n\n The Pumpkin Spice fragrance is warm, sweet and comforting, with the familiar cozy character of autumn spices and a soft, creamy sweetness. \n\n The candle contains approximately 50 g of soy wax and comes in an approximately 9 cm high glass jar. Each candle is poured and finished by hand, making every piece unique. \n\n Approx. 50 g soy wax | Approx. 9 cm high | Pumpkin Spice fragrance',
       },
       {
         id: 'boo-boo',
@@ -207,7 +207,7 @@ export const collections: Collection[] = [
         images: Array.from({ length: 2 }, (_, index) => `/images/products/boo-boo/image-${index + 1}.webp`),
         collectionId: 'scented-glow',
         description:
-          'A handmade ghost detail sits on this soy wax candle. Scented with Vanilla & Cinders, with smoky vanilla, clove, cedarwood, amber and musk.',
+          'Bring a cozy little Halloween touch into your home with our Boo Boo Candle. Featuring a playful ghost design, this candle combines seasonal charm with a warm, comforting fragrance. \n\n The Vanilla & Cinders fragrance blends smoky vanilla, soft clove, cedarwood, amber and musk, creating a rich and cozy scent that feels perfect for crisp autumn evenings. \n\n The candle contains approximately 50 g of soy wax and comes in an approximately 9 cm high glass jar. Each candle is poured and finished by hand, making every piece unique. \n\n Approx. 50 g soy wax | Approx. 9 cm high | Vanilla & Cinders fragrance',
       },
       {
         id: 'scary-boo',
@@ -217,7 +217,7 @@ export const collections: Collection[] = [
         images: Array.from({ length: 2 }, (_, index) => `/images/products/scary-boo/image-${index + 1}.webp`),
         collectionId: 'scented-glow',
         description:
-          'A playful autumn candle with a hand-finished ghost-inspired wax detail, perfect for adding a subtle spooky touch to your home. \n\n Made with soy wax and scented with Vanilla & Cinders, a warm and comforting fragrance with smoky vanilla, soft clove, cedarwood, glowing amber and musk. Rich, cozy and slightly mysterious, it feels like a crisp autumn evening by the fire.',
+          'Bring a playful spooky touch into your home with our Scary Boo Candle. Featuring a ghost-inspired design, this little candle is perfect for adding a cozy Halloween feel to your space. \n\n The Vanilla & Cinders fragrance blends smoky vanilla, soft clove, cedarwood, amber and musk, creating a warm, rich and slightly mysterious scent for crisp autumn evenings. \n\n The candle contains approximately 50 g of soy wax and comes in an approximately 9 cm high glass jar. Each candle is poured and finished by hand, making every piece unique. \n\n Approx. 50 g soy wax | Approx. 9 cm high | Vanilla & Cinders fragrance',
       },
       {
         id: 'hot-cocoa',
@@ -378,7 +378,7 @@ export const collections: Collection[] = [
         images: ['/images/products/ghostlight-dinner-candle/image-1.webp'],
         collectionId: 'natural-glow',
         description:
-          'A twisted dinner candle with a little ghost face, poured by hand with 100% soy wax. A playful addition to your Halloween table or a small gift for someone who loves the season.',
+          'Add a playful spooky touch to your table with our Ghostlight Dinner Candle. With its elegant shape and subtle Halloween-inspired character, it is perfect for creating a warm seasonal atmosphere. \n\n The candle is completely unscented and made from 100% natural soy wax, making it a simple and natural choice for your home. \n\n Each Ghostlight Dinner Candle is approximately 20 cm high and is individually poured by hand, making every piece unique. \n\n Approx. 20 cm high | Unscented | 100% natural soy wax',
       },
       {
         id: 'christmas-bubble-candle',
