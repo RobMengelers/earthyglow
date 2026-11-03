@@ -27,27 +27,19 @@ export function Shop() {
   const activeCollection = getCollection(collectionId)
   const activeSeason = getSeason(params.get('season'))
   const seasonNavRef = useRef<HTMLElement>(null)
-  const scrollThumbRef = useRef<HTMLSpanElement>(null)
 
   // The season row scrolls sideways on small screens. Its edge fades and the
-  // scroll indicator below follow the scroll position: a side only fades when
-  // there is more to see that way. Written straight to the DOM so scrolling
-  // never re-renders the product grid.
+  // arrow buttons follow the scroll position: a side only fades, and shows its
+  // arrow, while there is more to see that way. Written straight to the DOM so
+  // scrolling never re-renders the product grid.
   useEffect(() => {
     const nav = seasonNavRef.current
-    const thumb = scrollThumbRef.current
-    if (!nav || !thumb) return
+    if (!nav) return
     const update = () => {
       const max = nav.scrollWidth - nav.clientWidth
       const scrollable = max > 1
-      nav.dataset.scrollable = String(scrollable)
       nav.dataset.atStart = String(!scrollable || nav.scrollLeft <= 1)
       nav.dataset.atEnd = String(!scrollable || nav.scrollLeft >= max - 1)
-      if (scrollable) {
-        const width = (nav.clientWidth / nav.scrollWidth) * 100
-        thumb.style.width = `${width}%`
-        thumb.style.transform = `translateX(${(nav.scrollLeft / max) * (100 / width) * (100 - width)}%)`
-      }
     }
     update()
     nav.addEventListener('scroll', update, { passive: true })
@@ -58,6 +50,13 @@ export function Shop() {
       observer.disconnect()
     }
   }, [])
+
+  // The arrows move the row by most of its width; keyboard users tab through
+  // the links themselves, so the arrows stay out of the tab order.
+  const scrollSeasons = (direction: 1 | -1) => {
+    const nav = seasonNavRef.current
+    nav?.scrollBy({ left: direction * nav.clientWidth * 0.7, behavior: 'smooth' })
+  }
   useEffect(() => {
     const nav = seasonNavRef.current
     const selected = nav?.querySelector<HTMLElement>('.is-active')
@@ -263,9 +262,28 @@ export function Shop() {
                 </button>
               </div>
             </nav>
-            <div className="season-scrollbar" aria-hidden="true">
-              <span ref={scrollThumbRef} />
-            </div>
+            <button
+              type="button"
+              className="season-arrow season-arrow-prev"
+              aria-label="Show earlier seasons"
+              tabIndex={-1}
+              onClick={() => scrollSeasons(-1)}
+            >
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              className="season-arrow season-arrow-next"
+              aria-label="Show more seasons"
+              tabIndex={-1}
+              onClick={() => scrollSeasons(1)}
+            >
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <path d="m6 3 5 5-5 5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
 
           </Reveal>
 
