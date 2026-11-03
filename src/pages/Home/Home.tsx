@@ -29,8 +29,7 @@ const homeCopy = defineCopy({
     title: 'Maak plaats voor een winterse gloed',
     lede: 'Knusse winterfavorieten en attente cadeaus, en een beetje gloed voor elk seizoen. Allemaal met de hand gegoten.',
     count: (count: number) => `${count} ${count === 1 ? 'product' : 'producten'}`,
-    // \u00ad marks where a long title may break on narrow screens.
-    cardTitle: { summer: 'Zomer\u00adkaarsen', spring: 'Lente\u00adkaarsen', autumn: 'Herfst\u00adkaarsen', winter: 'Winter\u00adkaarsen' },
+    cardTitle: { summer: 'Zomerkaarsen', spring: 'Lentekaarsen', autumn: 'Herfstkaarsen', winter: 'Winterkaarsen' },
     explore: (label: string) => `Ontdek ${label.toLowerCase()}`,
     all: 'Bekijk alles',
   },
@@ -39,7 +38,7 @@ const homeCopy = defineCopy({
     title: 'Mach Platz für winterlichen Glanz',
     lede: 'Gemütliche Winterlieblinge und liebevolle Geschenke, dazu ein kleiner Glanz für jede Jahreszeit. Alles von Hand gegossen.',
     count: (count: number) => `${count} ${count === 1 ? 'Produkt' : 'Produkte'}`,
-    cardTitle: { summer: 'Sommer\u00adkerzen', spring: 'Frühlings\u00adkerzen', autumn: 'Herbst\u00adkerzen', winter: 'Winter\u00adkerzen' },
+    cardTitle: { summer: 'Sommerkerzen', spring: 'Frühlingskerzen', autumn: 'Herbstkerzen', winter: 'Winterkerzen' },
     explore: (label: string) => `${label} entdecken`,
     all: 'Alles ansehen',
   },
@@ -93,7 +92,11 @@ export function Home() {
                     </div>
                     <div className="collection-card-body">
                       <p className="eyebrow">{season.label}</p>
-                      <h3>{copy.cardTitle[season.id] ?? season.label}</h3>
+                      {/* Phones show just the season in the compact tile. */}
+                      <h3>
+                        <span className="collection-card-title">{copy.cardTitle[season.id] ?? season.label}</span>
+                        <span className="collection-card-title-short">{season.label}</span>
+                      </h3>
                       <p>{season.description}</p>
                       <span className="product-cta">{copy.explore(season.label)}<span aria-hidden="true">→</span></span>
                     </div>

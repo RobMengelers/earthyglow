@@ -2,6 +2,11 @@
   padding: 72px 0;
 }
 
+/* The short season title is for the phone tiles only (see max-width: 640px). */
+.collection-card-title-short {
+  display: none;
+}
+
 .collection-card-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -59,16 +64,19 @@
     display: none;
   }
 
-  /* Titles shrink beside the arrow instead of pushing it out of the tile.
-     Long one-word titles break only where the copy marks it with a soft
-     hyphen (hyphens: manual), never at an arbitrary letter. */
   .collection-card-grid .collection-card-body h3 {
     min-width: 0;
-    font-size: clamp(0.88rem, 4.2vw, 1.02rem);
+    font-size: 1.05rem;
     line-height: 1.2;
     margin: 0;
-    hyphens: manual;
-    overflow-wrap: break-word;
+  }
+
+  .collection-card-grid .collection-card-title {
+    display: none;
+  }
+
+  .collection-card-grid .collection-card-title-short {
+    display: inline;
   }
 
   .collection-card-grid .collection-card-body::after {
