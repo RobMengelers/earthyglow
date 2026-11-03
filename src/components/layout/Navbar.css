@@ -165,6 +165,50 @@
   .navbar-inner {
     height: 64px;
   }
+
+  /* Phones: the brand and the buttons share one narrow row, so they all
+     tighten a little. */
+  .nav-actions {
+    gap: 0.4rem;
+  }
+
+  .cart-link,
+  .mobile-toggle {
+    width: 38px;
+    height: 38px;
+  }
+
+  .navbar .brand {
+    gap: 0.5rem;
+  }
+
+  .navbar .brand-logo {
+    height: 40px;
+  }
+
+  .navbar .brand-wordmark {
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .navbar .brand-logo {
+    height: 34px;
+  }
+
+  .navbar .brand-wordmark {
+    font-size: 1.02rem;
+  }
+
+  .nav-actions {
+    gap: 0.3rem;
+  }
+
+  .cart-link,
+  .mobile-toggle {
+    width: 34px;
+    height: 34px;
+  }
 }
 
 .cart-link {

@@ -134,13 +134,70 @@
   object-fit: cover;
 }
 
+/* Phones and tablets: the photo opens the page as a full-width band that
+   melts into the cream, and the copy follows on that cream, so the image is
+   seen straight away instead of below the fold. */
 @media (max-width: 960px) {
+  .hero {
+    --hero-photo: min(64svh, 600px);
+    padding: 0;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .hero-bg {
+    display: none;
+  }
+
+  /* The grid steps aside so the photo can span the full width. The copy
+     starts on the lower part of the photo, where it has already turned
+     cream. */
   .hero-grid {
-    grid-template-columns: 1fr;
-    gap: 48px;
+    display: block;
+    position: static;
+    padding: calc(var(--hero-photo) - 120px) 0 56px;
+  }
+
+  .hero-visual {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--hero-photo);
+    z-index: -1;
+    /* The desktop grid centres the image; as a band it must fill the width. */
+    justify-self: stretch;
+    animation-name: visualInSoft;
+  }
+
+  .hero-frame {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+    border: 0;
+  }
+
+  .hero-frame img {
+    object-position: center 30%;
+  }
+
+  .hero-frame::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    background: linear-gradient(
+      180deg,
+      rgba(251, 247, 240, 0) 0%,
+      rgba(251, 247, 240, 0) 42%,
+      rgba(251, 247, 240, 0.55) 62%,
+      rgba(251, 247, 240, 0.9) 76%,
+      var(--bg) 88%
+    );
   }
 
   .hero-copy {
+    position: relative;
     max-width: none;
     text-align: center;
   }
@@ -148,17 +205,41 @@
   .hero .lede {
     margin: 0 auto;
   }
+
+  .hero-actions {
+    justify-content: center;
+  }
+}
+
+/* As a backdrop the photo only fades and settles; scaling the full screen
+   would look jumpy. */
+@keyframes visualInSoft {
+  from {
+    opacity: 0;
+    transform: scale(1.04);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 @media (max-width: 640px) {
-
   .hero {
-    padding-top: 48px;
+    --hero-photo: min(56svh, 470px);
   }
 
-  .hero-frame {
-    width: min(340px, 100%);
-    margin-inline: auto;
+  .hero-grid {
+    padding: calc(var(--hero-photo) - 96px) 0 40px;
+  }
+
+  /* Sized to the screen so the title keeps its three lines on any phone. */
+  .hero h1 {
+    font-size: clamp(1.9rem, 10.2vw, 2.6rem);
+  }
+
+  .hero .lede {
+    font-size: 0.98rem;
   }
 }
 
