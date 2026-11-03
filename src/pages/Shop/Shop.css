@@ -11,8 +11,8 @@
   initial-value: 0px;
 }
 
-/* The scroll indicator belongs to the phone layout (see max-width: 640px). */
-.season-scrollbar {
+/* The scroll arrows belong to the phone layout (see max-width: 640px). */
+.season-arrow {
   display: none;
 }
 
@@ -171,8 +171,8 @@
     overflow-y: visible;
     -webkit-overflow-scrolling: touch;
     scroll-snap-type: x proximity;
-    /* The native scrollbar is hidden (phones only show it while swiping);
-       .season-scrollbar below is always visible instead. */
+    /* The native scrollbar is hidden; the edge fades and arrows (below) show
+       that the row scrolls. */
     scrollbar-width: none;
     padding: 0 4px;
     /* Snap to the items inside the padding, so the start really is 0. */
@@ -190,34 +190,58 @@
   }
 
   .season-nav[data-at-start='false'] {
-    --fade-start: 28px;
+    --fade-start: 44px;
   }
 
   .season-nav[data-at-end='false'] {
-    --fade-end: 36px;
+    --fade-end: 52px;
   }
 
-  /* An always-visible scroll indicator, shown only when the row overflows. */
-  .season-scrollbar {
-    display: block;
-    height: 4px;
-    margin: 2px 4px 0;
-    border-radius: 999px;
-    background: rgba(95, 59, 37, 0.1);
-    overflow: hidden;
+  /* Arrow buttons in the faded edges: they show that the row continues and
+     scroll it on tap. Each appears together with its edge's fade. */
+  .shop-filters {
+    position: relative;
   }
 
-  .season-nav[data-scrollable='false'] + .season-scrollbar {
-    display: none;
+  .season-arrow {
+    position: absolute;
+    bottom: 20px;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--clay);
+    box-shadow: 0 4px 12px rgba(42, 33, 25, 0.12);
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.85);
+    transition: opacity 0.25s ease, transform 0.25s ease;
   }
 
-  .season-scrollbar span {
-    display: block;
-    height: 100%;
-    width: 30%;
-    border-radius: inherit;
-    background: rgba(95, 59, 37, 0.45);
-    will-change: transform;
+  .season-arrow svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .season-arrow-prev {
+    left: -6px;
+  }
+
+  .season-arrow-next {
+    right: -6px;
+  }
+
+  .season-nav[data-at-start='false'] ~ .season-arrow-prev,
+  .season-nav[data-at-end='false'] ~ .season-arrow-next {
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
   }
 
   .season-link,
