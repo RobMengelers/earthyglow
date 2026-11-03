@@ -20,6 +20,12 @@ These tests mock database access and payments; they do not create real orders.
 Apply catalog migrations with `npm --prefix server run prisma:deploy` before releasing
 storefront changes that add products or options.
 
+## Analytics
+
+Google Analytics 4 is switched on by setting `VITE_GA_MEASUREMENT_ID` (e.g. `G-XXXXXXXXXX`) in Netlify's environment variables; it is baked in at build time, so redeploy after changing it. Without it there is no tracking and no cookie banner.
+
+Nothing from Google loads until a visitor clicks Accept in the cookie banner (`src/components/layout/CookieBanner.tsx`); "Cookie settings" in the footer asks again, and declining removes the GA cookies. Page views are sent on every route change, plus these shop events for GA's funnel reports: `view_item`, `add_to_cart`, `begin_checkout`, `add_payment_info` and `purchase` (sent once per order on the confirmation page). The logic lives in `src/lib/analytics.ts`.
+
 ## Coupon codes
 
 Coupon codes live in the `Coupon` table; the admin portal has a **Coupons** page

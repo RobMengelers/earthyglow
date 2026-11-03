@@ -1,6 +1,7 @@
 import { Link } from 'react-router'
 import { SocialLinks } from '../ui/SocialLinks'
 import { seasons } from '../../data/seasons'
+import { analyticsEnabled, resetConsent } from '../../lib/analytics'
 
 const policies = [
   { label: 'Privacy Policy', to: '/policies/privacy-policy' },
@@ -62,6 +63,13 @@ export function Footer() {
                 <Link to={policy.to} prefetch="intent">{policy.label}</Link>
               </li>
             ))}
+            {analyticsEnabled && (
+              <li>
+                <button type="button" className="footer-cookie-settings" onClick={resetConsent}>
+                  Cookie settings
+                </button>
+              </li>
+            )}
           </ul>
         </div>
       </div>

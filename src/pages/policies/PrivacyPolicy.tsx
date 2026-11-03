@@ -12,7 +12,7 @@ export function meta() {
 
 export function PrivacyPolicy() {
   return (
-    <PolicyLayout title="Privacy Policy" updated="21 September 2026">
+    <PolicyLayout title="Privacy Policy" updated="3 November 2026">
       <p>
         This policy explains how EarthyGlow handles personal data when you use
         this website, contact us, or place an order. EarthyGlow is operated by
@@ -37,16 +37,16 @@ export function PrivacyPolicy() {
         <li>To keep accounting and tax records and meet other legal duties (legal obligation).</li>
         <li>To answer messages, prevent misuse and secure the website (legitimate interests).</li>
       </ul>
-      <p>We do not currently send newsletters, run behavioural advertising or use analytics or advertising cookies. We will ask for consent before introducing optional marketing that needs it.</p>
+      <p>If you accept analytics cookies, we use Google Analytics to see how the site is used, such as which pages are visited and where people leave the checkout, so we can improve the shop (consent). We do not currently send newsletters or run behavioural advertising. We will ask for consent before introducing optional marketing that needs it.</p>
 
       <h2>Who receives your data</h2>
-      <p>We share only what is needed with service providers that help us run the shop: Mollie for payments, Resend for transactional and contact emails, our hosting and database providers (including Netlify and Railway), and delivery partners when needed to deliver an order. We may disclose data to authorities where the law requires it. These providers process data under their own terms and, where relevant, data-processing agreements.</p>
+      <p>We share only what is needed with service providers that help us run the shop: Mollie for payments, Resend for transactional and contact emails, Google for website analytics if you accept analytics cookies, our hosting and database providers (including Netlify and Railway), and delivery partners when needed to deliver an order. We may disclose data to authorities where the law requires it. These providers process data under their own terms and, where relevant, data-processing agreements.</p>
 
       <h2>Emails and contact forms</h2>
       <p>We use your email address to send receipts, fulfilment updates and other messages directly related to your order. A message sent through the contact form is forwarded to us so we can reply; it is not added to a marketing list.</p>
 
       <h2>Cookies and local storage</h2>
-      <p>The shop uses necessary browser storage for your cart. The app does not currently set analytics or advertising cookies. Links to social media open the third-party site rather than embedding a social widget here. Hosting or payment providers may use their own technical cookies when you visit their services; their privacy policies apply there.</p>
+      <p>The shop uses necessary browser storage for your cart and to remember your cookie choice. Analytics cookies from Google Analytics (named <code>_ga</code> and <code>_ga_…</code>, kept for up to 2 years) are only set after you accept them in the cookie banner. They give your browser a random ID so visits can be counted; we do not send your name, email address or order details to Google, Google signals and ad personalisation are switched off, and Google Analytics does not store IP addresses. You can change your choice at any time through &ldquo;Cookie settings&rdquo; in the footer; declining removes the analytics cookies. We do not set advertising cookies. Links to social media open the third-party site rather than embedding a social widget here. Hosting or payment providers may use their own technical cookies when you visit their services; their privacy policies apply there.</p>
 
       <h2>How long we keep data</h2>
       <p>We keep order and payment records for as long as needed to fulfil the order, handle returns or disputes, and meet accounting and tax duties. Contact messages are kept for as long as needed to respond and manage the relationship. We then delete or anonymise data when there is no longer a lawful reason to keep it. We do not promise a fixed period where legal obligations require a different one.</p>
