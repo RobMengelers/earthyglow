@@ -114,15 +114,80 @@
   }
 }
 
+/* Phones: the brand sits centred on top, Shop and Explore share a row, and
+   the policy links follow full width below, rather than every column
+   stacking into one long list. */
 @media (max-width: 640px) {
+  .footer {
+    padding-top: 52px;
+  }
 
+  /* minmax(0, 1fr): a long word must not stretch its column past the edge. */
   .footer-grid {
-    grid-template-columns: 1fr;
-    gap: 2.2rem;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 2rem 1.4rem;
+    padding-bottom: 2.4rem;
+  }
+
+  .footer-brand {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--line-light);
+  }
+
+  .footer-brand p {
+    max-width: 32ch;
+  }
+
+  .footer-socials {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.8rem 1.3rem;
+    margin-top: 1.2rem;
+  }
+
+  .footer-col h3 {
+    margin-bottom: 0.8rem;
+  }
+
+  .footer-col ul {
+    gap: 0.55rem;
+  }
+
+  /* A very long single word wraps rather than running off-screen. */
+  .footer-col a {
+    overflow-wrap: break-word;
+  }
+
+  /* The last column (Information) spans the full width below, so its long
+     policy names always fit on one line. */
+  .footer-col:last-child {
+    grid-column: 1 / -1;
   }
 
   .footer-bottom .container {
     flex-direction: column;
+    gap: 0.5rem;
     text-align: center;
+    font-size: 0.8rem;
+  }
+
+  /* The separator dots would start a wrapped line, so on phones the legal
+     details are simply spaced apart. */
+  .footer-legal {
+    justify-content: center;
+    gap: 0.25rem 1rem;
+  }
+
+  .footer-legal span:first-child {
+    flex-basis: 100%;
+  }
+
+  .footer-legal span + span::before {
+    display: none;
   }
 }
