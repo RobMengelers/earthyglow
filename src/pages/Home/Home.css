@@ -16,10 +16,59 @@
   }
 }
 
+/* Phones: the four seasons sit in a compact 2 × 2 grid of tiles, so they fit
+   on about one screen instead of four stacked cards. Each tile keeps its
+   photo, count, title and link; the eyebrow and description (which repeat the
+   season) are left to larger screens. */
 @media (max-width: 640px) {
+  .collections {
+    padding: 56px 0;
+  }
+
   .collection-card-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
     max-width: 520px;
     margin: 0 auto;
+  }
+
+  /* Scoped to the grid: the card's own stylesheet loads after this one. */
+  .collection-card-grid .collection-card-media {
+    aspect-ratio: 1 / 1;
+  }
+
+  .collection-card-grid .collection-card-count {
+    bottom: 8px;
+    left: 8px;
+    font-size: 0.68rem;
+    padding: 0.25rem 0.55rem;
+  }
+
+  /* Title and a small arrow share one row; the whole tile is the link. */
+  .collection-card-grid .collection-card-body {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.4rem;
+    padding: 0.7rem 0.75rem 0.75rem;
+  }
+
+  .collection-card-grid .collection-card-body .eyebrow,
+  .collection-card-grid .collection-card-body p,
+  .collection-card-grid .collection-card-body .product-cta {
+    display: none;
+  }
+
+  .collection-card-grid .collection-card-body h3 {
+    font-size: 1.02rem;
+    line-height: 1.2;
+    margin: 0;
+  }
+
+  .collection-card-grid .collection-card-body::after {
+    content: '→';
+    flex: none;
+    color: var(--clay);
+    font-size: 0.95rem;
   }
 }
