@@ -29,7 +29,8 @@ const homeCopy = defineCopy({
     title: 'Maak plaats voor een winterse gloed',
     lede: 'Knusse winterfavorieten en attente cadeaus, en een beetje gloed voor elk seizoen. Allemaal met de hand gegoten.',
     count: (count: number) => `${count} ${count === 1 ? 'product' : 'producten'}`,
-    cardTitle: { summer: 'Zomerkaarsen', spring: 'Lentekaarsen', autumn: 'Herfstkaarsen', winter: 'Winterkaarsen' },
+    // \u00ad marks where a long title may break on narrow screens.
+    cardTitle: { summer: 'Zomer\u00adkaarsen', spring: 'Lente\u00adkaarsen', autumn: 'Herfst\u00adkaarsen', winter: 'Winter\u00adkaarsen' },
     explore: (label: string) => `Ontdek ${label.toLowerCase()}`,
     all: 'Bekijk alles',
   },
@@ -38,7 +39,7 @@ const homeCopy = defineCopy({
     title: 'Mach Platz für winterlichen Glanz',
     lede: 'Gemütliche Winterlieblinge und liebevolle Geschenke, dazu ein kleiner Glanz für jede Jahreszeit. Alles von Hand gegossen.',
     count: (count: number) => `${count} ${count === 1 ? 'Produkt' : 'Produkte'}`,
-    cardTitle: { summer: 'Sommerkerzen', spring: 'Frühlingskerzen', autumn: 'Herbstkerzen', winter: 'Winterkerzen' },
+    cardTitle: { summer: 'Sommer\u00adkerzen', spring: 'Frühlings\u00adkerzen', autumn: 'Herbst\u00adkerzen', winter: 'Winter\u00adkerzen' },
     explore: (label: string) => `${label} entdecken`,
     all: 'Alles ansehen',
   },
