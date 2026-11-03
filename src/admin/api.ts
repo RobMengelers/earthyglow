@@ -94,6 +94,8 @@ export type AdminOrdersResponse = {
   stats: Record<string, number>
   /** Paid orders still waiting to be sent. */
   todoCount: number
+  /** Orders that were marked as sent. */
+  doneCount: number
   orders: AdminOrder[]
   /** Opaque id to pass back as `cursor` for the next page, or null at the end. */
   nextCursor: string | null
@@ -107,8 +109,11 @@ export type AdminOrdersQuery = {
   status?: string
   /** Free text over order number, customer name/email and city. */
   q?: string
-  /** Restrict to paid orders still awaiting fulfilment. */
-  fulfilmentOpen?: boolean
+  /**
+   * 'open': paid orders still awaiting fulfilment (the to-do list).
+   * 'processed': orders that were marked as sent.
+   */
+  fulfilment?: 'open' | 'processed'
   /** Cursor from a previous response's `nextCursor`. */
   cursor?: string | null
   limit?: number
@@ -256,7 +261,7 @@ export async function fetchAdminOrders(
     params.set('status', options.status)
   }
   if (options.q) params.set('q', options.q)
-  if (options.fulfilmentOpen) params.set('fulfilment', 'open')
+  if (options.fulfilment) params.set('fulfilment', options.fulfilment)
   if (options.cursor) params.set('cursor', options.cursor)
   if (options.limit) params.set('limit', String(options.limit))
   const query = params.toString()

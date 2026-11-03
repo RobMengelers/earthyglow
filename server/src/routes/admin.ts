@@ -691,6 +691,7 @@ export async function adminRoutes(app: FastifyInstance) {
           : undefined
       const search = (query.q ?? '').trim()
       const onlyOpen = query.fulfilment === 'open'
+      const onlyDone = query.fulfilment === 'processed'
       const parsedLimit = Number.parseInt(query.limit ?? '', 10)
       const limit = Number.isFinite(parsedLimit)
         ? Math.min(Math.max(parsedLimit, 1), ORDERS_MAX_PAGE_SIZE)
@@ -705,6 +706,9 @@ export async function adminRoutes(app: FastifyInstance) {
         // The fulfilment to-do is only meaningful for orders that were paid.
         where.status = 'paid'
         where.fulfillmentStatus = 'open'
+      } else if (onlyDone) {
+        // "Done" is everything that was marked sent, whatever happened after.
+        where.fulfillmentStatus = 'processed'
       } else if (statusFilter) {
         where.status = statusFilter
       }
@@ -726,9 +730,10 @@ export async function adminRoutes(app: FastifyInstance) {
         ]
       }
 
-      const [counts, todoCount, matched, paid, rows] = await Promise.all([
+      const [counts, todoCount, doneCount, matched, paid, rows] = await Promise.all([
         prisma.order.groupBy({ by: ['status'], _count: true }),
         prisma.order.count({ where: { status: 'paid', fulfillmentStatus: 'open' } }),
+        prisma.order.count({ where: { fulfillmentStatus: 'processed' } }),
         prisma.order.aggregate({ where, _count: true }),
         // "€X paid" in the header: the paid value of everything matching the
         // current filters, not just the page that happens to be loaded.
@@ -782,6 +787,7 @@ export async function adminRoutes(app: FastifyInstance) {
       return {
         stats,
         todoCount,
+        doneCount,
         orders: page.map((order) => ({
           ...order,
           hasInvoicePdf: archivedIds.has(order.id),

@@ -581,7 +581,15 @@
 .admin-filters {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.4rem;
+}
+
+.admin-filters-divider {
+  align-self: stretch;
+  width: 1px;
+  margin: 0.15rem 0.3rem;
+  background: var(--line);
 }
 
 .admin-filter {

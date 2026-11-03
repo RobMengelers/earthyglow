@@ -1,44 +1,54 @@
 import { ADMIN_STATUSES } from '../../../admin/api'
 
+export type FulfilmentFilter = 'open' | 'processed' | null
+
 // The pills double as navigation: the active one is reflected in the URL so a
 // filtered view can be bookmarked and the back button works.
 export function StatusFilter({
   value,
-  onlyOpen,
+  fulfilment,
   counts,
   todoCount,
+  doneCount,
   onChange,
 }: {
   value: string
-  onlyOpen: boolean
+  fulfilment: FulfilmentFilter
   counts: Record<string, number>
   todoCount: number
-  onChange: (next: { status: string; onlyOpen: boolean }) => void
+  doneCount: number
+  onChange: (next: { status: string; fulfilment: FulfilmentFilter }) => void
 }) {
   const total = Object.values(counts).reduce((sum, count) => sum + count, 0)
-  const isTodo = value === 'paid' && onlyOpen
 
   return (
     <div className="admin-filters" role="group" aria-label="Filter orders">
       <FilterPill
         label="To do"
         count={todoCount}
-        active={isTodo}
-        onClick={() => onChange({ status: 'paid', onlyOpen: true })}
+        active={fulfilment === 'open'}
+        onClick={() => onChange({ status: 'paid', fulfilment: 'open' })}
       />
+      <FilterPill
+        label="Done"
+        count={doneCount}
+        active={fulfilment === 'processed'}
+        onClick={() => onChange({ status: 'all', fulfilment: 'processed' })}
+      />
+      <span className="admin-filters-divider" aria-hidden="true" />
       <FilterPill
         label="All"
         count={total}
-        active={value === 'all' && !onlyOpen}
-        onClick={() => onChange({ status: 'all', onlyOpen: false })}
+        active={value === 'all' && fulfilment === null}
+        onClick={() => onChange({ status: 'all', fulfilment: null })}
       />
       {ADMIN_STATUSES.map((status) => (
         <FilterPill
           key={status}
           label={status}
           count={counts[status] ?? 0}
-          active={value === status && !onlyOpen}
-          onClick={() => onChange({ status, onlyOpen: false })}
+          active={value === status && fulfilment === null}
+          onClick={() => onChange({ status, fulfilment: null })}
         />
       ))}
     </div>

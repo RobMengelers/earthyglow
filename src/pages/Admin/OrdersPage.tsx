@@ -13,7 +13,7 @@ import { siteMeta } from '../../lib/seo'
 import { FulfillmentDialog } from './components/FulfillmentDialog'
 import { Modal } from './components/Modal'
 import { OrdersTable, type OrderRowAction } from './components/OrdersTable'
-import { StatusFilter } from './components/StatusFilter'
+import { StatusFilter, type FulfilmentFilter } from './components/StatusFilter'
 
 type Flash = { tone: 'success' | 'error'; text: string } | undefined
 
@@ -24,6 +24,7 @@ type OrdersView = {
   orders: AdminOrder[]
   stats: Record<string, number>
   todoCount: number
+  doneCount: number
   total: number
   paidTotalCents: number
   nextCursor: string | null
@@ -43,16 +44,24 @@ export default function OrdersPage() {
   // back button behaves. With no filter in the URL, the fulfilment to-do is
   // the default view.
   const statusParam = searchParams.get('status')
-  const onlyOpen = searchParams.has('fulfilment')
-    ? searchParams.get('fulfilment') === 'open'
-    : !searchParams.has('status')
-  const status = onlyOpen
-    ? 'paid'
-    : statusParam !== null && ADMIN_STATUSES.includes(statusParam)
-      ? statusParam
-      : 'all'
+  const fulfilmentParam = searchParams.get('fulfilment')
+  const fulfilment: FulfilmentFilter =
+    fulfilmentParam === 'open' || fulfilmentParam === 'processed'
+      ? fulfilmentParam
+      : searchParams.has('fulfilment') || searchParams.has('status')
+        ? null
+        : 'open'
+  const status =
+    fulfilment === 'open'
+      ? 'paid'
+      : fulfilment === 'processed'
+        ? 'all'
+        : statusParam !== null && ADMIN_STATUSES.includes(statusParam)
+          ? statusParam
+          : 'all'
   const query = searchParams.get('q') ?? ''
-  const isTodo = status === 'paid' && onlyOpen
+  const isTodo = fulfilment === 'open'
+  const isDone = fulfilment === 'processed'
 
   const [reloadKey, setReloadKey] = useState(0)
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -63,7 +72,7 @@ export default function OrdersPage() {
   >(null)
   const noticeShown = useRef(false)
 
-  const filtersKey = `${token ?? ''}|${status}|${onlyOpen}|${query}|${reloadKey}`
+  const filtersKey = `${token ?? ''}|${status}|${fulfilment ?? ''}|${query}|${reloadKey}`
   const [view, setView] = useState<OrdersView | null>(null)
   const [failure, setFailure] = useState<{ key: string; message: string } | null>(null)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -77,7 +86,7 @@ export default function OrdersPage() {
       fetchAdminOrders(token, {
         status: status === 'all' ? undefined : status,
         q: query || undefined,
-        fulfilmentOpen: onlyOpen,
+        fulfilment: fulfilment ?? undefined,
       })
         .then((result) => {
           if (cancelled) return
@@ -87,6 +96,7 @@ export default function OrdersPage() {
             orders: result.orders,
             stats: result.stats,
             todoCount: result.todoCount,
+            doneCount: result.doneCount,
             total: result.total,
             paidTotalCents: result.paidTotalCents,
             nextCursor: result.nextCursor,
@@ -102,7 +112,7 @@ export default function OrdersPage() {
     }, query ? 250 : 0)
 
     return () => { cancelled = true; clearTimeout(handle) }
-  }, [token, status, onlyOpen, query, filtersKey])
+  }, [token, status, fulfilment, query, filtersKey])
 
   // Coming back from "new order" carries its outcome in the route state, so the
   // message survives the redirect without a global store.
@@ -117,7 +127,7 @@ export default function OrdersPage() {
   const data = view?.key === filtersKey ? view : null
   const loadError = failure?.key === filtersKey ? failure.message : ''
   const loading = data === null && loadError === ''
-  const hasFilters = query !== '' || (!isTodo && status !== 'all')
+  const hasFilters = query !== '' || isDone || (!isTodo && status !== 'all')
 
   async function loadMore() {
     if (!token || !data || !data.nextCursor || loadingMore) return
@@ -126,7 +136,7 @@ export default function OrdersPage() {
       const next = await fetchAdminOrders(token, {
         status: status === 'all' ? undefined : status,
         q: query || undefined,
-        fulfilmentOpen: onlyOpen,
+        fulfilment: fulfilment ?? undefined,
         cursor: data.nextCursor,
       })
       setView((current) =>
@@ -234,8 +244,10 @@ export default function OrdersPage() {
             {loading || !data
               ? isTodo
                 ? 'Paid orders still waiting to be sent.'
-                : 'Everything bought online and in the shop.'
-              : `${count} ${isTodo ? 'to send' : 'in view'} · ${formatEuros(data.paidTotalCents)} paid${
+                : isDone
+                  ? 'Orders that have been sent.'
+                  : 'Everything bought online and in the shop.'
+              : `${count} ${isTodo ? 'to send' : isDone ? 'sent' : 'in view'} · ${formatEuros(data.paidTotalCents)} paid${
                   loaded < count ? ` · showing ${loaded}` : ''
                 }`}
           </p>
@@ -250,13 +262,14 @@ export default function OrdersPage() {
       <div className="admin-toolbar">
         <StatusFilter
           value={status}
-          onlyOpen={onlyOpen}
+          fulfilment={fulfilment}
           counts={data?.stats ?? {}}
           todoCount={data?.todoCount ?? 0}
+          doneCount={data?.doneCount ?? 0}
           onChange={(next) =>
             updateParams({
               status: next.status,
-              fulfilment: next.onlyOpen ? 'open' : null,
+              fulfilment: next.fulfilment,
             })
           }
         />

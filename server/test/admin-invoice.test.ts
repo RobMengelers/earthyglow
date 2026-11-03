@@ -312,3 +312,43 @@ test('the fulfilment to-do filter only lists paid, unprocessed orders', async (t
     assert.equal(where.fulfillmentStatus, 'open')
   }
 })
+
+test('the done filter lists every order marked as sent', async (t) => {
+  const restore: (() => void)[] = []
+  const stub = (key: string, impl: unknown) => {
+    const original = Reflect.get(prisma.order, key)
+    Reflect.set(prisma.order, key, impl)
+    restore.push(() => { Reflect.set(prisma.order, key, original) })
+  }
+  t.after(() => { for (const undo of restore) undo() })
+
+  const pageWhere: { status?: string; fulfillmentStatus?: string }[] = []
+  stub('groupBy', async () => [{ status: 'paid', _count: 4 }])
+  stub('count', async (args: { where?: { fulfillmentStatus?: string } }) =>
+    args.where?.fulfillmentStatus === 'processed' ? 5 : 2)
+  stub('aggregate', async (args: { _sum?: unknown; where?: { status?: string; fulfillmentStatus?: string } }) => {
+    if (!args._sum) pageWhere.push(args.where ?? {})
+    return args._sum ? { _sum: { totalCents: 9500 } } : { _count: 5 }
+  })
+  stub('findMany', async (args: { select?: unknown; where?: { status?: string; fulfillmentStatus?: string } }) => {
+    if (args.select) return []
+    pageWhere.push(args.where ?? {})
+    return [makeOrder({ fulfillmentStatus: 'processed' })]
+  })
+
+  const { app, token } = await authedApp()
+  const response = await app.inject({
+    method: 'GET',
+    url: '/api/admin/orders?fulfilment=processed&status=paid',
+    headers: { authorization: `Bearer ${token}` },
+  })
+
+  assert.equal(response.statusCode, 200)
+  assert.equal(response.json().doneCount, 5)
+  assert.equal(response.json().todoCount, 2)
+  assert.equal(pageWhere.length, 2)
+  for (const where of pageWhere) {
+    assert.equal(where.status, undefined)
+    assert.equal(where.fulfillmentStatus, 'processed')
+  }
+})
