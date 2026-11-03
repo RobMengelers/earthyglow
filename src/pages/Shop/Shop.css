@@ -1,3 +1,21 @@
+/* Registered so the edge fades of the season row can ease in and out. */
+@property --fade-start {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --fade-end {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+/* The scroll indicator belongs to the phone layout (see max-width: 640px). */
+.season-scrollbar {
+  display: none;
+}
+
 .shop-body {
   background: var(--surface);
   padding: 28px 0 96px;
@@ -153,30 +171,53 @@
     overflow-y: visible;
     -webkit-overflow-scrolling: touch;
     scroll-snap-type: x proximity;
-    scrollbar-width: thin;
-    scrollbar-gutter: stable;
-    padding: 0 4px 8px;
-    /* hint that content scrolls horizontally */
-    mask-image: linear-gradient(to right, transparent 0, black 12px, black calc(100% - 24px), transparent 100%);
-    -webkit-mask-image: linear-gradient(to right, transparent 0, black 12px, black calc(100% - 24px), transparent 100%);
+    /* The native scrollbar is hidden (phones only show it while swiping);
+       .season-scrollbar below is always visible instead. */
+    scrollbar-width: none;
+    padding: 0 4px;
+    /* Snap to the items inside the padding, so the start really is 0. */
+    scroll-padding-inline: 4px;
+    /* An edge only fades while there is more to scroll towards it. */
+    --fade-start: 0px;
+    --fade-end: 0px;
+    mask-image: linear-gradient(to right, transparent 0, #000 var(--fade-start), #000 calc(100% - var(--fade-end)), transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--fade-start), #000 calc(100% - var(--fade-end)), transparent 100%);
+    transition: --fade-start 0.25s ease, --fade-end 0.25s ease;
   }
 
   .season-nav::-webkit-scrollbar {
-    height: 6px;
+    display: none;
   }
 
-  .season-nav::-webkit-scrollbar-track {
-    background: rgba(95, 59, 37, 0.08);
+  .season-nav[data-at-start='false'] {
+    --fade-start: 28px;
+  }
+
+  .season-nav[data-at-end='false'] {
+    --fade-end: 36px;
+  }
+
+  /* An always-visible scroll indicator, shown only when the row overflows. */
+  .season-scrollbar {
+    display: block;
+    height: 4px;
+    margin: 2px 4px 0;
     border-radius: 999px;
+    background: rgba(95, 59, 37, 0.1);
+    overflow: hidden;
   }
 
-  .season-nav::-webkit-scrollbar-thumb {
-    background: rgba(95, 59, 37, 0.4);
-    border-radius: 999px;
+  .season-nav[data-scrollable='false'] + .season-scrollbar {
+    display: none;
   }
 
-  .season-nav::-webkit-scrollbar-thumb:hover {
-    background: rgba(95, 59, 37, 0.55);
+  .season-scrollbar span {
+    display: block;
+    height: 100%;
+    width: 30%;
+    border-radius: inherit;
+    background: rgba(95, 59, 37, 0.45);
+    will-change: transform;
   }
 
   .season-link,
