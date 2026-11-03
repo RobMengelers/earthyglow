@@ -59,10 +59,15 @@
     display: none;
   }
 
+  /* Long one-word titles (Dutch and German compounds) shrink beside the
+     arrow and hyphenate rather than pushing it out of the tile. */
   .collection-card-grid .collection-card-body h3 {
-    font-size: 1.02rem;
+    min-width: 0;
+    font-size: clamp(0.88rem, 4.2vw, 1.02rem);
     line-height: 1.2;
     margin: 0;
+    hyphens: auto;
+    overflow-wrap: break-word;
   }
 
   .collection-card-grid .collection-card-body::after {
