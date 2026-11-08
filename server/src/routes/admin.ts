@@ -1,4 +1,4 @@
-import { deductOrderMaterials } from '../material-stock.js'
+import { applyMaterialUsage, deductOrderMaterials, recipeMaterialUsage } from '../material-stock.js'
 import { Prisma, type OrderStatus } from '@prisma/client'
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { gzipSync, gunzipSync } from 'node:zlib'
@@ -96,6 +96,59 @@ const manualOrderSchema = z.object({
   notes: z.string().trim().max(500).optional().default(''),
   sendInvoiceEmail: z.boolean().optional().default(false),
 })
+
+// Checks a catalog line against the database. The name, variant and colour
+// always come from there, never from the form.
+async function resolveCatalogLine(productId: string, variantId?: string, colorId?: string) {
+  const product = await prisma.product.findUnique({
+    where: { id: productId },
+    select: {
+      id: true,
+      name: true,
+      active: true,
+      _count: { select: { variants: true, colors: true } },
+    },
+  })
+  if (!product || !product.active) return { error: `Product "${productId}" is not available` }
+  if (product._count.variants > 0 && !variantId) return { error: `Please choose an option for "${product.name}"` }
+  const variant = variantId
+    ? await prisma.productVariant.findFirst({ where: { id: variantId, productId: product.id, active: true } })
+    : null
+  if (variantId && !variant) return { error: `Variant for "${product.name}" is not available` }
+  if (product._count.colors > 0 && !colorId) return { error: `Please choose a colour for "${product.name}"` }
+  const color = colorId
+    ? await prisma.productColor.findFirst({ where: { id: colorId, productId: product.id, active: true } })
+    : null
+  if (colorId && !color) return { error: `Colour for "${product.name}" is not available` }
+  return {
+    productId: product.id,
+    name: product.name,
+    variantId: variantId ?? null,
+    variantLabel: variant?.label ?? null,
+    colorId: colorId ?? null,
+    colorLabel: color?.label ?? null,
+  }
+}
+
+const testerOrderSchema = z.object({
+  date: z.iso.date(),
+  description: z.string().trim().min(1, 'Describe what the products were used for').max(1000),
+  items: z
+    .array(
+      z.object({
+        productId: z.string().trim().min(1).max(100).optional(),
+        name: z.string().trim().min(1).max(200).optional(),
+        variantId: z.string().trim().min(1).max(80).optional(),
+        colorId: z.string().trim().min(1).max(80).optional(),
+        quantity: z.number().int().min(1).max(99),
+      }).refine((item) => Boolean(item.productId) !== Boolean(item.name), 'Choose a product or enter a custom item name')
+        .refine((item) => Boolean(item.productId) || (!item.variantId && !item.colorId), 'Custom items cannot have catalog options'),
+    )
+    .min(1)
+    .max(50),
+})
+
+const TESTER_ITEMS = { items: { orderBy: { position: 'asc' as const } } }
 
 // The shop prices everything VAT-inclusive at 21% (see the invoice), so a
 // purchase's receipt total is split exactly the way invoices are: net is what
@@ -449,6 +502,102 @@ export async function adminRoutes(app: FastifyInstance) {
     async () => ({ ok: true }),
   )
 
+  // Products used for testing or filming. These consume materials like a sale
+  // does, but stay out of orders, revenue and invoices.
+  const saveTesterOrder = async (request: FastifyRequest, reply: FastifyReply) => {
+    const id = (request.params as { id?: string }).id
+    const parsed = testerOrderSchema.safeParse(request.body)
+    if (!parsed.success) {
+      return reply.code(400).send({ error: parsed.error.issues[0]?.message ?? 'Invalid tester order' })
+    }
+    const { date, description, items } = parsed.data
+
+    const lines: Prisma.TesterOrderItemCreateManyTesterOrderInput[] = []
+    for (const item of items) {
+      if (!item.productId) {
+        lines.push({ productId: 'custom', name: item.name!, quantity: item.quantity, position: lines.length })
+        continue
+      }
+      const resolved = await resolveCatalogLine(item.productId, item.variantId, item.colorId)
+      if ('error' in resolved) return reply.code(400).send({ error: resolved.error })
+      lines.push({ ...resolved, quantity: item.quantity, position: lines.length })
+    }
+
+    const data = { description, usedAt: new Date(`${date}T00:00:00.000Z`) }
+    try {
+      const tester = await prisma.$transaction(async (tx) => {
+        // The write comes first: on an edit it locks the row, so the deductions
+        // it returns cannot be reversed twice by a concurrent save.
+        const saved = id
+          ? await tx.testerOrder.update({ where: { id }, data: { ...data, items: { deleteMany: {}, create: lines } } })
+          : await tx.testerOrder.create({ data: { ...data, items: { create: lines } } })
+        const usage = await recipeMaterialUsage(tx, lines.map((line) => ({
+          productId: line.productId, variantId: line.variantId ?? null, colorId: line.colorId ?? null, quantity: line.quantity,
+        })))
+        await applyMaterialUsage(tx, saved.materialDeductions as Record<string, number>, usage)
+        return tx.testerOrder.update({ where: { id: saved.id }, data: { materialDeductions: usage }, include: TESTER_ITEMS })
+      })
+      return { tester }
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        return reply.code(404).send({ error: 'Tester order not found' })
+      }
+      request.log.error({ error }, 'Could not save tester order')
+      return reply.code(500).send({ error: 'Could not save the tester order' })
+    }
+  }
+
+  app.get('/api/admin/testers', { preHandler: requireAdmin }, async () => {
+    const testers = await prisma.testerOrder.findMany({
+      orderBy: [{ usedAt: 'desc' }, { createdAt: 'desc' }],
+      include: TESTER_ITEMS,
+    })
+    const materialIds = [...new Set(testers.flatMap((tester) => Object.keys(tester.materialDeductions as object)))]
+    const materials = await prisma.material.findMany({
+      where: { id: { in: materialIds } },
+      select: { id: true, name: true, unit: true },
+    })
+    return {
+      testers: testers.map((tester) => {
+        const usage = tester.materialDeductions as Record<string, number>
+        return {
+          ...tester,
+          materials: materials
+            .filter((material) => usage[material.id])
+            .map((material) => ({ ...material, amount: usage[material.id] })),
+        }
+      }),
+    }
+  })
+
+  app.get('/api/admin/testers/:id', { preHandler: requireAdmin }, async (request, reply) => {
+    const { id } = request.params as { id: string }
+    const tester = await prisma.testerOrder.findUnique({ where: { id }, include: TESTER_ITEMS })
+    if (!tester) return reply.code(404).send({ error: 'Tester order not found' })
+    return tester
+  })
+
+  app.post('/api/admin/testers', { preHandler: requireAdmin }, saveTesterOrder)
+  app.put('/api/admin/testers/:id', { preHandler: requireAdmin }, saveTesterOrder)
+
+  // Deleting a tester order gives its materials back.
+  app.delete('/api/admin/testers/:id', { preHandler: requireAdmin }, async (request, reply) => {
+    const { id } = request.params as { id: string }
+    try {
+      await prisma.$transaction(async (tx) => {
+        const deleted = await tx.testerOrder.delete({ where: { id } })
+        await applyMaterialUsage(tx, deleted.materialDeductions as Record<string, number>, {})
+      })
+      return { ok: true }
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        return reply.code(404).send({ error: 'Tester order not found' })
+      }
+      request.log.error({ error }, 'Could not delete tester order')
+      return reply.code(500).send({ error: 'Could not delete the tester order' })
+    }
+  })
+
   // Records a sale made in person. The order is born paid (the money changed
   // hands in the shop) and its invoice PDF is archived immediately, so the
   // download button works without ever going through the email flow.
@@ -484,62 +633,13 @@ export async function adminRoutes(app: FastifyInstance) {
           quantity: item.quantity, lineTotalCents: item.unitPriceCents * item.quantity, position: lines.length })
         continue
       }
-      const product = await prisma.product.findUnique({
-        where: { id: item.productId },
-        select: {
-          id: true,
-          name: true,
-          active: true,
-          _count: { select: { variants: true, colors: true } },
-        },
-      })
-      if (!product || !product.active) {
-        return reply
-          .code(400)
-          .send({ error: `Product "${item.productId}" is not available` })
-      }
-      if (product._count.variants > 0 && !item.variantId) {
-        return reply
-          .code(400)
-          .send({ error: `Please choose an option for "${product.name}"` })
-      }
-      const variant = item.variantId
-        ? await prisma.productVariant.findFirst({
-            where: { id: item.variantId, productId: product.id, active: true },
-          })
-        : null
-      if (item.variantId && !variant) {
-        return reply
-          .code(400)
-          .send({ error: `Variant for "${product.name}" is not available` })
-      }
-      // The colour tells the shop what to pour, so it is recorded just like the
-      // variant — and it comes from the database, never from the form.
-      if (product._count.colors > 0 && !item.colorId) {
-        return reply
-          .code(400)
-          .send({ error: `Please choose a colour for "${product.name}"` })
-      }
-      const color = item.colorId
-        ? await prisma.productColor.findFirst({
-            where: { id: item.colorId, productId: product.id, active: true },
-          })
-        : null
-      if (item.colorId && !color) {
-        return reply
-          .code(400)
-          .send({ error: `Colour for "${product.name}" is not available` })
-      }
+      const resolved = await resolveCatalogLine(item.productId, item.variantId, item.colorId)
+      if ('error' in resolved) return reply.code(400).send({ error: resolved.error })
       // The admin's price wins (market/trade discount), but the name, variant
       // and colour are always the database's so the invoice stays truthful.
       const unitPriceCents = item.unitPriceCents
       lines.push({
-        productId: product.id,
-        name: product.name,
-        variantId: item.variantId ?? null,
-        variantLabel: variant?.label ?? null,
-        colorId: item.colorId ?? null,
-        colorLabel: color?.label ?? null,
+        ...resolved,
         unitPriceCents,
         quantity: item.quantity,
         lineTotalCents: unitPriceCents * item.quantity,

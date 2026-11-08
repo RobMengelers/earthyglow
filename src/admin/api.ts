@@ -241,6 +241,62 @@ export async function createManualOrder(
   return body as CreatedOrderResult
 }
 
+export type AdminTester = {
+  id: string
+  description: string
+  usedAt: string
+  items: {
+    id: string
+    productId: string
+    name: string
+    variantId: string | null
+    variantLabel: string | null
+    colorId: string | null
+    colorLabel: string | null
+    quantity: number
+  }[]
+  materials: { id: string; name: string; unit: string; amount: number }[]
+}
+
+export type AdminTesterInput = {
+  date: string
+  description: string
+  items: { productId?: string; name?: string; variantId?: string; colorId?: string; quantity: number }[]
+}
+
+async function testerRequest<T>(token: string, path: string, fallback: string, init: RequestInit = {}): Promise<T> {
+  const response = await fetch(`${API_URL}/api/admin/testers${path}`, {
+    ...init,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      ...(init.body ? { 'Content-Type': 'application/json' } : {}),
+    },
+  })
+  const body = (await response.json().catch(() => null)) as (T & { error?: string }) | null
+  if (!response.ok) throw new Error(body?.error ?? fallback)
+  return body as T
+}
+
+export async function fetchAdminTesters(token: string): Promise<AdminTester[]> {
+  const body = await testerRequest<{ testers: AdminTester[] }>(token, '', 'Could not load tester orders')
+  return body.testers
+}
+
+export function fetchAdminTester(token: string, id: string): Promise<Omit<AdminTester, 'materials'>> {
+  return testerRequest(token, `/${id}`, 'Could not load the tester order')
+}
+
+export async function saveAdminTester(token: string, input: AdminTesterInput, id?: string): Promise<void> {
+  await testerRequest(token, id ? `/${id}` : '', 'Could not save the tester order', {
+    method: id ? 'PUT' : 'POST',
+    body: JSON.stringify(input),
+  })
+}
+
+export async function deleteAdminTester(token: string, id: string): Promise<void> {
+  await testerRequest(token, `/${id}`, 'Could not delete the tester order', { method: 'DELETE' })
+}
+
 const ORDER_STATUSES = [
   'pending',
   'paid',

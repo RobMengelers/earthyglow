@@ -200,9 +200,44 @@ model OrderItem {
   @@index([orderId])
 }
 
+// Products used up without being sold (testing, filming content). Kept apart
+// from Order so they never reach revenue, invoices or fulfilment, while still
+// consuming materials through the product's recipe.
+model TesterOrder {
+  id                 String   @id @default(uuid())
+  // Free text: what the products were used for.
+  description        String
+  usedAt             DateTime
+  // Actual consumption, so an edit or delete reverses the original amounts
+  // even if the recipe has since changed.
+  materialDeductions Json     @default("{}")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  items TesterOrderItem[]
+
+  @@index([usedAt])
+}
+
+model TesterOrderItem {
+  id            String      @id @default(uuid())
+  testerOrderId String
+  testerOrder   TesterOrder @relation(fields: [testerOrderId], references: [id], onDelete: Cascade)
+  productId     String
+  name          String
+  variantId     String?
+  variantLabel  String?
+  colorId       String?
+  colorLabel    String?
+  quantity      Int
+  position      Int         @default(0)
+
+  @@index([testerOrderId])
+}
+
 // A raw material kept in stock for making candles (wax, scent, …). The
 // quantity is stored as a float in `unit` (kg, g, …) and only ever changes
-// through stock adjustments and paid-order recipe deductions.
+// through stock adjustments and paid-order or tester recipe deductions.
 model Material {
   id        String   @id @default(uuid())
   name      String
