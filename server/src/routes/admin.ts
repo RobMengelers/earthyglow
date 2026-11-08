@@ -150,6 +150,51 @@ const testerOrderSchema = z.object({
 
 const TESTER_ITEMS = { items: { orderBy: { position: 'asc' as const } } }
 
+type RecipeCost = { productId: string; variantId: string | null; colorId: string | null; costCents: number | null }
+
+// Best match first: exact combination, then variant, then color, then the
+// product default.
+function matchingRecipes(
+  recipes: RecipeCost[],
+  sale: { productId: string; variantId: string | null; colorId: string | null },
+) {
+  return recipes
+    .filter(recipe => recipe.productId === sale.productId &&
+      (!recipe.variantId || recipe.variantId === sale.variantId) &&
+      (!recipe.colorId || recipe.colorId === sale.colorId))
+    .sort((a, b) => (Number(!!b.variantId) * 2 + Number(!!b.colorId)) - (Number(!!a.variantId) * 2 + Number(!!a.colorId)))
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000
+
+// The overview graphs show days for a month, weeks counted from the first day
+// for a quarter, and months for a year. Buckets use the same UTC windows as the
+// overview totals, so the bars add up to the cards.
+function chartBuckets(period: 'month' | 'quarter' | 'year', start: Date, end: Date) {
+  const starts: Date[] = []
+  if (period === 'year') {
+    for (let month = 0; month < 12; month++) starts.push(new Date(Date.UTC(start.getUTCFullYear(), month, 1)))
+  } else {
+    const step = period === 'quarter' ? 7 * DAY_MS : DAY_MS
+    for (let time = start.getTime(); time < end.getTime(); time += step) starts.push(new Date(time))
+  }
+  const indexOf = (date: Date) => {
+    if (period === 'year') return date.getUTCMonth()
+    return Math.floor((date.getTime() - start.getTime()) / (period === 'quarter' ? 7 * DAY_MS : DAY_MS))
+  }
+  return {
+    unit: period === 'year' ? 'month' as const : period === 'quarter' ? 'week' as const : 'day' as const,
+    indexOf,
+    points: starts.map((date) => ({
+      start: date.toISOString().slice(0, 10),
+      revenueCents: 0,
+      netRevenueCents: 0,
+      expensesCents: 0,
+      productionCostCents: 0,
+    })),
+  }
+}
+
 // The shop prices everything VAT-inclusive at 21% (see the invoice), so a
 // purchase's receipt total is split exactly the way invoices are: net is what
 // is left after pulling the included VAT out of the gross price.
@@ -986,11 +1031,7 @@ export async function adminRoutes(app: FastifyInstance) {
       for (const sale of sales) {
         const quantity = sale._sum.quantity ?? 0
         const isCustom = sale.productId === 'custom'
-        const matching = recipes.filter(recipe => recipe.productId === sale.productId &&
-          (!recipe.variantId || recipe.variantId === sale.variantId) &&
-          (!recipe.colorId || recipe.colorId === sale.colorId))
-        // Exact combination, then variant, then color, then the product default.
-        matching.sort((a, b) => (Number(!!b.variantId) * 2 + Number(!!b.colorId)) - (Number(!!a.variantId) * 2 + Number(!!a.colorId)))
+        const matching = matchingRecipes(recipes, sale)
         const hasRecipe = matching.length > 0
         const cost = matching[0]?.costCents
         if (!isCustom) {
@@ -1017,6 +1058,42 @@ export async function adminRoutes(app: FastifyInstance) {
     }
     const production = await productionCosts(periodStart, periodEnd)
     const previousProduction = await productionCosts(previousPeriodStart, periodStart)
+
+    const buckets = chartBuckets(period, periodStart, periodEnd)
+    const [chartOrders, chartPurchases, chartRecipes] = await Promise.all([
+      prisma.order.findMany({
+        where: { status: 'paid', paidAt: { gte: periodStart, lt: periodEnd } },
+        select: {
+          paidAt: true,
+          totalCents: true,
+          pricesIncludeVat: true,
+          items: { select: { productId: true, variantId: true, colorId: true, quantity: true } },
+        },
+      }),
+      prisma.purchase.findMany({
+        where: { dateBought: { gte: periodStart, lt: periodEnd } },
+        select: { dateBought: true, costCents: true },
+      }),
+      prisma.recipe.findMany({
+        select: { productId: true, costCents: true, variantId: true, colorId: true },
+        orderBy: [{ updatedAt: 'desc' }, { id: 'asc' }],
+      }),
+    ])
+    for (const order of chartOrders) {
+      const point = buckets.points[buckets.indexOf(order.paidAt!)]
+      if (!point) continue
+      point.revenueCents += order.totalCents
+      point.netRevenueCents += order.pricesIncludeVat ? includedVatSplit(order.totalCents).netCents : order.totalCents
+      for (const item of order.items) {
+        if (item.productId !== 'custom') {
+          point.productionCostCents += (matchingRecipes(chartRecipes, item)[0]?.costCents ?? 0) * item.quantity
+        }
+      }
+    }
+    for (const purchase of chartPurchases) {
+      const point = buckets.points[buckets.indexOf(purchase.dateBought)]
+      if (point) point.expensesCents += purchase.costCents
+    }
 
     const cachedIds = recent.map((order) => order.id)
     const archivedIds = new Set(
@@ -1061,6 +1138,7 @@ export async function adminRoutes(app: FastifyInstance) {
       profitCents: revenueCents - production.costCents,
       previousProfitCents: previousRevenueCents - previousProduction.costCents,
       profitAfterPurchasesCents: revenueCents - expensesCents,
+      chart: { unit: buckets.unit, points: buckets.points },
       unfulfilledCount,
       customerCount,
       recentOrders: recent.map((order) => ({

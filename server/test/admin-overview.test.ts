@@ -43,6 +43,8 @@ function stubOverview(
     previousExpenses?: number
     unfulfilled?: number
     customerCount?: number
+    chartOrders?: unknown[]
+    chartPurchases?: unknown[]
   } = {},
 ) {
   const restore: (() => void)[] = []
@@ -113,10 +115,12 @@ function stubOverview(
       },
     }
   })
+  stub(prisma.purchase, 'findMany', async () => options.chartPurchases ?? [])
   stub(prisma.order, 'count', async () => options.unfulfilled ?? 3)
   stub(prisma.customer, 'count', async () => options.customerCount ?? 9)
   stub(prisma.order, 'findMany', async (args: Record<string, unknown>) => {
     findManyCalls.push(args)
+    if ((args.where as { status?: string } | undefined)?.status === 'paid') return options.chartOrders ?? []
     if (args.select) {
       const where = (args.where ?? {}) as { id?: { in?: string[] } }
       const wanted = new Set(where.id?.in ?? [])
@@ -205,7 +209,7 @@ test('overview only asks for the archived flag of the orders it shows', async (t
   assert.ok(rowsCall, 'should fetch the recent orders in one query')
   assert.equal(rowsCall.select, undefined, 'the recent query must include items')
 
-  const idCalls = findManyCalls.filter((call) => call.select)
+  const idCalls = findManyCalls.filter((call) => call.select && call.where?.id)
   assert.equal(idCalls.length, 1, 'one ids-only query for the archive flags')
   assert.deepEqual((idCalls[0].where as { id: { in: string[] } }).id.in, ['a', 'b'])
 })
@@ -216,7 +220,7 @@ test('overview skips the archive lookup when there are no orders', async (t) => 
 
   assert.equal(response.statusCode, 200)
   assert.deepEqual(response.json().recentOrders, [])
-  assert.equal(findManyCalls.length, 1, 'no wasted archive query')
+  assert.equal(findManyCalls.filter((call) => call.select && call.where?.id).length, 0, 'no wasted archive query')
   assert.equal(response.json().revenueCents, 12500)
 })
 
@@ -334,4 +338,34 @@ test('profit uses exact option recipes before variant, color and product default
   assert.equal(response.statusCode, 200)
   assert.equal(response.json().productionCostCents, 1400)
   assert.equal(response.json().missingCostUnits, 0)
+})
+
+test('overview graphs put sales, recipe costs and purchases in the right day', async (t) => {
+  stubOverview(t, {
+    chartOrders: [
+      { paidAt: new Date('2026-11-03T15:00:00.000Z'), totalCents: 1210, pricesIncludeVat: true, items: [{ productId: 'candle', variantId: null, colorId: null, quantity: 2 }, { productId: 'custom', variantId: null, colorId: null, quantity: 1 }] },
+      { paidAt: new Date('2026-11-03T18:00:00.000Z'), totalCents: 500, pricesIncludeVat: false, items: [] },
+    ],
+    chartPurchases: [{ dateBought: new Date('2026-11-30T00:00:00.000Z'), costCents: 700 }],
+  })
+  const { response } = await fetchOverview('month', '2026-11-01')
+  const { chart } = response.json()
+  assert.equal(chart.unit, 'day')
+  assert.equal(chart.points.length, 30)
+  assert.deepEqual(chart.points[2], { start: '2026-11-03', revenueCents: 1710, netRevenueCents: 1500, expensesCents: 0, productionCostCents: 242 })
+  assert.equal(chart.points[29].expensesCents, 700)
+})
+
+test('overview graphs use weeks for a quarter and months for a year', async (t) => {
+  stubOverview(t, {
+    chartOrders: [{ paidAt: new Date('2026-12-31T23:00:00.000Z'), totalCents: 100, pricesIncludeVat: false, items: [] }],
+  })
+  const quarter = (await fetchOverview('quarter', '2026-10-01')).response.json().chart
+  assert.equal(quarter.unit, 'week')
+  assert.equal(quarter.points.length, 14)
+  assert.equal(quarter.points[13].revenueCents, 100)
+  const year = (await fetchOverview('year', '2026-01-01')).response.json().chart
+  assert.equal(year.unit, 'month')
+  assert.equal(year.points.length, 12)
+  assert.equal(year.points[11].revenueCents, 100)
 })
