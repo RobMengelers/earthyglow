@@ -126,7 +126,19 @@ export type AdminSoldItem = {
   recipeStatus: 'ready' | 'missing' | 'no-cost' | 'custom'
 }
 
+export type OverviewChartBucket = 'day' | 'week' | 'month'
+
+export type OverviewChartPoint = {
+  /** First day of this bucket, YYYY-MM-DD. */
+  start: string
+  revenueCents: number
+  netRevenueCents: number
+  expensesCents: number
+  productionCostCents: number
+}
+
 export type AdminOverview = {
+  chart: { unit: OverviewChartBucket; points: OverviewChartPoint[] }
   productionCostCents: number
   previousProductionCostCents: number
   missingCostUnits: number
