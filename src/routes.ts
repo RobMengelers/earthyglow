@@ -22,6 +22,9 @@ export default [
     route('documents', './pages/Admin/DocumentsPage.tsx'),
     route('orders/:id/edit', './pages/Admin/EditOrderPage.tsx'),
     route('orders/new', './pages/Admin/NewOrderPage.tsx'),
+    route('testers', './pages/Admin/TestersPage.tsx'),
+    route('testers/new', './pages/Admin/NewTesterPage.tsx'),
+    route('testers/:id/edit', './pages/Admin/EditTesterPage.tsx'),
   ]),
   layout('./components/layout/Layout.tsx', [
     index('./pages/Home/Home.tsx'),

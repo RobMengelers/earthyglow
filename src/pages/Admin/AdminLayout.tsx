@@ -208,6 +208,9 @@ function AdminShell() {
               </span>
             )}
           </NavLink>
+          <NavLink to="/admin/testers" end className="admin-nav-link">
+            Testers
+          </NavLink>
           <NavLink to="/admin/documents" end className="admin-nav-link">
             Documents
           </NavLink>
