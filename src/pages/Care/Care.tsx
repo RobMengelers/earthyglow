@@ -26,6 +26,7 @@ const careCopy = defineCopy({
     eyebrow: 'Candle care',
     title: 'Make every glow last',
     lede: 'A little care helps you enjoy your candle safely. Start with the guidance for your candle type, and always follow its safety label.',
+    tipsHeading: 'Candle care tips',
     faqEyebrow: 'Good to know',
     faqTitle: 'Frequently asked questions',
     tips: [
@@ -75,6 +76,7 @@ const careCopy = defineCopy({
     eyebrow: 'Kaarsverzorging',
     title: 'Laat elke gloed lang duren',
     lede: 'Met een beetje zorg geniet je veilig van je kaars. Begin met de tips voor jouw soort kaars en volg altijd het veiligheidslabel.',
+    tipsHeading: 'Tips voor kaarsverzorging',
     faqEyebrow: 'Goed om te weten',
     faqTitle: 'Veelgestelde vragen',
     tips: [
@@ -124,6 +126,7 @@ const careCopy = defineCopy({
     eyebrow: 'Kerzenpflege',
     title: 'Damit jeder Glanz lange hält',
     lede: 'Mit ein wenig Pflege genießt du deine Kerze sicher. Fang mit den Tipps für deine Kerzenart an und beachte immer das Sicherheitsetikett.',
+    tipsHeading: 'Tipps zur Kerzenpflege',
     faqEyebrow: 'Gut zu wissen',
     faqTitle: 'Häufig gestellte Fragen',
     tips: [
@@ -238,6 +241,7 @@ export function Care() {
 
       <section className="care care-page">
         <div className="container">
+          <h2 className="visually-hidden">{copy.tipsHeading}</h2>
           <div className="care-grid">
             {copy.tips.map((tip, i) => (
               <Reveal key={IMAGES[i]} immediate={i === 0} delay={(i % 3) * 90} className="care-card">

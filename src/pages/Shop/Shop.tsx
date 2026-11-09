@@ -20,6 +20,7 @@ const shopCopy = defineCopy({
     breadcrumb: 'Breadcrumb',
     favourites: (_id: string, label: string) => `${label} favourites`,
     heading: 'Find your next little glow',
+    productsHeading: 'Products',
     lede: 'Browse by season, or take a look at everything I’ve been making.',
     eyebrow: 'Made by hand, chosen by you',
     caption: 'A glow for every season',
@@ -47,6 +48,7 @@ const shopCopy = defineCopy({
         christmas: 'Kerstfavorieten',
       } as Record<string, string>)[id] ?? `Favorieten: ${label}`,
     heading: 'Vind jouw volgende kleine gloed',
+    productsHeading: 'Producten',
     lede: 'Kies per seizoen, of bekijk alles wat ik heb gemaakt.',
     eyebrow: 'Met de hand gemaakt, door jou gekozen',
     caption: 'Een gloed voor elk seizoen',
@@ -74,6 +76,7 @@ const shopCopy = defineCopy({
         christmas: 'Weihnachtslieblinge',
       } as Record<string, string>)[id] ?? `Lieblinge: ${label}`,
     heading: 'Finde deinen nächsten kleinen Glanz',
+    productsHeading: 'Produkte',
     lede: 'Stöbere nach Jahreszeit oder schau dir alles an, was ich gemacht habe.',
     eyebrow: 'Von Hand gemacht, von dir ausgewählt',
     caption: 'Ein Glanz für jede Jahreszeit',
@@ -424,13 +427,13 @@ export function Shop() {
                 ))}
               </div>
             ) : (
-              <div
-                key={`${activeSeason?.id ?? 'all'}:${activeCollection?.id ?? 'all'}`}
-                className="product-grid"
-              >
-                {shown.map((product, i) => (
-                  <ProductCard key={product.id} product={product} index={i} />
-                ))}
+              <div key={`${activeSeason?.id ?? 'all'}:${activeCollection?.id ?? 'all'}`}>
+                <h2 className="visually-hidden">{copy.productsHeading}</h2>
+                <div className="product-grid">
+                  {shown.map((product, i) => (
+                    <ProductCard key={product.id} product={product} index={i} />
+                  ))}
+                </div>
               </div>
             )
           ) : (
