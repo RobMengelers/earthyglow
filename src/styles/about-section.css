@@ -88,8 +88,22 @@
     margin-right: auto;
   }
 
+  /* The list block is centred, but its lines start on one left edge. */
   .about-list {
-    align-items: center;
+    width: fit-content;
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .about-list li {
+    align-items: flex-start;
+  }
+
+  .about-list li::before {
+    margin-top: 0.2em;
   }
 
   .about-visual {
