@@ -487,8 +487,19 @@ export const collections: Collection[] = [
 
 export const products: Product[] = collections.flatMap((c) => c.products)
 
+// Hidden 40 cent product for testing the live checkout. It stays out of
+// `products`, so it is not listed, prerendered or in the sitemap.
+export const testProduct: Product = {
+  id: 'test-candle',
+  name: 'Test candle',
+  priceCents: 40,
+  image: '/images/boo-boo.webp',
+  description: 'Hidden product for testing the checkout.',
+  collectionId: 'scented-glow',
+}
+
 export function getProduct(id: string | undefined): Product | undefined {
-  return products.find((p) => p.id === id)
+  return [...products, testProduct].find((p) => p.id === id)
 }
 
 export function getCollection(id: string | undefined): Collection | undefined {
