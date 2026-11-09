@@ -15,7 +15,7 @@
  * Requires the `sharp` devDependency. Variant files are committed.
  */
 import { readdirSync, writeFileSync } from 'node:fs'
-import { join, dirname, basename, extname } from 'node:path'
+import { join, dirname, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import sharp from 'sharp'
 
@@ -27,11 +27,15 @@ const TARGET_WIDTHS = [400, 800]
 /** Only create a variant when it is at least ~100px smaller than the original. */
 const MIN_MARGIN = 100
 
-const files = readdirSync(imagesDir).filter((f) => extname(f) === '.webp')
+// Originals only, including the per-product folders: generated variants end in
+// -400 or -800 and must not be treated as sources.
+const files = readdirSync(imagesDir, { recursive: true })
+  .map(String)
+  .filter((f) => f.endsWith('.webp') && !/-(400|800)\.webp$/.test(f))
 const entries = []
 
 for (const file of files.sort()) {
-  const stem = basename(file, '.webp')
+  const stem = file.replace(/\.webp$/, '')
   const original = join(imagesDir, file)
   const meta = await sharp(original).metadata()
   if (!meta.width || !meta.height) {
@@ -44,13 +48,13 @@ for (const file of files.sort()) {
     const variantFile = `${stem}-${width}.webp`
     await sharp(original)
       .resize({ width, withoutEnlargement: true })
-      .webp({ quality: 82, effort: 4 })
+      .webp({ quality: 76, effort: 6 })
       .toFile(join(imagesDir, variantFile))
     variants.push(width)
   }
 
   entries.push({
-    path: `/images/${file}`,
+    path: `/images/${relative(imagesDir, join(imagesDir, file)).split(sep).join('/')}`,
     width: meta.width,
     height: meta.height,
     variants,

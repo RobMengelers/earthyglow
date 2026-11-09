@@ -335,12 +335,12 @@ export function ProductPage() {
           </nav>
 
           <div className="product-detail-grid">
-            <Reveal className="product-detail-media">
+            <Reveal immediate className="product-detail-media">
               <div className="product-gallery">
                 <div className="product-gallery-main">
                   <div className="product-gallery-track" style={{ transform: `translateX(-${galleryIndex * 100}%)` }}>
-                    {galleryImages.map((image) => (
-                      <img key={image} {...imageAttrs(image, SIZES.gallery)} alt={copy.imageAlt(product.name)} />
+                    {galleryImages.map((image, idx) => (
+                      <img key={image} {...imageAttrs(image, SIZES.gallery)} loading={idx <= galleryIndex + 1 ? 'eager' : 'lazy'} fetchPriority={idx === 0 ? 'high' : 'low'} alt={copy.imageAlt(product.name)} />
                     ))}
                   </div>
                   {fadeImage && (
@@ -390,7 +390,7 @@ export function ProductPage() {
               </div>
             </Reveal>
 
-            <Reveal delay={100} className="product-detail-info">
+            <Reveal immediate className="product-detail-info">
               {collection && (
                 <Link
                   to={season ? `/shop?season=${season.id}` : '/shop'}

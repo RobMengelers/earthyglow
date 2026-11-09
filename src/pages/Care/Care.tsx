@@ -220,7 +220,7 @@ export function Care() {
       />
       <section className="page-hero">
         <div className="container">
-          <Reveal>
+          <Reveal immediate>
             <nav className="breadcrumb" aria-label={copy.breadcrumb}>
               <Link to="/" prefetch="intent">{copy.home}</Link>
               <span aria-hidden="true">/</span>

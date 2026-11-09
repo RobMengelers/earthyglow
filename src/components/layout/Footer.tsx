@@ -60,9 +60,9 @@ export function Footer() {
         <div className="footer-brand">
           <Link to="/" className="brand brand-light" prefetch="intent">
             <img
-              src="/logo-mark.png"
-              width={280}
-              height={280}
+              src="/logo-mark-96.webp"
+              width={96}
+              height={96}
               className="brand-logo"
               alt=""
             />
