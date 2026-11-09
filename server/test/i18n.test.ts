@@ -216,3 +216,16 @@ test('prices use a comma in Dutch and German and a point in English', () => {
   assert.equal(formatPriceFor('de', 895), '€8,95')
   assert.equal(formatPriceFor('en', 895), '€8.95')
 })
+
+test('the order email table keeps its four columns', async () => {
+  const { productTable } = await import('../src/email.ts')
+  const html = productTable(
+    [{ name: 'Test candle', variantLabel: null, colorLabel: null, quantity: 2, unitPriceCents: 895, lineTotalCents: 1790 }],
+    'nl',
+    { description: 'Product', qty: 'Aantal', unitPrice: 'Prijs per stuk', amount: 'Bedrag' },
+  )
+  assert.equal(html.match(/<th\b/g)?.length, 4)
+  assert.equal(html.match(/<td\b/g)?.length, 4)
+  assert.match(html, /€8,95/)
+  assert.match(html, /€17,90/)
+})

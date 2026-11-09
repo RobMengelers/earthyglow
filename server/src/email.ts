@@ -513,6 +513,36 @@ async function generateInvoicePdf(
   return doc.save()
 }
 
+// Tight padding and small headings that may wrap keep all four columns inside
+// a phone's width. Email apps ignore most responsive CSS, so the table has to
+// fit by itself.
+export function productTable(
+  items: { name: string; variantLabel: string | null; colorLabel: string | null; quantity: number; unitPriceCents: number; lineTotalCents: number }[],
+  locale: Locale,
+  labels: { description: string; qty: string; unitPrice: string; amount: string },
+): string {
+  const euro = (cents: number) => formatEuroFor(locale, cents)
+  const heading = (label: string, align: string) =>
+    `<th style="padding:9px 5px; text-align:${align}; vertical-align:bottom; color:#5f3b25; font-size:10px; font-weight:bold; text-transform:uppercase; background:#f4ecdd;">${label}</th>`
+  const number = (value: string, color = '#6b6157', weight = 'normal') =>
+    `<td style="padding:10px 5px; text-align:right; vertical-align:top; font-size:13px; color:${color}; font-weight:${weight}; white-space:nowrap;">${value}</td>`
+  const rows = items
+    .map(
+      (item) =>
+        `<tr>
+          <td style="padding:10px 5px; vertical-align:top; font-size:13px; color:#2e2a25; word-break:break-word; overflow-wrap:anywhere;">${escapeHtml(describeLine(item.name, item.variantLabel, item.colorLabel, locale))}</td>
+          ${number(String(item.quantity))}
+          ${number(euro(item.unitPriceCents))}
+          ${number(euro(item.lineTotalCents), '#5f3b25', 'bold')}
+        </tr>`,
+    )
+    .join('')
+  return `<table style="border-collapse:collapse; width:100%; margin:0 0 24px; background:#fffdf8; border:1px solid #e3d8c8;">
+            <thead><tr>${heading(labels.description, 'left')}${heading(labels.qty, 'right')}${heading(labels.unitPrice, 'right')}${heading(labels.amount, 'right')}</tr></thead>
+            <tbody>${rows}</tbody>
+          </table>`
+}
+
 function renderCustomerEmail(content: string, locale: Locale): string {
   const t = EMAIL[locale]
   return `
@@ -650,19 +680,6 @@ export async function sendOrderInvoice(
   const pdf = await archiveInvoicePdf(order)
   const locale = toLocale(order.locale)
   const t = EMAIL[locale]
-  const euro = (cents: number) => formatEuroFor(locale, cents)
-
-  const productRows = order.items
-    .map(
-      (item) =>
-        `<tr>
-          <td style="padding:11px 16px; color:#2e2a25;">${escapeHtml(describeLine(item.name, item.variantLabel, item.colorLabel, locale))}</td>
-          <td style="padding:11px 16px; text-align:right; color:#6b6157; white-space:nowrap;">${item.quantity}</td>
-          <td style="padding:11px 16px; text-align:right; color:#6b6157; white-space:nowrap;">${euro(item.unitPriceCents)}</td>
-          <td style="padding:11px 16px; text-align:right; color:#5f3b25; font-weight:bold; white-space:nowrap;">${euro(item.lineTotalCents)}</td>
-        </tr>`,
-    )
-    .join('')
 
   const html = renderCustomerEmail(`
           <div style="padding:34px 0 12px;">
@@ -671,17 +688,7 @@ export async function sendOrderInvoice(
             <p style="color:#6b6157; line-height:1.7;">${t.invoice.paid(escapeHtml(order.orderNumber))}</p>
             <p style="color:#6b6157; line-height:1.7;">${t.invoice.ordered}</p>
           </div>
-          <table style="border-collapse:collapse; width:100%; margin:0 0 24px; background:#fffdf8; border:1px solid #e3d8c8; border-radius:12px; overflow:hidden;">
-            <thead>
-              <tr>
-                <th style="padding:10px 16px; text-align:left; color:#5f3b25; font-size:11px; font-weight:bold; letter-spacing:1.5px; text-transform:uppercase; background:#f4ecdd;">${t.invoice.description}</th>
-                <th style="padding:10px 16px; text-align:right; color:#5f3b25; font-size:11px; font-weight:bold; letter-spacing:1.5px; text-transform:uppercase; background:#f4ecdd;">${t.invoice.qty}</th>
-                <th style="padding:10px 16px; text-align:right; color:#5f3b25; font-size:11px; font-weight:bold; letter-spacing:1.5px; text-transform:uppercase; background:#f4ecdd;">${t.invoice.unitPrice}</th>
-                <th style="padding:10px 16px; text-align:right; color:#5f3b25; font-size:11px; font-weight:bold; letter-spacing:1.5px; text-transform:uppercase; background:#f4ecdd;">${t.invoice.amount}</th>
-              </tr>
-            </thead>
-            <tbody>${productRows}</tbody>
-          </table>
+          ${productTable(order.items, locale, t.invoice)}
           <p style="color:#6b6157; line-height:1.6;">${t.invoice.attached}</p>
   `, locale)
 
