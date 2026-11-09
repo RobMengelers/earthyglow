@@ -9,6 +9,7 @@ import { getProduct, type Product, type ProductColor, type ProductVariant } from
 import { fetchCatalog, reconcileCatalogItems } from './catalog'
 import { INVALID_COUPON, validateCoupon } from './coupons'
 import { useLocale } from '../i18n'
+import { centsToEuros, trackEvent } from '../lib/analytics'
 import {
   CartContext,
   calcTotals,
@@ -186,6 +187,21 @@ export function CartProvider({ children }: { children: ReactNode }) {
         ]
       })
       setIsDrawerOpen(true)
+
+      const price = centsToEuros(variant?.priceCents ?? product.priceCents)
+      const optionLabel = [variant?.label, color?.label].filter(Boolean).join(' / ')
+      trackEvent('add_to_cart', {
+        currency: 'EUR',
+        value: Math.round(price * quantity * 100) / 100,
+        items: [{
+          item_id: product.id,
+          item_name: product.name,
+          item_category: collectionTitle,
+          ...(optionLabel ? { item_variant: optionLabel } : {}),
+          price,
+          quantity,
+        }],
+      })
     },
     [],
   )

@@ -19,6 +19,7 @@ export function clientLoader({ params, request }: ClientLoaderFunctionArgs) {
   if (!isLocale(params.lang)) throw clientLanguageRedirect(request)
   return null
 }
+import { CookieBanner } from './CookieBanner'
 
 export default function Layout() {
   const pageRef = useRef<HTMLDivElement>(null)
@@ -33,6 +34,7 @@ export default function Layout() {
       </main>
       <Footer />
       <CartDrawer />
+      <CookieBanner />
     </div>
   )
 }

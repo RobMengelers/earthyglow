@@ -10,6 +10,7 @@ import {
 import { siteMeta } from '../../lib/seo'
 import { useAdmin } from './admin-context'
 import { Modal } from './components/Modal'
+import { OverviewChart } from './components/OverviewChart'
 
 export function meta() {
   return siteMeta({ title: 'Overview · EarthyGlow Admin', robots: 'noindex, nofollow' })
@@ -247,6 +248,20 @@ function OverviewBody({
   const vatExpenses = overview.expensesCents - netExpenses
   const vatBalance = vatRevenue - vatExpenses
 
+  const chartPoints = overview.chart.points.map((point) => ({
+    start: point.start,
+    revenue: excl ? point.netRevenueCents : point.revenueCents,
+    spent: excl ? splitIncludedVat(point.expensesCents).netCents : point.expensesCents,
+    production: excl ? splitIncludedVat(point.productionCostCents).netCents : point.productionCostCents,
+  }))
+  type Point = (typeof chartPoints)[number]
+  const charts = [
+    { name: 'Profit', value: (point: Point) => point.revenue - point.production },
+    { name: 'Revenue', value: (point: Point) => point.revenue },
+    { name: 'Purchases', value: (point: Point) => point.spent },
+    { name: 'Revenue against purchases', value: (point: Point) => point.revenue - point.spent },
+  ]
+
   return (
     <>
       <div className="admin-cards">
@@ -327,11 +342,17 @@ function OverviewBody({
         </div>
       </section>
 
-      <section className="admin-panel">
-        <header className="admin-panel-head">
-          <h2>Needs attention</h2>
-        </header>
-        <AttentionList overview={overview} />
+      <section className="admin-charts" aria-label="Graphs">
+        {charts.map((chart) => (
+          <OverviewChart
+            key={chart.name}
+            label={`${chart.name} · ${title} · ${vatLabel}`}
+            hint={`Per ${overview.chart.unit}`}
+            bucket={overview.chart.unit}
+            loading={loading}
+            points={chartPoints.map((point) => ({ start: point.start, value: chart.value(point) }))}
+          />
+        ))}
       </section>
     </>
   )
@@ -409,42 +430,5 @@ function SoldItems({ items }: { items: AdminSoldItem[] }) {
       ))}
       {products.length > 0 && <Link to="/admin/materials">Manage recipes →</Link>}
     </div>
-  )
-}
-
-// The two things that quietly cost the shop money if forgotten.
-function AttentionList({ overview }: { overview: AdminOverview }) {
-  const waiting = overview.recentOrders.filter(
-    (order) => order.status === 'paid' && order.fulfillmentStatus === 'open',
-  )
-  const awaitingPayment = overview.stats.pending ?? 0
-
-  if (overview.unfulfilledCount === 0 && awaitingPayment === 0) {
-    return <p className="admin-empty-inline">Nothing is waiting on you.</p>
-  }
-
-  return (
-    <ul className="admin-attention">
-      {overview.unfulfilledCount > 0 && (
-        <li>
-          <Link to="/admin/orders?status=paid&fulfilment=open">
-            {overview.unfulfilledCount} paid order
-            {overview.unfulfilledCount === 1 ? '' : 's'} still to send →
-          </Link>
-          {waiting.length > 0 && (
-            <p className="admin-muted">
-              Newest: {waiting.map((order) => order.orderNumber).join(', ')}
-            </p>
-          )}
-        </li>
-      )}
-      {awaitingPayment > 0 && (
-        <li>
-          <Link to="/admin/orders?status=pending">
-            {awaitingPayment} order{awaitingPayment === 1 ? '' : 's'} awaiting payment →
-          </Link>
-        </li>
-      )}
-    </ul>
   )
 }

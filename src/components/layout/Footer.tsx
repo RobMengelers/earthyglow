@@ -3,6 +3,7 @@ import { seasons } from '../../data/seasons'
 import { localizedSeason } from '../../data/catalog-i18n'
 import { defineCopy, Link, useCopy, useLocale } from '../../i18n'
 import { policyLinks } from '../../pages/policies/policy-links'
+import { analyticsEnabled, resetConsent } from '../../lib/analytics'
 
 const footerCopy = defineCopy({
   en: {
@@ -101,6 +102,13 @@ export function Footer() {
                 <Link to={policy.to} prefetch="intent">{policy.label}</Link>
               </li>
             ))}
+            {analyticsEnabled && (
+              <li>
+                <button type="button" className="footer-cookie-settings" onClick={resetConsent}>
+                  Cookie settings
+                </button>
+              </li>
+            )}
           </ul>
         </div>
       </div>

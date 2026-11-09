@@ -1,5 +1,5 @@
 import { useParams } from 'react-router'
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { getCollection, getProduct, getRelated, productLowestCents, productPriceLabel, type ProductColor, type ProductVariant } from '../../data/products'
 import { ProductCard } from '../../components/catalog/ProductCard'
 import { Reveal } from '../../components/ui/Reveal'
@@ -12,6 +12,7 @@ import { absoluteUrl, breadcrumbLd, localizedUrl, merchantReturnPolicy, offerShi
 import { localizedCollection, localizedDescription, localizedSeason } from '../../data/catalog-i18n'
 import { defineCopy, Link, localeFromParams, useCopy, useFormatPrice, useLocale } from '../../i18n'
 import { optionLabel } from '../../i18n/options'
+import { centsToEuros, trackEvent } from '../../lib/analytics'
 import type { Route } from './+types/ProductPage'
 
 // What the option pickers ask for, keyed by the product's English picker word.
@@ -166,6 +167,22 @@ export function ProductPage() {
   // Holds the image that is fading out on top of the incoming one so switching
   // a variant crossfades instead of swapping the hero shot in a single frame.
   const [fadeImage, setFadeImage] = useState<{ src: string; id: number } | null>(null)
+
+  useEffect(() => {
+    if (!product) return
+    const price = centsToEuros(product.priceCents)
+    trackEvent('view_item', {
+      currency: 'EUR',
+      value: price,
+      items: [{
+        item_id: product.id,
+        item_name: product.name,
+        item_category: getCollection(product.collectionId)?.title,
+        price,
+        quantity: 1,
+      }],
+    })
+  }, [product?.id]) // eslint-disable-line react-hooks/exhaustive-deps -- once per product shown
 
   if (!product) {
     return <NotFound />

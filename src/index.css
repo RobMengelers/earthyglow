@@ -15,6 +15,7 @@
 @import './styles/care-section.css';
 @import './pages/Home/components/Newsletter.css';
 @import './components/layout/Footer.css';
+@import './components/layout/CookieBanner.css';
 @import './components/layout/PolicyLayout.css';
 @import './pages/Shop/Shop.css';
 @import './components/catalog/CollectionCard.css';

@@ -6,6 +6,7 @@ import { Reveal } from '../../components/ui/Reveal'
 import { siteMeta } from '../../lib/seo'
 import { defineCopy, Link, localeFromParams, useCopy, useFormatPrice } from '../../i18n'
 import type { Route } from './+types/CheckoutConfirmation'
+import { cartItemToAnalytics, centsToEuros, trackPurchaseOnce } from '../../lib/analytics'
 
 type OrderStatus =
   | 'pending'
@@ -151,12 +152,19 @@ export function CheckoutConfirmation() {
   const [params] = useSearchParams()
   const orderNumber = params.get('order')
   const isMock = params.get('mock') === '1'
-  const { clearCart, removeCoupon } = useCart()
+  const { clearCart, removeCoupon, items, coupon } = useCart()
   const copy = useCopy(confirmationCopy)
   const formatPrice = useFormatPrice()
   const [order, setOrder] = useState<OrderStatusResponse | null>(null)
   const [failed, setFailed] = useState(false)
   const clearedRef = useRef(false)
+  // Read inside the polling effect without restarting it when the cart loads.
+  const itemsRef = useRef(items)
+  const couponRef = useRef(coupon?.code)
+  useEffect(() => {
+    itemsRef.current = items
+    couponRef.current = coupon?.code
+  }, [items, coupon])
 
   // In mock mode (no Mollie key) settle the order once so pending -> paid works.
   useEffect(() => {
@@ -183,6 +191,12 @@ export function CheckoutConfirmation() {
           timer = window.setTimeout(poll, 2500)
         } else if (data.status === 'paid' && !clearedRef.current) {
           clearedRef.current = true
+          // The cart still holds what was bought until it is cleared below.
+          trackPurchaseOnce(data.orderNumber, {
+            value: centsToEuros(data.totalCents),
+            ...(couponRef.current ? { coupon: couponRef.current } : {}),
+            items: itemsRef.current.map(cartItemToAnalytics),
+          })
           clearCart()
           removeCoupon()
         }

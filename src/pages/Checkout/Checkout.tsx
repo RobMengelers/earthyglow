@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import {
   submitOrder,
   fetchPaymentMethods,
@@ -20,6 +20,7 @@ import { OrderSummary } from './components/OrderSummary'
 import { siteMeta } from '../../lib/seo'
 import { defineCopy, Link, localeFromParams, useCopy, useLocale } from '../../i18n'
 import type { Route } from './+types/Checkout'
+import { cartItemToAnalytics, itemsValue, trackEvent } from '../../lib/analytics'
 
 const checkoutCopy = defineCopy({
   en: {
@@ -125,6 +126,21 @@ export function Checkout() {
     isMethodAvailable(method, country),
   )
 
+  // The cart loads from storage after mount; report the checkout once it has
+  // items, and only once per visit to this page.
+  const checkoutTrackedRef = useRef(false)
+  useEffect(() => {
+    if (checkoutTrackedRef.current || items.length === 0) return
+    checkoutTrackedRef.current = true
+    const analyticsItems = items.map(cartItemToAnalytics)
+    trackEvent('begin_checkout', {
+      currency: 'EUR',
+      value: itemsValue(analyticsItems),
+      ...(coupon ? { coupon: coupon.code } : {}),
+      items: analyticsItems,
+    })
+  }, [items, coupon])
+
   useEffect(() => {
     let cancelled = false
     fetchPaymentMethods(locale).then((fetched) => {
@@ -152,6 +168,15 @@ export function Checkout() {
     const data = new FormData(event.currentTarget)
     setError(null)
     setSubmitting(true)
+
+    const analyticsItems = items.map(cartItemToAnalytics)
+    trackEvent('add_payment_info', {
+      currency: 'EUR',
+      value: itemsValue(analyticsItems),
+      payment_type: paymentMethod,
+      ...(coupon ? { coupon: coupon.code } : {}),
+      items: analyticsItems,
+    })
 
     try {
       const countryCode = String(data.get('country') ?? '').toUpperCase()
