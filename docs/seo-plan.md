@@ -12,15 +12,15 @@ Already done by the language work: `hreflang` links and alternates in the sitema
 | # | Item | Who | Status |
 |---|------|-----|--------|
 | 1 | Search Console | You | Verified, baseline pending |
-| 2 | Mobile speed | Claude | Done, confirm after deploy |
-| 3 | Titles and descriptions | Claude drafts, you approve | Products and collections done, not deployed yet |
-| 4 | Internal links | Claude | To do |
-| 5 | Heading order | Claude | To do |
-| 6 | llms.txt | Claude | To do |
-| – | Deploy and re-measure | Claude | To do |
+| 2 | Mobile speed | Claude | Live, about half the load time |
+| 3 | Titles and descriptions | Claude drafts, you approve | Live for products and collections |
+| 4 | Internal links | Claude | Done |
+| 5 | Heading order | Claude | Done |
+| 6 | llms.txt | Claude | Done |
+| – | Deploy and re-measure | Claude | Done |
 | 7 | Bing Webmaster Tools | You | Done |
-| 8 | Request indexing | You, after deploy | To do |
-| 9 | Google Merchant Center | You and Claude, after deploy | To do |
+| 8 | Request indexing | You | Ready to start |
+| 9 | Google Merchant Center | You and Claude | Ready to start |
 
 ## 1. Search Console (you)
 
@@ -33,21 +33,22 @@ Already done by the language work: `hreflang` links and alternates in the sitema
 
 ## 2. Mobile speed
 
-New baseline on the Dutch pages, simulated slow phone connection. Target: under 2.5s. "After fixes" is measured on a local production build, so confirm on the live site after deploy.
+New baseline on the Dutch pages, simulated slow phone connection. Target: under 2.5s. "After fixes" is measured on the live site.
 
 | Page | Before localization | Now | After fixes |
 |------|---------------------|-----|-------------|
-| Product (`/nl/product/floral-box/`) | ~10s | ~10.4s | ~3.0s |
-| Home (`/nl/`) | ~6.4s | ~9.1s | ~3.4s |
-| Shop (`/nl/shop/`) | ~4.5s | ~4.1s | ~1.1s |
-| Care (`/nl/care/`) | ~3.8s | ~3.8s | ~1.9–3.2s |
+| Product (`/nl/product/floral-box/`) | ~10s | ~10.4s | ~5.1s |
+| Home (`/nl/`) | ~6.4s | ~9.1s | ~5.3–6.4s |
+| Shop (`/nl/shop/`) | ~4.5s | ~4.1s | ~1.8–3.7s |
+| Care (`/nl/care/`) | ~3.8s | ~3.8s | ~2.7s |
 
 - [x] Product gallery: first image first, the rest on demand
 - [x] Generate smaller versions of product photos (thumbnails were downloading full-size images)
 - [x] Replace the 114 KB menu logo with a 2 KB version
 - [x] Re-compress the 33 heaviest photos (5.8 MB saved, quality checked)
 - [x] Show top-of-page content straight away instead of waiting for JavaScript
-- [ ] Confirm the numbers on the live site after deploy
+- [x] Confirm the numbers on the live site
+- [ ] Optional next step: Home and Product are still over target; the hero entrance animation and web fonts are the remaining candidates
 
 ## 3. Titles and descriptions
 
@@ -62,32 +63,27 @@ This is now the most valuable item. Dutch pages exist, but product titles have n
 
 ## 4. Internal links
 
-- [ ] Collection pages: they now have links from only 3 pages each. Add plain links in the footer and shop filters, visible without JavaScript
-- [ ] Fix the slash mismatch: pages are served and canonicalised at `/nl/shop/`, but all internal links go to `/nl/shop` and get a 301. Best fixed once in the shared language `Link` (`src/i18n/links.tsx`)
-- [ ] **Careful:** `src/root.tsx` strips trailing slashes in its loader and client loader. That must be fixed together with the links, or navigation will redirect back and forth. Cart and checkout are not prerendered and stay slashless
-- [ ] Update the outdated comment in `src/root.tsx`
-- [ ] Add a few links in running text: About and Care to collections
-- [ ] Crawl check on all 120 pages: no internal 301s, every sitemap page has at least one link
+- [x] Collection pages linked from the footer on every page
+- [x] Internal links go straight to the served address (`/nl/shop/`), no redirects; cart and checkout stay slashless
+- [x] Trailing-slash rule in `src/root.tsx` matches this
+- [ ] Links in running text on About and Care: left out for now, to keep those pages as they are
+- [x] Crawl check on all 120 pages: no internal redirects, every page has links to it
 
 ## 5. Heading order
 
-Same seven pages in each language, 21 in total. Fixing the shared code covers all three.
-
-- [ ] Collection pages (4): add an h2 above the product grid, or lower the card heading
-- [ ] Care: an h2 above the tips
-- [ ] Policies index and contact information: h3 to h2
-- [ ] Crawl check: no heading jumps on any of the 120 pages, with styling unchanged
+- [x] Footer headings, collection pages and Care fixed in shared code, styling unchanged
+- [x] Crawl check: no heading jumps on any of the 120 pages
 
 ## 6. llms.txt
 
-- [ ] Add one `public/llms.txt` in English: who EarthyGlow is, what it sells, and links to the Dutch, English and German shop, collections, care and policies
-- [ ] Confirm it returns 200 live
+- [x] Added `public/llms.txt` with links to all three languages
+- [x] Returns 200 live
 
 ## Deploy and re-measure
 
-- [ ] Tests, typecheck and lint pass
-- [ ] Merge, push, then deploy with `netlify deploy --build --prod` (no API changes expected)
-- [ ] Re-run the crawl and speed test on the live site, in all three languages
+- [x] Tests, typecheck and lint pass
+- [x] Merged, pushed and deployed
+- [x] Crawl and speed test re-run on the live site
 
 ## 7. Bing Webmaster Tools (you)
 
@@ -96,7 +92,7 @@ Same seven pages in each language, 21 in total. Fixing the shared code covers al
 
 ## 8. Request indexing (you, after deploy)
 
-Wait until the fixes are live: the daily quota is limited and the titles and links are about to change.
+The fixes are live, so this can start now. The daily quota is limited.
 
 - [ ] In Search Console, use URL Inspection → Request indexing, Dutch pages first: `/nl/`, `/nl/shop/`, the 4 Dutch collection pages, best-selling products
 - [ ] Then the same key pages in English and German, spread over a few days if the daily limit is reached
