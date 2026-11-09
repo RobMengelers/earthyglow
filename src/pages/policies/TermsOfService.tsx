@@ -33,8 +33,8 @@ export function TermsOfService() {
           </ul>
           <h2>4. Verzendkosten</h2>
           <ul>
-            <li>Verzendkosten (NL) zijn €6.99, gratis bij bestellingen vanaf €25</li>
-            <li>Internationale verzending kost €12.95, gratis bij bestellingen vanaf €50</li>
+            <li>Verzendkosten (NL) zijn €6,99, gratis bij bestellingen vanaf €25</li>
+            <li>Internationale verzending kost €12,95, gratis bij bestellingen vanaf €50</li>
             <li>Verwachte levering: 3 tot 7 werkdagen na betaling. Levertijden kunnen variëren.</li>
             <li>EarthyGlow is niet verantwoordelijk voor vertragingen door de vervoerder.</li>
           </ul>
@@ -62,8 +62,8 @@ export function TermsOfService() {
           </ul>
           <h2>4. Versandkosten</h2>
           <ul>
-            <li>Versandkosten (NL) betragen €6.99, kostenlos ab einem Bestellwert von €25</li>
-            <li>Internationaler Versand kostet €12.95, kostenlos ab einem Bestellwert von €50</li>
+            <li>Versandkosten (NL) betragen €6,99, kostenlos ab einem Bestellwert von €25</li>
+            <li>Internationaler Versand kostet €12,95, kostenlos ab einem Bestellwert von €50</li>
             <li>Voraussichtliche Lieferung: 3 bis 7 Werktage nach Zahlung. Lieferzeiten können variieren.</li>
             <li>EarthyGlow ist nicht verantwortlich für Verzögerungen durch den Versanddienstleister.</li>
           </ul>

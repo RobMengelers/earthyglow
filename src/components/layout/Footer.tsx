@@ -18,6 +18,7 @@ const footerCopy = defineCopy({
     rights: 'All rights reserved.',
     vat: 'VAT',
     madeIn: 'Handmade with care in the Netherlands',
+    cookieSettings: 'Cookie settings',
   },
   nl: {
     intro: 'Kaarsen gemaakt door Naomi in Nederland, met de hand gegoten van 100% sojawas. Dankjewel dat je mijn kleine bedrijf steunt.',
@@ -31,6 +32,7 @@ const footerCopy = defineCopy({
     rights: 'Alle rechten voorbehouden.',
     vat: 'Btw',
     madeIn: 'Met zorg handgemaakt in Nederland',
+    cookieSettings: 'Cookie-instellingen',
   },
   de: {
     intro: 'Kerzen von Naomi aus den Niederlanden, von Hand gegossen aus 100 % Sojawachs. Danke, dass du mein kleines Unternehmen unterstützt.',
@@ -44,6 +46,7 @@ const footerCopy = defineCopy({
     rights: 'Alle Rechte vorbehalten.',
     vat: 'USt-IdNr.',
     madeIn: 'Mit Liebe handgemacht in den Niederlanden',
+    cookieSettings: 'Cookie-Einstellungen',
   },
 })
 
@@ -105,7 +108,7 @@ export function Footer() {
             {analyticsEnabled && (
               <li>
                 <button type="button" className="footer-cookie-settings" onClick={resetConsent}>
-                  Cookie settings
+                  {copy.cookieSettings}
                 </button>
               </li>
             )}

@@ -33,7 +33,7 @@ const pageCopy = defineCopy({
     clear: 'Winkelmand legen',
     summary: 'Overzicht',
     toCheckout: 'Naar afrekenen',
-    note: 'De verzendkosten worden berekend bij het afrekenen, zodra je je land kiest. Bestellingen binnen Nederland vanaf €25.00 en internationale bestellingen vanaf €50.00 worden gratis verzonden.',
+    note: 'De verzendkosten worden berekend bij het afrekenen, zodra je je land kiest. Bestellingen binnen Nederland vanaf €25,00 en internationale bestellingen vanaf €50,00 worden gratis verzonden.',
   },
   de: {
     metaTitle: 'Warenkorb · EarthyGlow',
@@ -46,7 +46,7 @@ const pageCopy = defineCopy({
     clear: 'Warenkorb leeren',
     summary: 'Bestellübersicht',
     toCheckout: 'Zur Kasse',
-    note: 'Die Versandkosten werden an der Kasse berechnet, sobald du dein Land auswählst. Bestellungen in die Niederlande ab €25.00 und internationale Bestellungen ab €50.00 werden kostenlos versandt.',
+    note: 'Die Versandkosten werden an der Kasse berechnet, sobald du dein Land auswählst. Bestellungen in die Niederlande ab €25,00 und internationale Bestellungen ab €50,00 werden kostenlos versandt.',
   },
 })
 

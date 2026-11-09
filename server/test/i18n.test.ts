@@ -6,7 +6,8 @@ import { productDescriptions, collectionCopy, seasonCopy } from '../../src/data/
 import { collections } from '../../src/data/products.ts'
 import { holidays, seasons } from '../../src/data/seasons.ts'
 import { OPTION_LABEL_KEYS as STOREFRONT_OPTION_KEYS, optionLabel as storefrontOptionLabel } from '../../src/i18n/options.ts'
-import { detectLocale, localizePath, stripLocale } from '../../src/i18n/locales.ts'
+import { detectLocale, formatPriceFor, localizePath, stripLocale } from '../../src/i18n/locales.ts'
+import { formatEuroFor } from '../src/i18n.ts'
 import { describeLine } from '../src/order-line.ts'
 import { OPTION_LABEL_KEYS, optionLabel } from '../src/i18n.ts'
 
@@ -204,4 +205,14 @@ test('the invoice PDF renders in Dutch and German', async () => {
     assert.ok(stored, `${locale} invoice is archived`)
     restore.splice(0).reverse().forEach((reset) => reset())
   }
+})
+
+test('prices use a comma in Dutch and German and a point in English', () => {
+  assert.equal(formatEuroFor('nl', 1495), '€14,95')
+  assert.equal(formatEuroFor('de', 1495), '€14,95')
+  assert.equal(formatEuroFor('en', 1495), '€14.95')
+  assert.equal(formatEuroFor('nl', -500), '-€5,00')
+  assert.equal(formatPriceFor('nl', 895), '€8,95')
+  assert.equal(formatPriceFor('de', 895), '€8,95')
+  assert.equal(formatPriceFor('en', 895), '€8.95')
 })

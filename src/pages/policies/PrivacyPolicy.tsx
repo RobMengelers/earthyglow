@@ -7,9 +7,9 @@ import type { Route } from './+types/PrivacyPolicy'
 const PATH = '/policies/privacy-policy'
 
 const UPDATED: Record<Locale, string> = {
-  en: '3 November 2026',
-  nl: '3 november 2026',
-  de: '3. November 2026',
+  en: '9 November 2026',
+  nl: '9 november 2026',
+  de: '9. November 2026',
 }
 
 export function meta({ params }: Route.MetaArgs) {
@@ -46,16 +46,16 @@ export function PrivacyPolicy() {
             <li>Om onze boekhouding en belastingadministratie bij te houden en aan andere wettelijke plichten te voldoen (wettelijke verplichting).</li>
             <li>Om berichten te beantwoorden, misbruik te voorkomen en de website te beveiligen (gerechtvaardigd belang).</li>
           </ul>
-          <p>We versturen op dit moment geen nieuwsbrieven, doen niet aan gedragsgerichte advertenties en gebruiken geen analytische of advertentiecookies. We vragen toestemming voordat we optionele marketing invoeren waarvoor dat nodig is.</p>
+          <p>Als je analytische cookies accepteert, gebruiken we Google Analytics om te zien hoe de site wordt gebruikt, bijvoorbeeld welke pagina&apos;s worden bezocht en waar mensen het afrekenen verlaten, zodat we de winkel kunnen verbeteren (toestemming). We versturen op dit moment geen nieuwsbrieven en doen niet aan gedragsgerichte advertenties. We vragen toestemming voordat we optionele marketing invoeren waarvoor dat nodig is.</p>
 
           <h2>Wie je gegevens ontvangt</h2>
-          <p>We delen alleen wat nodig is met dienstverleners die ons helpen de winkel te runnen: Mollie voor betalingen, Resend voor transactionele e-mails en contactmails, onze hosting- en databaseproviders (waaronder Netlify en Railway), en bezorgpartners wanneer dat nodig is om een bestelling te bezorgen. We kunnen gegevens aan autoriteiten verstrekken als de wet dat vereist. Deze providers verwerken gegevens onder hun eigen voorwaarden en, waar van toepassing, verwerkersovereenkomsten.</p>
+          <p>We delen alleen wat nodig is met dienstverleners die ons helpen de winkel te runnen: Mollie voor betalingen, Resend voor transactionele e-mails en contactmails, Google voor websitestatistieken als je analytische cookies accepteert, onze hosting- en databaseproviders (waaronder Netlify en Railway), en bezorgpartners wanneer dat nodig is om een bestelling te bezorgen. We kunnen gegevens aan autoriteiten verstrekken als de wet dat vereist. Deze providers verwerken gegevens onder hun eigen voorwaarden en, waar van toepassing, verwerkersovereenkomsten.</p>
 
           <h2>E-mails en contactformulieren</h2>
           <p>We gebruiken je e-mailadres om bevestigingen, verzendupdates en andere berichten te sturen die direct met je bestelling te maken hebben. Een bericht via het contactformulier wordt naar ons doorgestuurd zodat we kunnen reageren; het wordt niet aan een marketinglijst toegevoegd.</p>
 
           <h2>Cookies en lokale opslag</h2>
-          <p>De winkel gebruikt noodzakelijke browseropslag voor je winkelmand en een functionele cookie die je taalkeuze onthoudt. De app plaatst op dit moment geen analytische of advertentiecookies. Links naar sociale media openen de externe site in plaats van een social widget hier in te sluiten. Hosting- of betaalproviders kunnen hun eigen technische cookies gebruiken wanneer je hun diensten bezoekt; daar geldt hun privacybeleid.</p>
+          <p>De winkel gebruikt noodzakelijke browseropslag voor je winkelmand en een functionele cookie die je taalkeuze onthoudt, en om je cookiekeuze te onthouden. Analytische cookies van Google Analytics (met de namen <code>_ga</code> en <code>_ga_…</code>, maximaal 2 jaar bewaard) worden pas geplaatst nadat je ze in de cookiebanner hebt geaccepteerd. Ze geven je browser een willekeurige ID zodat bezoeken geteld kunnen worden; we sturen je naam, e-mailadres of bestelgegevens niet naar Google, Google Signals en advertentiepersonalisatie staan uit, en Google Analytics slaat geen IP-adressen op. Je kunt je keuze altijd wijzigen via &ldquo;Cookie-instellingen&rdquo; onderaan de site; als je weigert, worden de analytische cookies verwijderd. We plaatsen geen advertentiecookies. Links naar sociale media openen de externe site in plaats van een social widget hier in te sluiten. Hosting- of betaalproviders kunnen hun eigen technische cookies gebruiken wanneer je hun diensten bezoekt; daar geldt hun privacybeleid.</p>
 
           <h2>Hoe lang we gegevens bewaren</h2>
           <p>We bewaren bestel- en betaalgegevens zo lang als nodig is om de bestelling uit te voeren, retouren of geschillen af te handelen en aan onze boekhoud- en belastingplichten te voldoen. Contactberichten bewaren we zo lang als nodig is om te reageren en het contact te onderhouden. Daarna verwijderen of anonimiseren we gegevens wanneer er geen wettige reden meer is om ze te bewaren. We beloven geen vaste termijn waar wettelijke verplichtingen een andere vereisen.</p>
@@ -101,16 +101,16 @@ export function PrivacyPolicy() {
             <li>Um unsere Buchhaltungs- und Steuerunterlagen zu führen und weitere gesetzliche Pflichten zu erfüllen (rechtliche Verpflichtung).</li>
             <li>Um Nachrichten zu beantworten, Missbrauch zu verhindern und die Website zu schützen (berechtigtes Interesse).</li>
           </ul>
-          <p>Wir versenden derzeit keine Newsletter, betreiben keine verhaltensbasierte Werbung und nutzen keine Analyse- oder Werbecookies. Bevor wir optionales Marketing einführen, für das eine Einwilligung nötig ist, fragen wir dich danach.</p>
+          <p>Wenn du Analyse-Cookies akzeptierst, nutzen wir Google Analytics, um zu sehen, wie die Website genutzt wird, zum Beispiel welche Seiten besucht werden und wo Menschen den Bestellvorgang verlassen, damit wir den Shop verbessern können (Einwilligung). Wir versenden derzeit keine Newsletter und betreiben keine verhaltensbasierte Werbung. Bevor wir optionales Marketing einführen, für das eine Einwilligung nötig ist, fragen wir dich danach.</p>
 
           <h2>Wer deine Daten erhält</h2>
-          <p>Wir teilen nur das Nötige mit Dienstleistern, die uns beim Betrieb des Shops helfen: Mollie für Zahlungen, Resend für Transaktions- und Kontakt-E-Mails, unsere Hosting- und Datenbankanbieter (darunter Netlify und Railway) sowie Versandpartner, wenn das für die Zustellung einer Bestellung nötig ist. Wo das Gesetz es verlangt, können wir Daten an Behörden weitergeben. Diese Anbieter verarbeiten Daten nach ihren eigenen Bedingungen und, wo zutreffend, nach Auftragsverarbeitungsverträgen.</p>
+          <p>Wir teilen nur das Nötige mit Dienstleistern, die uns beim Betrieb des Shops helfen: Mollie für Zahlungen, Resend für Transaktions- und Kontakt-E-Mails, Google für Website-Statistiken, wenn du Analyse-Cookies akzeptierst, unsere Hosting- und Datenbankanbieter (darunter Netlify und Railway) sowie Versandpartner, wenn das für die Zustellung einer Bestellung nötig ist. Wo das Gesetz es verlangt, können wir Daten an Behörden weitergeben. Diese Anbieter verarbeiten Daten nach ihren eigenen Bedingungen und, wo zutreffend, nach Auftragsverarbeitungsverträgen.</p>
 
           <h2>E-Mails und Kontaktformulare</h2>
           <p>Wir nutzen deine E-Mail-Adresse, um Bestätigungen, Versandupdates und andere Nachrichten zu senden, die direkt mit deiner Bestellung zusammenhängen. Eine Nachricht über das Kontaktformular wird an uns weitergeleitet, damit wir antworten können; sie wird nicht in eine Marketingliste aufgenommen.</p>
 
           <h2>Cookies und lokale Speicherung</h2>
-          <p>Der Shop nutzt notwendigen Browserspeicher für deinen Warenkorb und ein funktionales Cookie, das deine Sprachwahl speichert. Die App setzt derzeit keine Analyse- oder Werbecookies. Links zu sozialen Medien öffnen die externe Website, statt hier ein Social-Widget einzubetten. Hosting- oder Zahlungsanbieter können eigene technische Cookies verwenden, wenn du ihre Dienste besuchst; dort gilt deren Datenschutzerklärung.</p>
+          <p>Der Shop nutzt notwendigen Browserspeicher für deinen Warenkorb und ein funktionales Cookie, das deine Sprachwahl speichert, sowie zum Speichern deiner Cookie-Auswahl. Analyse-Cookies von Google Analytics (mit den Namen <code>_ga</code> und <code>_ga_…</code>, bis zu 2 Jahre gespeichert) werden erst gesetzt, nachdem du sie im Cookie-Banner akzeptiert hast. Sie geben deinem Browser eine zufällige ID, damit Besuche gezählt werden können; wir senden weder deinen Namen noch deine E-Mail-Adresse oder Bestelldaten an Google, Google Signals und die Personalisierung von Anzeigen sind deaktiviert, und Google Analytics speichert keine IP-Adressen. Du kannst deine Wahl jederzeit über &bdquo;Cookie-Einstellungen&ldquo; unten auf der Seite ändern; wenn du ablehnst, werden die Analyse-Cookies entfernt. Wir setzen keine Werbecookies. Links zu sozialen Medien öffnen die externe Website, statt hier ein Social-Widget einzubetten. Hosting- oder Zahlungsanbieter können eigene technische Cookies verwenden, wenn du ihre Dienste besuchst; dort gilt deren Datenschutzerklärung.</p>
 
           <h2>Wie lange wir Daten speichern</h2>
           <p>Wir speichern Bestell- und Zahlungsdaten so lange, wie es nötig ist, um die Bestellung auszuführen, Rücksendungen oder Streitfälle zu bearbeiten und Buchhaltungs- und Steuerpflichten zu erfüllen. Kontaktnachrichten speichern wir so lange, wie es nötig ist, um zu antworten und den Kontakt zu pflegen. Danach löschen oder anonymisieren wir Daten, sobald es keinen rechtmäßigen Grund mehr gibt, sie aufzubewahren. Wir versprechen keine feste Frist, wo gesetzliche Pflichten eine andere vorschreiben.</p>
@@ -156,16 +156,16 @@ export function PrivacyPolicy() {
             <li>To keep accounting and tax records and meet other legal duties (legal obligation).</li>
             <li>To answer messages, prevent misuse and secure the website (legitimate interests).</li>
           </ul>
-          <p>We do not currently send newsletters, run behavioural advertising or use analytics or advertising cookies. We will ask for consent before introducing optional marketing that needs it.</p>
+          <p>If you accept analytics cookies, we use Google Analytics to see how the site is used, such as which pages are visited and where people leave the checkout, so we can improve the shop (consent). We do not currently send newsletters or run behavioural advertising. We will ask for consent before introducing optional marketing that needs it.</p>
 
           <h2>Who receives your data</h2>
-          <p>We share only what is needed with service providers that help us run the shop: Mollie for payments, Resend for transactional and contact emails, our hosting and database providers (including Netlify and Railway), and delivery partners when needed to deliver an order. We may disclose data to authorities where the law requires it. These providers process data under their own terms and, where relevant, data-processing agreements.</p>
+          <p>We share only what is needed with service providers that help us run the shop: Mollie for payments, Resend for transactional and contact emails, Google for website analytics if you accept analytics cookies, our hosting and database providers (including Netlify and Railway), and delivery partners when needed to deliver an order. We may disclose data to authorities where the law requires it. These providers process data under their own terms and, where relevant, data-processing agreements.</p>
 
           <h2>Emails and contact forms</h2>
           <p>We use your email address to send receipts, fulfilment updates and other messages directly related to your order. A message sent through the contact form is forwarded to us so we can reply; it is not added to a marketing list.</p>
 
           <h2>Cookies and local storage</h2>
-          <p>The shop uses necessary browser storage for your cart and a functional cookie that remembers your language choice. The app does not currently set analytics or advertising cookies. Links to social media open the third-party site rather than embedding a social widget here. Hosting or payment providers may use their own technical cookies when you visit their services; their privacy policies apply there.</p>
+          <p>The shop uses necessary browser storage for your cart and a functional cookie that remembers your language choice, and to remember your cookie choice. Analytics cookies from Google Analytics (named <code>_ga</code> and <code>_ga_…</code>, kept for up to 2 years) are only set after you accept them in the cookie banner. They give your browser a random ID so visits can be counted; we do not send your name, email address or order details to Google, Google signals and ad personalisation are switched off, and Google Analytics does not store IP addresses. You can change your choice at any time through &ldquo;Cookie settings&rdquo; in the footer; declining removes the analytics cookies. We do not set advertising cookies. Links to social media open the third-party site rather than embedding a social widget here. Hosting or payment providers may use their own technical cookies when you visit their services; their privacy policies apply there.</p>
 
           <h2>How long we keep data</h2>
           <p>We keep order and payment records for as long as needed to fulfil the order, handle returns or disputes, and meet accounting and tax duties. Contact messages are kept for as long as needed to respond and manage the relationship. We then delete or anonymise data when there is no longer a lawful reason to keep it. We do not promise a fixed period where legal obligations require a different one.</p>

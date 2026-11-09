@@ -70,12 +70,10 @@ function readCookie(header: string | null, name: string): string | undefined {
   return undefined
 }
 
-/**
- * Formats euro cents. Every language shows prices the same way (€14.95), so
- * the locale is accepted for the call sites but does not change the result.
- */
-export function formatPriceFor(_locale: Locale, cents: number): string {
-  return formatEuroCents(cents)
+/** Formats euro cents the way each language writes them: €14.95 in English, €14,95 in Dutch and German. */
+export function formatPriceFor(locale: Locale, cents: number): string {
+  const price = formatEuroCents(cents)
+  return locale === 'en' ? price : price.replace('.', ',')
 }
 
 export function formatEuroCents(cents: number): string {

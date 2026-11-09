@@ -29,10 +29,11 @@ export const MOLLIE_LOCALE: Record<Locale, 'nl_NL' | 'en_GB' | 'de_DE'> = {
 
 const INTL: Record<Locale, string> = { nl: 'nl-NL', en: 'en-GB', de: 'de-DE' }
 
-// Prices read the same in every language: €14.95.
-export function formatEuroFor(_locale: Locale, cents: number): string {
+// Prices follow each language: €14.95 in English, €14,95 in Dutch and German.
+export function formatEuroFor(locale: Locale, cents: number): string {
   const sign = cents < 0 ? '-' : ''
-  return `${sign}€${(Math.abs(cents) / 100).toFixed(2)}`
+  const amount = (Math.abs(cents) / 100).toFixed(2)
+  return `${sign}€${locale === 'en' ? amount : amount.replace('.', ',')}`
 }
 
 export function formatDateFor(locale: Locale, date: Date): string {
