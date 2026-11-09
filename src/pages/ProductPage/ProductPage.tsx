@@ -244,7 +244,7 @@ export function ProductPage() {
     availability,
     itemCondition: 'https://schema.org/NewCondition',
     seller: { '@type': 'Organization', name: 'EarthyGlow' },
-    shippingDetails: offerShippingDetails(),
+    shippingDetails: offerShippingDetails(productLowestCents(product)),
     hasMerchantReturnPolicy: merchantReturnPolicy(),
   }
   const offers = hasPriceRange
