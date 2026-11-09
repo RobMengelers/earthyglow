@@ -19,7 +19,7 @@ const heroCopy = defineCopy({
     line1: 'Koude dagen, knusse',
     line2: 'avonden,',
     line3: 'een beetje kaarslicht',
-    lede: 'Ik ben Naomi, de maker achter EarthyGlow. Deze winter breng ik een beetje warmte in vriesdagen met handgegoten sojawaskaarsen. Gemaakt voor avonden onder een dekentje, feestelijke tafels en cadeaus uit het hart.',
+    lede: 'Ik ben Naomi, de maker achter EarthyGlow. Deze winter breng ik een beetje warmte in deze koude dagen met handgegoten sojawaskaarsen. Gemaakt voor avonden onder een dekentje, feestelijke tafels en cadeaus vanuit het hart.',
     winter: 'Shop de wintercollectie',
     story: 'Ons verhaal',
     imageAlt: 'EarthyGlow-kerstkaarsen, een feestelijke bloemencadeaudoos en wax melts in een warme sfeer met kaarslicht',

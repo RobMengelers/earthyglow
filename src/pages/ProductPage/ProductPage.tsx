@@ -145,7 +145,6 @@ export function meta({ params }: Route.MetaArgs) {
     image: product.image,
     imageAlt: copy.imageAlt(product.name),
     type: 'product',
-    robots: product.id === 'test-candle' ? 'noindex, nofollow' : undefined,
     product: {
       price: (productLowestCents(product) / 100).toFixed(2),
       availability: product.soldOut ? 'oos' : 'instock',

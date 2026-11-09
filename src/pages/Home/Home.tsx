@@ -27,7 +27,7 @@ const homeCopy = defineCopy({
   nl: {
     eyebrow: 'Shop per seizoen',
     title: 'Maak plaats voor een winterse gloed',
-    lede: 'Knusse winterfavorieten en attente cadeaus, en een beetje gloed voor elk seizoen. Allemaal met de hand gegoten.',
+    lede: 'Knusse winterfavorieten en attente cadeaus, een beetje gloed voor elk seizoen. Allemaal met de hand gegoten.',
     count: (count: number) => `${count} ${count === 1 ? 'product' : 'producten'}`,
     cardTitle: { summer: 'Zomerkaarsen', spring: 'Lentekaarsen', autumn: 'Herfstkaarsen', winter: 'Winterkaarsen' },
     explore: (label: string) => `Ontdek ${label.toLowerCase()}`,
