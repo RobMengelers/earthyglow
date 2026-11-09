@@ -3,7 +3,7 @@
 Progress tracker for the follow-ups from the SEO audit of 2026-11-09, updated the same day after the Dutch, English and German site went live.
 Check items off as they are finished.
 
-**Status:** not started · **Branch:** `feature/seo-fixes` (off master, one commit per item)
+**Status:** in progress · **Branch:** `feature/seo-fixes` (off master, one commit per item)
 
 The site now has 120 pages: the same 40 pages under `/nl/`, `/en/` and `/de/`. Most fixes are made once and apply to all three. Only the written text in item 3 is triple the work.
 
@@ -12,8 +12,8 @@ Already done by the language work: `hreflang` links and alternates in the sitema
 | # | Item | Who | Status |
 |---|------|-----|--------|
 | 1 | Search Console | You | Verified, baseline pending |
-| 2 | Mobile speed | Claude | To do |
-| 3 | Titles and descriptions | Claude drafts, you approve | To do |
+| 2 | Mobile speed | Claude | Done, confirm after deploy |
+| 3 | Titles and descriptions | Claude drafts, you approve | Dutch draft waiting for approval (`docs/seo-copy-nl.md`) |
 | 4 | Internal links | Claude | To do |
 | 5 | Heading order | Claude | To do |
 | 6 | llms.txt | Claude | To do |
@@ -33,20 +33,21 @@ Already done by the language work: `hreflang` links and alternates in the sitema
 
 ## 2. Mobile speed
 
-New baseline on the Dutch pages, simulated slow phone connection. Target: under 2.5s.
+New baseline on the Dutch pages, simulated slow phone connection. Target: under 2.5s. "After fixes" is measured on a local production build, so confirm on the live site after deploy.
 
 | Page | Before localization | Now | After fixes |
 |------|---------------------|-----|-------------|
-| Product (`/nl/product/floral-box/`) | ~10s | ~10.4s | |
-| Home (`/nl/`) | ~6.4s | ~9.1s | |
-| Shop (`/nl/shop/`) | ~4.5s | ~4.1s | |
-| Care (`/nl/care/`) | ~3.8s | ~3.8s | |
+| Product (`/nl/product/floral-box/`) | ~10s | ~10.4s | ~3.0s |
+| Home (`/nl/`) | ~6.4s | ~9.1s | ~3.4s |
+| Shop (`/nl/shop/`) | ~4.5s | ~4.1s | ~1.1s |
+| Care (`/nl/care/`) | ~3.8s | ~3.8s | ~1.9–3.2s |
 
-- [ ] Product gallery: only load the first image up front (`fetchPriority="high"`), lazy-load the rest. All gallery images download immediately today, up to 1.9 MB on the floral box
-- [ ] Home: find out why it got slower (images went from about 800 KB to 1.4 MB). Check the hero picks a sensible size on phones, and preload it
-- [ ] Re-compress the 7 largest originals (over 250 KB) with `scripts/images.mjs`, checking they still look good
-- [ ] Shop: find out why text is the slowest item (likely the display font or the reveal animation)
-- [ ] Re-measure and fill in the table
+- [x] Product gallery: first image first, the rest on demand
+- [x] Generate smaller versions of product photos (thumbnails were downloading full-size images)
+- [x] Replace the 114 KB menu logo with a 2 KB version
+- [x] Re-compress the 33 heaviest photos (5.8 MB saved, quality checked)
+- [x] Show top-of-page content straight away instead of waiting for JavaScript
+- [ ] Confirm the numbers on the live site after deploy
 
 ## 3. Titles and descriptions
 

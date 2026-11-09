@@ -1,3 +1,4 @@
+import { imageAttrs, SIZES } from '../../lib/images'
 import { useState } from 'react'
 import { Reveal } from '../../components/ui/Reveal'
 import { Divider } from '../../components/ui/Divider'
@@ -239,8 +240,8 @@ export function Care() {
         <div className="container">
           <div className="care-grid">
             {copy.tips.map((tip, i) => (
-              <Reveal key={IMAGES[i]} delay={(i % 3) * 90} className="care-card">
-                <img className="care-card-image" src={IMAGES[i]} alt={tip.alt} />
+              <Reveal key={IMAGES[i]} immediate={i === 0} delay={(i % 3) * 90} className="care-card">
+                <img className="care-card-image" {...imageAttrs(IMAGES[i], SIZES.feature)} loading={i === 0 ? undefined : 'lazy'} alt={tip.alt} />
                 <div className="care-card-content">
                 <span className="care-step">{String(i + 1).padStart(2, '0')}</span>
                 <h3>{tip.title}</h3>
