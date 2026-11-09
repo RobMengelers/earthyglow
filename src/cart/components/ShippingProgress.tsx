@@ -1,9 +1,42 @@
-import {
-  DEFAULT_ZONE,
-  formatPrice,
-  type ShippingZone,
-} from '../CartContext'
+import { DEFAULT_ZONE, type ShippingZone } from '../CartContext'
 import { useCart } from '../useCart'
+import { defineCopy, useCopy, useFormatPrice } from '../../i18n'
+
+const progressCopy = defineCopy({
+  en: {
+    free: 'Free shipping',
+    withCode: 'with',
+    noCost: 'No shipping cost on this order',
+    unlocked: 'You’ve unlocked',
+    freeShipping: 'free shipping',
+    awayFrom: 'away from free shipping',
+    progress: 'Progress towards free shipping',
+    freeOver: (amount: string) => `Free shipping on orders of ${amount} or more`,
+    freeInternationalOver: (amount: string) => `Free international shipping on orders of ${amount} or more`,
+  },
+  nl: {
+    free: 'Gratis verzending',
+    withCode: 'met',
+    noCost: 'Geen verzendkosten voor deze bestelling',
+    unlocked: 'Je hebt',
+    freeShipping: 'gratis verzending',
+    awayFrom: 'verwijderd van gratis verzending',
+    progress: 'Voortgang naar gratis verzending',
+    freeOver: (amount: string) => `Gratis verzending bij bestellingen vanaf ${amount}`,
+    freeInternationalOver: (amount: string) => `Gratis internationale verzending bij bestellingen vanaf ${amount}`,
+  },
+  de: {
+    free: 'Kostenloser Versand',
+    withCode: 'mit',
+    noCost: 'Keine Versandkosten für diese Bestellung',
+    unlocked: 'Du erhältst',
+    freeShipping: 'kostenlosen Versand',
+    awayFrom: 'bis zum kostenlosen Versand',
+    progress: 'Fortschritt bis zum kostenlosen Versand',
+    freeOver: (amount: string) => `Kostenloser Versand ab einem Bestellwert von ${amount}`,
+    freeInternationalOver: (amount: string) => `Kostenloser internationaler Versand ab einem Bestellwert von ${amount}`,
+  },
+})
 
 type ShippingProgressProps = {
   className?: string
@@ -12,6 +45,8 @@ type ShippingProgressProps = {
 
 export function ShippingProgress({ className, zone }: ShippingProgressProps) {
   const { subtotalCents, discountCents, coupon } = useCart()
+  const copy = useCopy(progressCopy)
+  const formatPrice = useFormatPrice()
   const activeZone = zone ?? DEFAULT_ZONE
   const freeShippingByCoupon = coupon?.type === 'free_shipping'
   // The threshold is judged on what the customer pays for the products, so a
@@ -34,11 +69,9 @@ export function ShippingProgress({ className, zone }: ShippingProgressProps) {
     return (
       <div className={className ? `shipping-progress ${className}` : 'shipping-progress'}>
         <p className="shipping-progress-text">
-          <strong>Free shipping</strong> with {coupon.code}
+          <strong>{copy.free}</strong> {copy.withCode} {coupon.code}
         </p>
-        <p className="shipping-progress-note">
-          No shipping cost on this order
-        </p>
+        <p className="shipping-progress-note">{copy.noCost}</p>
       </div>
     )
   }
@@ -48,12 +81,11 @@ export function ShippingProgress({ className, zone }: ShippingProgressProps) {
       <p className="shipping-progress-text">
         {hasFreeShipping ? (
           <>
-            You&rsquo;ve unlocked <strong>free shipping</strong>
+            {copy.unlocked} <strong>{copy.freeShipping}</strong>
           </>
         ) : (
           <>
-            <strong>{formatPrice(shippingRemainingCents)}</strong> away from free
-            shipping
+            <strong>{formatPrice(shippingRemainingCents)}</strong> {copy.awayFrom}
           </>
         )}
       </p>
@@ -63,7 +95,7 @@ export function ShippingProgress({ className, zone }: ShippingProgressProps) {
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={Math.round(progress)}
-        aria-label="Progress towards free shipping"
+        aria-label={copy.progress}
       >
         <span
           className="shipping-progress-fill"
@@ -71,9 +103,9 @@ export function ShippingProgress({ className, zone }: ShippingProgressProps) {
         />
       </div>
       <p className="shipping-progress-note">
-        {zone
-          ? `Free ${activeZone.label === 'Netherlands' ? '' : 'international'} shipping on orders of ${formatPrice(activeZone.freeThresholdCents)} or more`
-          : `Free shipping on orders of ${formatPrice(activeZone.freeThresholdCents)} or more`}
+        {zone && activeZone.label !== 'Netherlands'
+          ? copy.freeInternationalOver(formatPrice(activeZone.freeThresholdCents))
+          : copy.freeOver(formatPrice(activeZone.freeThresholdCents))}
       </p>
     </div>
   )

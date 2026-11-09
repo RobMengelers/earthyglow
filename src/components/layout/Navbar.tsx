@@ -1,18 +1,47 @@
 import { useState } from 'react'
-import { Link, NavLink } from 'react-router'
 import { useCart } from '../../cart/useCart'
+import { defineCopy, Link, NavLink, useCopy } from '../../i18n'
+import { LanguageSwitcher } from './LanguageSwitcher'
+
+const navCopy = defineCopy({
+  en: {
+    links: { home: 'Home', shop: 'Shop', about: 'Our Story', care: 'Candle Care', contact: 'Contact' },
+    homeLabel: 'EarthyGlow home',
+    mainNav: 'Main navigation',
+    openCart: 'Open cart',
+    openCartCount: (count: number) => `Open cart, ${count} ${count === 1 ? 'item' : 'items'}`,
+    openMenu: 'Open menu',
+  },
+  nl: {
+    links: { home: 'Home', shop: 'Shop', about: 'Ons verhaal', care: 'Kaarsverzorging', contact: 'Contact' },
+    homeLabel: 'EarthyGlow home',
+    mainNav: 'Hoofdmenu',
+    openCart: 'Winkelmand openen',
+    openCartCount: (count: number) => `Winkelmand openen, ${count} ${count === 1 ? 'artikel' : 'artikelen'}`,
+    openMenu: 'Menu openen',
+  },
+  de: {
+    links: { home: 'Start', shop: 'Shop', about: 'Unsere Geschichte', care: 'Kerzenpflege', contact: 'Kontakt' },
+    homeLabel: 'EarthyGlow Startseite',
+    mainNav: 'Hauptnavigation',
+    openCart: 'Warenkorb öffnen',
+    openCartCount: (count: number) => `Warenkorb öffnen, ${count} ${count === 1 ? 'Artikel' : 'Artikel'}`,
+    openMenu: 'Menü öffnen',
+  },
+})
 
 const links = [
-  { label: 'Home', to: '/' },
-  { label: 'Shop', to: '/shop' },
-  { label: 'Our Story', to: '/about' },
-  { label: 'Candle Care', to: '/care' },
-  { label: 'Contact', to: '/contact' },
-]
+  { key: 'home', to: '/' },
+  { key: 'shop', to: '/shop' },
+  { key: 'about', to: '/about' },
+  { key: 'care', to: '/care' },
+  { key: 'contact', to: '/contact' },
+] as const
 
 export function Navbar() {
   const [open, setOpen] = useState(false)
   const { itemCount, openDrawer } = useCart()
+  const copy = useCopy(navCopy)
 
   return (
     <header className="navbar">
@@ -20,7 +49,7 @@ export function Navbar() {
         <Link
           to="/"
           className="brand"
-          aria-label="EarthyGlow home"
+          aria-label={copy.homeLabel}
           prefetch="viewport"
           onClick={() => setOpen(false)}
         >
@@ -38,7 +67,7 @@ export function Navbar() {
 
         <ul
           className={open ? 'nav-links menu-open' : 'nav-links'}
-          aria-label="Main navigation"
+          aria-label={copy.mainNav}
         >
           {links.map((link) => (
             <li key={link.to}>
@@ -49,21 +78,18 @@ export function Navbar() {
                 className={({ isActive }) => (isActive ? 'active' : undefined)}
                 onClick={() => setOpen(false)}
               >
-                {link.label}
+                {copy.links[link.key]}
               </NavLink>
             </li>
           ))}
         </ul>
 
         <div className="nav-actions">
+          <LanguageSwitcher />
           <button
             type="button"
             className="cart-link"
-            aria-label={
-              itemCount > 0
-                ? `Open cart, ${itemCount} ${itemCount === 1 ? 'item' : 'items'}`
-                : 'Open cart'
-            }
+            aria-label={itemCount > 0 ? copy.openCartCount(itemCount) : copy.openCart}
             onClick={openDrawer}
           >
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -87,7 +113,7 @@ export function Navbar() {
           <button
             type="button"
             className={open ? 'mobile-toggle is-open' : 'mobile-toggle'}
-            aria-label="Open menu"
+            aria-label={copy.openMenu}
             aria-expanded={open}
             onClick={() => setOpen((v) => !v)}
           >

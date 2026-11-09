@@ -14,6 +14,7 @@ import { archiveInvoiceForOrder, MISSING_DETAIL, sendFulfillmentEmail, sendOrder
 import { refundPayment } from '../mollie.js'
 import { createOrderNumber } from '../order-number.js'
 import { prisma } from '../prisma.js'
+import { LOCALES } from '../i18n.js'
 
 const ORDER_STATUSES: OrderStatus[] = [
   'pending',
@@ -95,6 +96,9 @@ const manualOrderSchema = z.object({
     .max(50),
   notes: z.string().trim().max(500).optional().default(''),
   sendInvoiceEmail: z.boolean().optional().default(false),
+  // The language of the invoice and emails. Sales recorded by hand are mostly
+  // made in the Netherlands, so Dutch unless chosen otherwise.
+  locale: z.enum(LOCALES).optional().default('nl'),
 })
 
 // Checks a catalog line against the database. The name, variant and colour
@@ -667,7 +671,7 @@ export async function adminRoutes(app: FastifyInstance) {
         .send({ error: parsed.error.issues[0]?.message ?? 'Invalid order' })
     }
 
-    const { customer, shipping, items, notes, sendInvoiceEmail, date, pricesIncludeVat } = parsed.data
+    const { customer, shipping, items, notes, sendInvoiceEmail, date, pricesIncludeVat, locale } = parsed.data
     const orderDate = date ? new Date(date + 'T00:00:00.000Z') : new Date()
 
     const lines: Prisma.OrderItemCreateManyOrderInput[] = []
@@ -735,6 +739,7 @@ export async function adminRoutes(app: FastifyInstance) {
       const data = {
           isManual: true,
           pricesIncludeVat,
+          locale,
           customerId: dbCustomer.id,
           status: 'paid' as const,
           paidAt: orderDate,

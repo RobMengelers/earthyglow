@@ -1507,6 +1507,31 @@
   background: var(--bg);
 }
 
+.admin-manual-locale {
+  display: grid;
+  gap: 0.25rem;
+  justify-items: start;
+  margin-top: 0.75rem;
+  color: var(--beige-deep);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.admin-manual-locale select {
+  min-height: 2.25rem;
+  padding: 0 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--body);
+  font: inherit;
+  font-size: 0.86rem;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
 .admin-manual-line.admin-tester-line {
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.1fr) minmax(0, 1fr) 4.5rem 2rem;
 }

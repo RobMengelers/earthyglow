@@ -1,4 +1,11 @@
-import { countries } from '../countries'
+import { countryOptions } from '../countries'
+import { defineCopy, useCopy, useLocale } from '../../../i18n'
+
+const shippingCopy = defineCopy({
+  en: { legend: 'Shipping address', street: 'Street and number', postalCode: 'Postal code', city: 'City', country: 'Country', pick: 'Pick your country' },
+  nl: { legend: 'Verzendadres', street: 'Straat en huisnummer', postalCode: 'Postcode', city: 'Plaats', country: 'Land', pick: 'Kies je land' },
+  de: { legend: 'Lieferadresse', street: 'Straße und Hausnummer', postalCode: 'Postleitzahl', city: 'Ort', country: 'Land', pick: 'Wähle dein Land' },
+})
 
 type ShippingFieldsProps = {
   country: string
@@ -6,11 +13,13 @@ type ShippingFieldsProps = {
 }
 
 export function ShippingFields({ country, onCountryChange }: ShippingFieldsProps) {
+  const copy = useCopy(shippingCopy)
+  const locale = useLocale()
   return (
     <fieldset className="checkout-fieldset">
-      <legend>Shipping address</legend>
+      <legend>{copy.legend}</legend>
       <label className="field">
-        <span>Street and number</span>
+        <span>{copy.street}</span>
         <input
           type="text"
           name="address"
@@ -20,7 +29,7 @@ export function ShippingFields({ country, onCountryChange }: ShippingFieldsProps
       </label>
       <div className="field-row">
         <label className="field">
-          <span>Postal code</span>
+          <span>{copy.postalCode}</span>
           <input
             type="text"
             name="postalCode"
@@ -29,12 +38,12 @@ export function ShippingFields({ country, onCountryChange }: ShippingFieldsProps
           />
         </label>
         <label className="field">
-          <span>City</span>
+          <span>{copy.city}</span>
           <input type="text" name="city" autoComplete="address-level2" required />
         </label>
       </div>
       <label className="field">
-        <span>Country</span>
+        <span>{copy.country}</span>
         <select
           name="country"
           autoComplete="country-name"
@@ -43,11 +52,11 @@ export function ShippingFields({ country, onCountryChange }: ShippingFieldsProps
           required
         >
           <option value="" disabled>
-            Pick your country
+            {copy.pick}
           </option>
-          {countries.map((option) => (
+          {countryOptions(locale).map((option) => (
             <option key={option.code} value={option.code}>
-              {option.name}
+              {option.label}
             </option>
           ))}
         </select>

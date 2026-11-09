@@ -1,11 +1,19 @@
 import type { MetaDescriptor } from 'react-router'
 import { socials } from '../data/socials'
+import { DEFAULT_LOCALE, LOCALE_INFO, LOCALES, localizePath, type Locale } from '../i18n/locales'
 
 export const SITE_URL = 'https://www.earthyglow.nl'
 const SITE_NAME = 'EarthyGlow'
-const DEFAULT_TITLE = 'EarthyGlow · Hand-poured Soy Candles'
-const DEFAULT_DESCRIPTION =
-  'Meet EarthyGlow: 100% soy wax candles, poured by hand by Naomi in the Netherlands. Flower candles, seasonal scents and sculptural shapes.'
+const DEFAULT_TITLE: Record<Locale, string> = {
+  en: 'EarthyGlow · Hand-poured Soy Candles',
+  nl: 'EarthyGlow · Handgegoten sojawaskaarsen',
+  de: 'EarthyGlow · Handgegossene Sojawachskerzen',
+}
+const DEFAULT_DESCRIPTION: Record<Locale, string> = {
+  en: 'Meet EarthyGlow: 100% soy wax candles, poured by hand by Naomi in the Netherlands. Flower candles, seasonal scents and sculptural shapes.',
+  nl: 'Maak kennis met EarthyGlow: kaarsen van 100% sojawas, met de hand gegoten door Naomi in Nederland. Bloemkaarsjes, seizoensgeuren en sculpturale vormen.',
+  de: 'Entdecke EarthyGlow: Kerzen aus 100 % Sojawachs, von Naomi in den Niederlanden von Hand gegossen. Blumenkerzen, saisonale Düfte und skulpturale Formen.',
+}
 const DEFAULT_OG_IMAGE = '/og-cover.png'
 const OG_IMAGE_WIDTH = 1200
 const OG_IMAGE_HEIGHT = 630
@@ -40,10 +48,17 @@ export function canonicalUrl(path: string): string {
   return absoluteUrl(pathname.endsWith('/') ? pathname : `${pathname}/`)
 }
 
+/** Absolute canonical URL of a site path in one language: ('nl', '/shop') → …/nl/shop/. */
+export function localizedUrl(locale: Locale, path: string): string {
+  return canonicalUrl(localizePath(locale, path))
+}
+
 type SiteMetaOptions = {
+  /** Language of the page; with `path` it adds hreflang links to the other languages. */
+  locale?: Locale
   title?: string
   description?: string
-  /** Pathname (no query string) used for canonical + og:url. Omit for pages that should not claim a canonical URL. */
+  /** Path without language (e.g. '/shop') used for canonical + og:url. Omit for pages that should not claim a canonical URL. */
   path?: string
   image?: string
   /** Alt text for the social share image. Defaults to the page title. */
@@ -60,6 +75,7 @@ type SiteMetaOptions = {
  * title/description/canonical/Open Graph/Twitter tags.
  */
 export function siteMeta({
+  locale = DEFAULT_LOCALE,
   title,
   description,
   path,
@@ -69,11 +85,11 @@ export function siteMeta({
   robots,
   product,
 }: SiteMetaOptions): MetaDescriptor[] {
-  const resolvedTitle = title ?? DEFAULT_TITLE
-  const resolvedDescription = description ?? DEFAULT_DESCRIPTION
+  const resolvedTitle = title ?? DEFAULT_TITLE[locale]
+  const resolvedDescription = shortDescription(description ?? DEFAULT_DESCRIPTION[locale])
   const resolvedImage = absoluteUrl(image ?? DEFAULT_OG_IMAGE)
   const resolvedImageAlt = imageAlt ?? resolvedTitle
-  const canonical = path ? canonicalUrl(path) : undefined
+  const canonical = path ? localizedUrl(locale, path) : undefined
 
   return [
     { title: resolvedTitle },
@@ -83,8 +99,22 @@ export function siteMeta({
       ? [
           { tagName: 'link', rel: 'canonical', href: canonical },
           { property: 'og:url', content: canonical },
+          // Every language version names all the others (and itself), with
+          // English as the pick for languages we do not have.
+          ...LOCALES.map((alternate) => ({
+            tagName: 'link',
+            rel: 'alternate',
+            hrefLang: alternate,
+            href: localizedUrl(alternate, path!),
+          })),
+          { tagName: 'link', rel: 'alternate', hrefLang: 'x-default', href: localizedUrl(DEFAULT_LOCALE, path!) },
         ]
       : []),
+    { property: 'og:locale', content: LOCALE_INFO[locale].og },
+    ...LOCALES.filter((other) => other !== locale).map((other) => ({
+      property: 'og:locale:alternate',
+      content: LOCALE_INFO[other].og,
+    })),
     { property: 'og:site_name', content: SITE_NAME },
     { property: 'og:title', content: resolvedTitle },
     { property: 'og:description', content: resolvedDescription },
@@ -115,12 +145,12 @@ export function siteMeta({
 }
 
 /** schema.org Organization describing the business, for knowledge-panel and entity data. */
-export function organizationLd(): Record<string, unknown> {
+export function organizationLd(locale: Locale = DEFAULT_LOCALE): Record<string, unknown> {
   return {
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name: BUSINESS.name,
-    url: canonicalUrl('/'),
+    url: localizedUrl(locale, '/'),
     logo: {
       '@type': 'ImageObject',
       url: absoluteUrl('/logo.png'),
@@ -137,7 +167,7 @@ export function organizationLd(): Record<string, unknown> {
       '@type': 'ContactPoint',
       contactType: 'customer support',
       email: BUSINESS.email,
-      availableLanguage: ['en', 'nl'],
+      availableLanguage: ['nl', 'en', 'de'],
     },
   }
 }
@@ -185,9 +215,26 @@ export function merchantReturnPolicy(): Record<string, unknown> {
   }
 }
 
+/**
+ * Search snippets are cut at about 155 characters, so long text (a full product
+ * description) is trimmed to whole sentences, or whole words, that fit.
+ */
+export function shortDescription(text: string, max = 155): string {
+  const flat = text.replace(/\s+/g, ' ').replace(/\s*♡\s*/g, ' ').trim()
+  if (flat.length <= max) return flat
+  let cut = ''
+  for (const sentence of flat.match(/[^.!?]+[.!?]+/g) ?? []) {
+    if ((cut + sentence).trim().length > max) break
+    cut += sentence
+  }
+  if (cut.trim().length >= 70) return cut.trim()
+  return `${flat.slice(0, max - 1).replace(/\s+\S*$/, '')}…`
+}
+
 /** schema.org BreadcrumbList for the visible breadcrumb navigation on a page. */
 export function breadcrumbLd(
   items: { name: string; path?: string }[],
+  locale: Locale = DEFAULT_LOCALE,
 ): Record<string, unknown> {
   return {
     '@context': 'https://schema.org',
@@ -196,7 +243,7 @@ export function breadcrumbLd(
       '@type': 'ListItem',
       position: index + 1,
       name: item.name,
-      ...(item.path ? { item: canonicalUrl(item.path) } : {}),
+      ...(item.path ? { item: localizedUrl(locale, item.path) } : {}),
     })),
   }
 }

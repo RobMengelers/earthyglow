@@ -25,7 +25,9 @@
 
 .hero-grid {
   display: grid;
-  grid-template-columns: 1.05fr 0.95fr;
+  /* The image column is exactly as wide as the image, so the title gets all
+     the remaining room instead of empty space beside the frame. */
+  grid-template-columns: minmax(0, 1fr) 430px;
   gap: 60px;
   align-items: center;
   position: relative;
@@ -33,7 +35,9 @@
 }
 
 .hero-copy {
-  max-width: 560px;
+  max-width: 660px;
+  /* The title is sized to this column (cqi units below). */
+  container-type: inline-size;
 }
 
 .hero-line {
@@ -82,9 +86,21 @@
 
 .hero h1 {
   font-size: clamp(2.6rem, 5.4vw, 4.3rem);
+  /* Sized to the column so each language's longest line just fits: the title
+     is always the same three lines, whichever language is shown. */
+  font-size: clamp(1.7rem, 11.9cqi, 4.3rem);
   font-weight: 500;
   margin: 1.1rem 0 1.4rem;
   letter-spacing: -0.02em;
+}
+
+/* Dutch and German lines run longer, so their title is a little smaller. */
+html[lang='nl'] .hero h1 {
+  font-size: clamp(1.6rem, 10cqi, 4.3rem);
+}
+
+html[lang='de'] .hero h1 {
+  font-size: clamp(1.5rem, 9.3cqi, 4.3rem);
 }
 
 .hero .lede {
@@ -249,11 +265,6 @@
 
   .hero-grid {
     padding: calc(var(--hero-photo) - 96px) 0 40px;
-  }
-
-  /* Sized to the screen so the title keeps its three lines on any phone. */
-  .hero h1 {
-    font-size: clamp(1.9rem, 10.2vw, 2.6rem);
   }
 
   .hero .lede {

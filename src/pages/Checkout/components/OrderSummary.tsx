@@ -1,13 +1,63 @@
 import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router'
-import { calcTotals, formatPrice, shippingZoneForCountry } from '../../../cart/CartContext'
+import { calcTotals, shippingZoneForCountry } from '../../../cart/CartContext'
+import { couponSummary } from '../../../cart/coupons'
+import { defineCopy, Link, useCopy, useFormatPrice, useLocale } from '../../../i18n'
+import { optionLabel } from '../../../i18n/options'
 import { ShippingProgress } from '../../../cart/components/ShippingProgress'
 import { useCart } from '../../../cart/useCart'
 import { Reveal } from '../../../components/ui/Reveal'
 import { LoadingButton } from '../../../components/ui/LoadingButton'
 import { imageAttrs, SIZES } from '../../../lib/images'
 
+const summaryCopy = defineCopy({
+  en: {
+    title: 'Order summary',
+    pickCountry: 'Pick a country to calculate shipping.',
+    remove: 'Remove',
+    coupon: 'Coupon',
+    apply: 'Apply',
+    subtotal: 'Subtotal',
+    discount: 'Discount',
+    shipping: 'Shipping',
+    free: 'Free',
+    chooseCountry: 'Choose a country',
+    total: 'Total',
+    editCart: 'Edit cart',
+  },
+  nl: {
+    title: 'Overzicht',
+    pickCountry: 'Kies een land om de verzendkosten te berekenen.',
+    remove: 'Verwijderen',
+    coupon: 'Kortingscode',
+    apply: 'Toepassen',
+    subtotal: 'Subtotaal',
+    discount: 'Korting',
+    shipping: 'Verzending',
+    free: 'Gratis',
+    chooseCountry: 'Kies een land',
+    total: 'Totaal',
+    editCart: 'Winkelmand aanpassen',
+  },
+  de: {
+    title: 'Bestellübersicht',
+    pickCountry: 'Wähle ein Land, um die Versandkosten zu berechnen.',
+    remove: 'Entfernen',
+    coupon: 'Gutschein',
+    apply: 'Einlösen',
+    subtotal: 'Zwischensumme',
+    discount: 'Rabatt',
+    shipping: 'Versand',
+    free: 'Kostenlos',
+    chooseCountry: 'Wähle ein Land',
+    total: 'Gesamt',
+    editCart: 'Warenkorb bearbeiten',
+  },
+})
+
 export function OrderSummary({ country }: { country: string }) {
+  const copy = useCopy(summaryCopy)
+  const locale = useLocale()
+  const formatPrice = useFormatPrice()
   const {
     items,
     itemCount,
@@ -30,7 +80,7 @@ export function OrderSummary({ country }: { country: string }) {
 
   return (
     <Reveal delay={100} className="checkout-summary">
-      <h2>Order summary</h2>
+      <h2>{copy.title}</h2>
       <ul className="checkout-summary-lines">
         {items.map((item) => (
           <li key={item.id} className="checkout-summary-line">
@@ -42,8 +92,8 @@ export function OrderSummary({ country }: { country: string }) {
             </span>
                   <span className="checkout-summary-name">
                     {item.name}
-                    {item.variantLabel && <small className="checkout-summary-variant">{item.variantLabel}</small>}
-                    {item.colorLabel && <small className="checkout-summary-variant">{item.colorLabel}</small>}
+                    {item.variantLabel && <small className="checkout-summary-variant">{optionLabel(item.variantLabel, locale)}</small>}
+                    {item.colorLabel && <small className="checkout-summary-variant">{optionLabel(item.colorLabel, locale)}</small>}
                   </span>
             <span className="checkout-summary-price">
               {formatPrice(item.priceCents * item.quantity)}
@@ -55,26 +105,26 @@ export function OrderSummary({ country }: { country: string }) {
         <ShippingProgress className="checkout-shipping" zone={zone} />
       ) : (
         <p className="checkout-shipping-placeholder">
-          Pick a country to calculate shipping.
+          {copy.pickCountry}
         </p>
       )}
       {coupon ? (
         <p className="checkout-coupon-applied">
           <span>
-            <strong>{coupon.code}</strong> — {coupon.summary}
+            <strong>{coupon.code}</strong> — {couponSummary(coupon, locale)}
           </span>
           <button
             type="button"
             className="checkout-coupon-remove"
             onClick={removeCoupon}
           >
-            Remove
+            {copy.remove}
           </button>
         </p>
       ) : (
         <form className="checkout-coupon" onSubmit={handleApply}>
           <label className="checkout-coupon-label" htmlFor="coupon-code">
-            Coupon
+            {copy.coupon}
           </label>
           <div className="checkout-coupon-row">
             <input
@@ -93,7 +143,7 @@ export function OrderSummary({ country }: { country: string }) {
               disabled={code.trim() === ''}
               loading={couponPending}
             >
-              Apply
+              {copy.apply}
             </LoadingButton>
           </div>
           {couponError && (
@@ -105,38 +155,38 @@ export function OrderSummary({ country }: { country: string }) {
       )}
       <div className="cart-totals">
         <div className="cart-totals-row">
-          <span>Subtotal ({itemCount})</span>
+          <span>{copy.subtotal} ({itemCount})</span>
           <span>{formatPrice(zoneTotals.subtotalCents)}</span>
         </div>
         {zoneTotals.discountCents > 0 && (
           <div className="cart-totals-row">
-            <span>Discount ({coupon?.code})</span>
+            <span>{copy.discount} ({coupon?.code})</span>
             <span>-{formatPrice(zoneTotals.discountCents)}</span>
           </div>
         )}
         <div className="cart-totals-row">
-          <span>Shipping</span>
+          <span>{copy.shipping}</span>
           {hasCountry ? (
             <span>
               {zoneTotals.shippingCents === 0
-                ? 'Free'
+                ? copy.free
                 : formatPrice(zoneTotals.shippingCents)}
             </span>
           ) : (
-            <span className="cart-totals-muted">Choose a country</span>
+            <span className="cart-totals-muted">{copy.chooseCountry}</span>
           )}
         </div>
         <div className="cart-totals-row cart-totals-total">
-          <span>Total</span>
+          <span>{copy.total}</span>
           {hasCountry ? (
             <span>{formatPrice(zoneTotals.totalCents)}</span>
           ) : (
-            <span className="cart-totals-muted">Choose a country</span>
+            <span className="cart-totals-muted">{copy.chooseCountry}</span>
           )}
         </div>
       </div>
       <Link to="/cart" className="cart-view-link">
-        Edit cart
+        {copy.editCart}
       </Link>
     </Reveal>
   )

@@ -7,7 +7,8 @@ import {
 } from 'react'
 import { getProduct, type Product, type ProductColor, type ProductVariant } from '../data/products'
 import { fetchCatalog, reconcileCatalogItems } from './catalog'
-import { validateCoupon } from './coupons'
+import { INVALID_COUPON, validateCoupon } from './coupons'
+import { useLocale } from '../i18n'
 import { centsToEuros, trackEvent } from '../lib/analytics'
 import {
   CartContext,
@@ -94,6 +95,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [hydrated, setHydrated] = useState(false)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [coupon, setCoupon] = useState<AppliedCoupon | null>(null)
+  const locale = useLocale()
   const [couponError, setCouponError] = useState<string | null>(null)
   const [couponPending, setCouponPending] = useState(false)
 
@@ -228,7 +230,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setCouponPending(true)
     setCouponError(null)
     try {
-      const validated = await validateCoupon(code)
+      const validated = await validateCoupon(code, locale)
       setCoupon(validated)
       return true
     } catch (error) {
@@ -236,13 +238,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setCouponError(
         error instanceof Error
           ? error.message
-          : 'That coupon code is not valid.',
+          : INVALID_COUPON[locale],
       )
       return false
     } finally {
       setCouponPending(false)
     }
-  }, [])
+  }, [locale])
 
   const removeCoupon = useCallback(() => {
     setCoupon(null)

@@ -1,5 +1,6 @@
-import { createMollieClient, PaymentLineType, PaymentMethod } from '@mollie/api-client'
+import { createMollieClient, Locale as MollieLocale, PaymentLineType, PaymentMethod } from '@mollie/api-client'
 import { env } from './env.js'
+import { MOLLIE_LOCALE, type Locale } from './i18n.js'
 
 const client = env.MOLLIE_API_KEY
   ? createMollieClient({ apiKey: env.MOLLIE_API_KEY })
@@ -69,23 +70,25 @@ type CreatePaymentInput = {
   totalCents: number
   description: string
   method?: string
+  /** Storefront language: picks Mollie's page language and the return URL. */
+  locale?: Locale
   lines?: PaymentLineInput[]
   billingAddress?: PaymentAddressInput
   shippingAddress?: PaymentAddressInput
 }
 
-function buildRedirectUrl(orderNumber: string, mock: boolean): string {
+function buildRedirectUrl(orderNumber: string, mock: boolean, locale: Locale = 'en'): string {
   const origins = env.FRONTEND_URL.split(',').map((o) => o.trim()).filter(Boolean)
   const frontendBase = origins.find((o) => o.includes('www.')) ?? origins[0] ?? ''
-  const url = `${frontendBase}/checkout/confirmation?order=${encodeURIComponent(orderNumber)}`
+  const url = `${frontendBase}/${locale}/checkout/confirmation?order=${encodeURIComponent(orderNumber)}`
   return mock ? `${url}&mock=1` : url
 }
 
-export async function listPaymentMethods(): Promise<PaymentMethodOption[]> {
+export async function listPaymentMethods(locale: Locale = 'en'): Promise<PaymentMethodOption[]> {
   if (!client) return MOCK_METHODS
 
   try {
-    const methods = await client.methods.list()
+    const methods = await client.methods.list({ locale: MollieLocale[MOLLIE_LOCALE[locale]] })
     const supported = new Map<string, (typeof methods)[number]>(
       methods.map((method) => [method.id, method]),
     )
@@ -110,7 +113,7 @@ export async function createPayment(
     // confirmation page, where the dev-only mock-pay endpoint settles the order.
     return {
       id: `tr_mock_${input.orderId}`,
-      checkoutUrl: buildRedirectUrl(input.orderNumber, true),
+      checkoutUrl: buildRedirectUrl(input.orderNumber, true, input.locale),
     }
   }
 
@@ -121,7 +124,8 @@ export async function createPayment(
     },
     description: input.description,
     method: input.method as PaymentMethod | undefined,
-    redirectUrl: buildRedirectUrl(input.orderNumber, false),
+    redirectUrl: buildRedirectUrl(input.orderNumber, false, input.locale),
+    ...(input.locale ? { locale: MollieLocale[MOLLIE_LOCALE[input.locale]] } : {}),
     webhookUrl: `${env.PUBLIC_API_URL}/api/webhooks/mollie`,
     metadata: {
       orderId: input.orderId,

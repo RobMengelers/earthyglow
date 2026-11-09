@@ -1,11 +1,15 @@
 import { useEffect } from 'react'
-import { Link } from 'react-router'
 import { lockBodyScroll } from '../../lib/scrollLock'
-import { formatPrice } from '../CartContext'
 import { useCart } from '../useCart'
+import { couponSummary } from '../coupons'
+import { Link, useCopy, useFormatPrice, useLocale } from '../../i18n'
+import { cartCopy } from '../cart-copy'
 import { CartLine } from './CartLine'
 
 export function CartDrawer() {
+  const copy = useCopy(cartCopy)
+  const locale = useLocale()
+  const formatPrice = useFormatPrice()
   const {
     items,
     itemCount,
@@ -37,20 +41,20 @@ export function CartDrawer() {
       <button
         type="button"
         className="cart-overlay-backdrop"
-        aria-label="Close cart"
+        aria-label={copy.close}
         tabIndex={isDrawerOpen ? 0 : -1}
         onClick={closeDrawer}
       />
-      <aside className="cart-drawer" role="dialog" aria-modal="true" aria-label="Shopping cart">
+      <aside className="cart-drawer" role="dialog" aria-modal="true" aria-label={copy.dialog}>
         <header className="cart-drawer-head">
           <h2>
-            Your cart
+            {copy.title}
             {itemCount > 0 && <span className="cart-drawer-count">{itemCount}</span>}
           </h2>
           <button
             type="button"
             className="cart-close"
-            aria-label="Close cart"
+            aria-label={copy.close}
             tabIndex={isDrawerOpen ? 0 : -1}
             onClick={closeDrawer}
           >
@@ -60,8 +64,8 @@ export function CartDrawer() {
 
         {items.length === 0 ? (
           <div className="cart-empty">
-            <p className="cart-empty-title">Your cart is empty</p>
-            <p>Fill it with something warm and hand-poured.</p>
+            <p className="cart-empty-title">{copy.emptyTitle}</p>
+            <p>{copy.emptyBody}</p>
             <Link
               to="/shop"
               className="btn btn-primary"
@@ -69,7 +73,7 @@ export function CartDrawer() {
               tabIndex={isDrawerOpen ? 0 : -1}
               onClick={closeDrawer}
             >
-              Shop the collection
+              {copy.shop}
             </Link>
           </div>
         ) : (
@@ -88,27 +92,27 @@ export function CartDrawer() {
 
             <footer className="cart-drawer-foot">
               <div className="cart-totals-row">
-                <span>Subtotal</span>
+                <span>{copy.subtotal}</span>
                 <span>{formatPrice(subtotalCents)}</span>
               </div>
               <div className="cart-totals-row">
-                <span>Shipping</span>
-                <span className="cart-totals-muted">At checkout</span>
+                <span>{copy.shipping}</span>
+                <span className="cart-totals-muted">{copy.atCheckout}</span>
               </div>
               {coupon && (
                 <div className="cart-totals-row">
-                  <span>Coupon</span>
+                  <span>{copy.coupon}</span>
                   <span>
                     {coupon.code} —{' '}
                     {discountCents > 0
                       ? `-${formatPrice(discountCents)}`
-                      : coupon.summary}
+                      : couponSummary(coupon, locale)}
                   </span>
                 </div>
               )}
               <div className="cart-totals-row cart-totals-total">
-                <span>Total</span>
-                <span className="cart-totals-muted">At checkout</span>
+                <span>{copy.total}</span>
+                <span className="cart-totals-muted">{copy.atCheckout}</span>
               </div>
               <Link
                 to="/checkout"
@@ -117,7 +121,7 @@ export function CartDrawer() {
                 tabIndex={isDrawerOpen ? 0 : -1}
                 onClick={closeDrawer}
               >
-                Checkout
+                {copy.checkout}
               </Link>
               <Link
                 to="/cart"
@@ -126,7 +130,7 @@ export function CartDrawer() {
                 tabIndex={isDrawerOpen ? 0 : -1}
                 onClick={closeDrawer}
               >
-                View cart
+                {copy.viewCart}
               </Link>
             </footer>
           </>

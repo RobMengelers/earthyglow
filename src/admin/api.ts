@@ -62,6 +62,8 @@ type AdminOrderItem = {
 export type AdminOrder = {
   isManual: boolean
   pricesIncludeVat: boolean
+  /** The storefront language of the order: it picks the language of its emails and invoice. */
+  locale?: 'nl' | 'en' | 'de'
   id: string
   orderNumber: string
   couponCode: string | null
@@ -211,6 +213,8 @@ type ManualOrderItemInput = {
 
 export type ManualOrderInput = {
   pricesIncludeVat?: boolean
+  /** Language of the invoice and emails: 'nl', 'en' or 'de'. */
+  locale?: 'nl' | 'en' | 'de'
   date?: string
   customer: {
     firstName?: string

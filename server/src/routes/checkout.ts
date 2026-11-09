@@ -11,6 +11,7 @@ import { createPayment } from '../mollie.js'
 import { createOrderNumber } from '../order-number.js'
 import { describeLine } from '../order-line.js'
 import { prisma } from '../prisma.js'
+import { LOCALES, MESSAGES, toLocale } from '../i18n.js'
 
 const SHIPPING_ZONES = {
   netherlands: { code: 'NL', label: 'Netherlands', rateCents: 699, freeThresholdCents: 2500 },
@@ -85,19 +86,26 @@ const bodySchema = z.object({
   notes: z.string().trim().max(500).optional().default(''),
   couponCode: z.string().trim().min(1).max(COUPON_CODE_MAX_LENGTH).optional(),
   paymentMethod: z.string().trim().min(2).max(40).optional(),
+  locale: z.enum(LOCALES).optional().default('en'),
 })
 
 export async function checkoutRoutes(app: FastifyInstance) {
   app.post('/api/checkout', { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } }, async (request, reply) => {
     const parsed = bodySchema.safeParse(request.body)
     if (!parsed.success) {
-      return reply
-        .code(400)
-        .send({ error: parsed.error.issues[0]?.message ?? 'Invalid request' })
+      // The validator's own wording is English; other languages get a general line.
+      const requested = toLocale((request.body as { locale?: unknown } | null)?.locale)
+      return reply.code(400).send({
+        error:
+          requested === 'en'
+            ? (parsed.error.issues[0]?.message ?? 'Invalid request')
+            : MESSAGES[requested].invalidRequest,
+      })
     }
 
-    const { items, customer, shipping, notes, couponCode, paymentMethod } =
+    const { items, customer, shipping, notes, couponCode, paymentMethod, locale } =
       parsed.data
+    const t = MESSAGES[locale]
 
     const lines: CheckoutLine[] = []
     for (const item of items) {
@@ -114,11 +122,11 @@ export async function checkoutRoutes(app: FastifyInstance) {
       if (!product || !product.active) {
         return reply
           .code(400)
-          .send({ error: `Product "${item.id}" is not available` })
+          .send({ error: t.productUnavailable(item.id) })
       }
       if (product._count.variants > 0 && !item.variantId) {
         return reply.code(400).send({
-          error: `Please choose an option for "${product.name}" on its product page and add it to your cart again.`,
+          error: t.chooseOption(product.name),
         })
       }
       const variant = item.variantId
@@ -127,16 +135,16 @@ export async function checkoutRoutes(app: FastifyInstance) {
           })
         : null
       if (item.variantId && !variant) {
-        return reply.code(400).send({ error: `Variant for "${product.name}" is not available` })
+        return reply.code(400).send({ error: t.variantUnavailable(product.name) })
       }
       if (item.variantId && item.variantLabel && variant?.label !== item.variantLabel) {
-        return reply.code(400).send({ error: 'Invalid product variant' })
+        return reply.code(400).send({ error: t.invalidVariant })
       }
       // The colour is the second option dimension. It never changes the price,
       // but the shop needs it to know what to pour.
       if (product._count.colors > 0 && !item.colorId) {
         return reply.code(400).send({
-          error: `Please choose a colour for "${product.name}" on its product page and add it to your cart again.`,
+          error: t.chooseColour(product.name),
         })
       }
       const color = item.colorId
@@ -145,10 +153,10 @@ export async function checkoutRoutes(app: FastifyInstance) {
           })
         : null
       if (item.colorId && !color) {
-        return reply.code(400).send({ error: `Colour for "${product.name}" is not available` })
+        return reply.code(400).send({ error: t.colourUnavailable(product.name) })
       }
       if (item.colorId && item.colorLabel && color?.label !== item.colorLabel) {
-        return reply.code(400).send({ error: 'Invalid product colour' })
+        return reply.code(400).send({ error: t.invalidColour })
       }
       const unitPriceCents = variant?.priceCents ?? product.priceCents
       lines.push({
@@ -183,9 +191,9 @@ export async function checkoutRoutes(app: FastifyInstance) {
       if (!coupon) {
         return reply
           .code(400)
-          .send({ error: 'That coupon code is not valid.', couponInvalid: true })
+          .send({ error: t.couponInvalid, couponInvalid: true })
       }
-      const problem = couponProblem(coupon)
+      const problem = couponProblem(coupon, new Date(), locale)
       if (problem) {
         return reply.code(400).send({ error: problem, couponInvalid: true })
       }
@@ -199,7 +207,7 @@ export async function checkoutRoutes(app: FastifyInstance) {
 
     if (paymentMethod === 'klarna' && !KLARNA_COUNTRIES.has(shipping.countryCode)) {
       return reply.code(400).send({
-        error: 'Klarna is not available for the selected shipping country. Please choose another payment method.',
+        error: t.klarnaCountry,
       })
     }
 
@@ -208,7 +216,7 @@ export async function checkoutRoutes(app: FastifyInstance) {
         ? [
             ...lines.map((line) => ({
               type: PaymentLineType.physical,
-              description: describeLine(line.product.name, line.variantLabel, line.colorLabel),
+              description: describeLine(line.product.name, line.variantLabel, line.colorLabel, locale),
               quantity: line.quantity,
               unitPrice: mollieAmount(line.unitPriceCents),
               totalAmount: mollieAmount(line.lineTotalCents),
@@ -219,7 +227,7 @@ export async function checkoutRoutes(app: FastifyInstance) {
               ? [
                   {
                     type: PaymentLineType.shipping_fee,
-                    description: 'Shipping',
+                    description: t.shipping,
                     quantity: 1,
                     unitPrice: mollieAmount(shippingCents),
                     totalAmount: mollieAmount(shippingCents),
@@ -232,7 +240,7 @@ export async function checkoutRoutes(app: FastifyInstance) {
               ? [
                   {
                     type: PaymentLineType.discount,
-                    description: `Coupon ${coupon?.code ?? ''}`.trim(),
+                    description: t.coupon(coupon?.code ?? ''),
                     quantity: 1,
                     unitPrice: mollieAmount(-discountCents),
                     totalAmount: mollieAmount(-discountCents),
@@ -316,6 +324,7 @@ export async function checkoutRoutes(app: FastifyInstance) {
             totalCents,
             discountCents,
             currency: 'EUR',
+            locale,
             address: shipping.address,
             postalCode: shipping.postalCode,
             city: shipping.city,
@@ -355,8 +364,9 @@ export async function checkoutRoutes(app: FastifyInstance) {
         orderId: order.id,
         orderNumber,
         totalCents,
-        description: `EarthyGlow order ${orderNumber}`,
+        description: t.orderDescription(orderNumber),
         method: paymentMethod,
+        locale,
         lines: paymentLines,
         billingAddress,
         shippingAddress,
@@ -382,7 +392,7 @@ export async function checkoutRoutes(app: FastifyInstance) {
 
       if (error instanceof Error && error.message === 'coupon-exhausted') {
         return reply.code(400).send({
-          error: 'This coupon code has already been used.',
+          error: t.couponUsed,
           couponInvalid: true,
         })
       }
@@ -403,7 +413,7 @@ export async function checkoutRoutes(app: FastifyInstance) {
           })
       }
 
-      return reply.code(502).send({ error: 'Could not start the payment' })
+      return reply.code(502).send({ error: t.paymentFailed })
     }
   })
 }

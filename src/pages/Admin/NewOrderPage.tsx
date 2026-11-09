@@ -83,6 +83,7 @@ export default function NewOrderPage() {
   const [notes, setNotes] = useState('')
   const [pricesIncludeVat, setPricesIncludeVat] = useState(true)
   const [sendInvoiceEmail, setSendInvoiceEmail] = useState(false)
+  const [locale, setLocale] = useState<'nl' | 'en' | 'de'>('nl')
   const [lines, setLines] = useState<ManualLine[]>([emptyLine(1)])
 
   const [state, setState] = useState<'idle' | 'saving'>('idle')
@@ -108,6 +109,7 @@ export default function NewOrderPage() {
       setAddress(clean(order.address)); setPostalCode(clean(order.postalCode))
       setCity(clean(order.city)); setCountry(clean(order.country)); setNotes(order.notes ?? '')
       setPricesIncludeVat(order.pricesIncludeVat ?? true)
+      setLocale(order.locale ?? 'nl')
       setDate((order.paidAt ?? order.createdAt).slice(0, 10))
       setLines(order.items.map((item, index) => ({
         key: index + 1, productId: item.productId, name: item.productId === 'custom' ? item.name : '',
@@ -196,6 +198,7 @@ export default function NewOrderPage() {
       })),
       notes: notes.trim() || undefined,
       sendInvoiceEmail: sendInvoiceEmail && canEmail,
+      locale,
     }
 
     try {
@@ -472,6 +475,14 @@ export default function NewOrderPage() {
                     : 'Add an email address to enable this.'}
                 </small>
               </span>
+            </label>
+            <label className="admin-manual-locale">
+              <span>Invoice language</span>
+              <select value={locale} onChange={(event) => setLocale(event.target.value as 'nl' | 'en' | 'de')}>
+                <option value="nl">Dutch</option>
+                <option value="en">English</option>
+                <option value="de">German</option>
+              </select>
             </label>
           </div>
 

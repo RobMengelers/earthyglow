@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { Link } from 'react-router'
 import {
   submitOrder,
   fetchPaymentMethods,
@@ -19,10 +18,91 @@ import { ShippingFields } from './components/ShippingFields'
 import { PaymentMethods } from './components/PaymentMethods'
 import { OrderSummary } from './components/OrderSummary'
 import { siteMeta } from '../../lib/seo'
+import { defineCopy, Link, localeFromParams, useCopy, useLocale } from '../../i18n'
+import type { Route } from './+types/Checkout'
 import { cartItemToAnalytics, itemsValue, trackEvent } from '../../lib/analytics'
 
-export function meta() {
-  return siteMeta({ title: 'Checkout · EarthyGlow', robots: 'noindex, nofollow' })
+const checkoutCopy = defineCopy({
+  en: {
+    metaTitle: 'Checkout · EarthyGlow',
+    failed: 'Something went wrong. Please try again.',
+    demoEyebrow: 'Demo order',
+    demoTitle: 'Your demo order is saved',
+    demoBefore: 'Demo order',
+    demoAfter: 'is saved in this browser. No payment was taken and no email will be sent.',
+    keepShopping: 'Keep shopping',
+    backHome: 'Back home',
+    checkout: 'Checkout',
+    emptyTitle: 'Your cart is empty',
+    emptyLede: 'Add a candle or two before heading to checkout.',
+    shop: 'Shop the collection',
+    breadcrumb: 'Breadcrumb',
+    home: 'Home',
+    cart: 'Cart',
+    title: 'Let’s get your glow on its way',
+    notes: 'Notes',
+    notesLabel: 'Anything I should know? (optional)',
+    submit: 'Continue to payment',
+    legalBefore: 'By placing your order you agree to our',
+    terms: 'Terms of Service',
+    and: 'and',
+    refund: 'Refund Policy',
+  },
+  nl: {
+    metaTitle: 'Afrekenen · EarthyGlow',
+    failed: 'Er ging iets mis. Probeer het nog eens.',
+    demoEyebrow: 'Testbestelling',
+    demoTitle: 'Je testbestelling is opgeslagen',
+    demoBefore: 'Testbestelling',
+    demoAfter: 'is opgeslagen in deze browser. Er is niet betaald en er wordt geen e-mail verstuurd.',
+    keepShopping: 'Verder winkelen',
+    backHome: 'Terug naar home',
+    checkout: 'Afrekenen',
+    emptyTitle: 'Je winkelmand is leeg',
+    emptyLede: 'Voeg eerst een kaars of twee toe voordat je gaat afrekenen.',
+    shop: 'Bekijk de collectie',
+    breadcrumb: 'Kruimelpad',
+    home: 'Home',
+    cart: 'Winkelmand',
+    title: 'Laten we je gloed op weg helpen',
+    notes: 'Opmerkingen',
+    notesLabel: 'Is er iets wat ik moet weten? (optioneel)',
+    submit: 'Verder naar betalen',
+    legalBefore: 'Door je bestelling te plaatsen ga je akkoord met onze',
+    terms: 'algemene voorwaarden',
+    and: 'en ons',
+    refund: 'retourbeleid',
+  },
+  de: {
+    metaTitle: 'Kasse · EarthyGlow',
+    failed: 'Etwas ist schiefgelaufen. Bitte versuche es noch einmal.',
+    demoEyebrow: 'Testbestellung',
+    demoTitle: 'Deine Testbestellung ist gespeichert',
+    demoBefore: 'Testbestellung',
+    demoAfter: 'ist in diesem Browser gespeichert. Es wurde nichts bezahlt und es wird keine E-Mail verschickt.',
+    keepShopping: 'Weiter einkaufen',
+    backHome: 'Zur Startseite',
+    checkout: 'Kasse',
+    emptyTitle: 'Dein Warenkorb ist leer',
+    emptyLede: 'Leg erst eine oder zwei Kerzen in den Warenkorb, bevor du zur Kasse gehst.',
+    shop: 'Zur Kollektion',
+    breadcrumb: 'Brotkrümelnavigation',
+    home: 'Start',
+    cart: 'Warenkorb',
+    title: 'Bringen wir deinen Glanz auf den Weg',
+    notes: 'Anmerkungen',
+    notesLabel: 'Gibt es etwas, das ich wissen sollte? (optional)',
+    submit: 'Weiter zur Zahlung',
+    legalBefore: 'Mit deiner Bestellung akzeptierst du unsere',
+    terms: 'AGB',
+    and: 'und unsere',
+    refund: 'Rückgaberichtlinie',
+  },
+})
+
+export function meta({ params }: Route.MetaArgs) {
+  const locale = localeFromParams(params)
+  return siteMeta({ locale, title: checkoutCopy[locale].metaTitle, robots: 'noindex, nofollow' })
 }
 
 function isMethodAvailable(method: PaymentMethodOption, country: string) {
@@ -32,6 +112,8 @@ function isMethodAvailable(method: PaymentMethodOption, country: string) {
 
 export function Checkout() {
   const { items, clearCart, coupon, removeCoupon } = useCart()
+  const locale = useLocale()
+  const copy = useCopy(checkoutCopy)
   const [order, setOrder] = useState<OrderResult | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -61,7 +143,7 @@ export function Checkout() {
 
   useEffect(() => {
     let cancelled = false
-    fetchPaymentMethods().then((fetched) => {
+    fetchPaymentMethods(locale).then((fetched) => {
       if (cancelled) return
       setMethods(fetched)
       setPaymentMethod((current) => current || fetched[0]?.id || '')
@@ -69,7 +151,7 @@ export function Checkout() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [locale])
 
   function handleCountryChange(nextCountry: string) {
     setCountry(nextCountry)
@@ -103,6 +185,7 @@ export function Checkout() {
         countryCode
       const result = await submitOrder({
         paymentMethod,
+        locale,
         details: {
           firstName: String(data.get('firstName') ?? ''),
           lastName: String(data.get('lastName') ?? ''),
@@ -138,7 +221,7 @@ export function Checkout() {
       setError(
         submitError instanceof Error
           ? submitError.message
-          : 'Something went wrong. Please try again.',
+          : copy.failed,
       )
     } finally {
       setSubmitting(false)
@@ -150,18 +233,17 @@ export function Checkout() {
       <section className="checkout-done">
         <div className="container">
           <Reveal>
-            <p className="eyebrow">Demo order</p>
-            <h1>Your demo order is saved</h1>
+            <p className="eyebrow">{copy.demoEyebrow}</p>
+            <h1>{copy.demoTitle}</h1>
             <p className="checkout-done-lede">
-              Demo order <strong>{order.orderNumber}</strong> is saved in this
-              browser. No payment was taken and no email will be sent.
+              {copy.demoBefore} <strong>{order.orderNumber}</strong> {copy.demoAfter}
             </p>
             <div className="hero-actions">
               <Link to="/shop" className="btn btn-primary" prefetch="intent">
-                Keep shopping
+                {copy.keepShopping}
               </Link>
               <Link to="/" className="btn btn-ghost" prefetch="intent">
-                Back home
+                {copy.backHome}
               </Link>
             </div>
           </Reveal>
@@ -175,13 +257,11 @@ export function Checkout() {
       <section className="checkout-done">
         <div className="container">
           <Reveal>
-            <p className="eyebrow">Checkout</p>
-            <h1>Your cart is empty</h1>
-            <p className="checkout-done-lede">
-              Add a candle or two before heading to checkout.
-            </p>
+            <p className="eyebrow">{copy.checkout}</p>
+            <h1>{copy.emptyTitle}</h1>
+            <p className="checkout-done-lede">{copy.emptyLede}</p>
             <Link to="/shop" className="btn btn-primary" prefetch="intent">
-              Shop the collection
+              {copy.shop}
             </Link>
           </Reveal>
         </div>
@@ -194,15 +274,15 @@ export function Checkout() {
       <section className="page-hero">
         <div className="container">
           <Reveal>
-            <nav className="breadcrumb" aria-label="Breadcrumb">
-              <Link to="/" prefetch="intent">Home</Link>
+            <nav className="breadcrumb" aria-label={copy.breadcrumb}>
+              <Link to="/" prefetch="intent">{copy.home}</Link>
               <span aria-hidden="true">/</span>
-              <Link to="/cart" prefetch="intent">Cart</Link>
+              <Link to="/cart" prefetch="intent">{copy.cart}</Link>
               <span aria-hidden="true">/</span>
-              <span aria-current="page">Checkout</span>
+              <span aria-current="page">{copy.checkout}</span>
             </nav>
-            <p className="eyebrow">Checkout</p>
-            <h1>Let&rsquo;s get your glow on its way</h1>
+            <p className="eyebrow">{copy.checkout}</p>
+            <h1>{copy.title}</h1>
           </Reveal>
         </div>
       </section>
@@ -224,9 +304,9 @@ export function Checkout() {
               />
 
               <fieldset className="checkout-fieldset">
-                <legend>Notes</legend>
+                <legend>{copy.notes}</legend>
                 <label className="field">
-                  <span>Anything I should know? (optional)</span>
+                  <span>{copy.notesLabel}</span>
                   <textarea name="notes" rows={4} />
                 </label>
               </fieldset>
@@ -242,12 +322,12 @@ export function Checkout() {
                 className="btn btn-primary checkout-submit"
                 loading={submitting}
               >
-                Continue to payment
+                {copy.submit}
               </LoadingButton>
               <p className="checkout-legal">
-                By placing your order you agree to our{' '}
-                <Link to="/policies/terms-of-service" prefetch="intent">Terms of Service</Link> and{' '}
-                <Link to="/policies/refund-policy" prefetch="intent">Refund Policy</Link>.
+                {copy.legalBefore}{' '}
+                <Link to="/policies/terms-of-service" prefetch="intent">{copy.terms}</Link> {copy.and}{' '}
+                <Link to="/policies/refund-policy" prefetch="intent">{copy.refund}</Link>.
               </p>
             </form>
           </Reveal>
