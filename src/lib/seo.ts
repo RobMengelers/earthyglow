@@ -1,5 +1,7 @@
 import type { MetaDescriptor } from 'react-router'
 import { socials } from '../data/socials'
+import { shippingZoneForCountry } from '../cart/CartContext'
+import { countries } from '../pages/Checkout/countries'
 import { DEFAULT_LOCALE, LOCALE_INFO, LOCALES, localizePath, type Locale } from '../i18n/locales'
 
 export const SITE_URL = 'https://www.earthyglow.nl'
@@ -172,34 +174,28 @@ export function organizationLd(locale: Locale = DEFAULT_LOCALE): Record<string, 
   }
 }
 
-/** Shipping terms for product offers (flat Netherlands rate; free over €25 in practice). */
-export function offerShippingDetails(): Record<string, unknown>[] {
-  return [
-    {
+/** Shipping for one item at this price, from the same rates and countries the checkout uses. */
+export function offerShippingDetails(priceCents: number): Record<string, unknown>[] {
+  const abroad = countries.map((country) => country.code).filter((code) => code !== 'NL')
+  const details = (destination: string | string[], zoneCountry: string) => {
+    const zone = shippingZoneForCountry(zoneCountry)
+    return {
       '@type': 'OfferShippingDetails',
       shippingRate: {
         '@type': 'MonetaryAmount',
-        value: '6.99',
+        value: priceCents >= zone.freeThresholdCents ? '0.00' : (zone.rateCents / 100).toFixed(2),
         currency: 'EUR',
       },
-      shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'NL' },
+      shippingDestination: { '@type': 'DefinedRegion', addressCountry: destination },
+      // Handling plus transit adds up to the 3 to 7 business days in the terms.
       deliveryTime: {
         '@type': 'ShippingDeliveryTime',
-        handlingTime: {
-          '@type': 'QuantitativeValue',
-          minValue: 1,
-          maxValue: 3,
-          unitCode: 'DAY',
-        },
-        transitTime: {
-          '@type': 'QuantitativeValue',
-          minValue: 1,
-          maxValue: 3,
-          unitCode: 'DAY',
-        },
+        handlingTime: { '@type': 'QuantitativeValue', minValue: 1, maxValue: 3, unitCode: 'DAY' },
+        transitTime: { '@type': 'QuantitativeValue', minValue: 2, maxValue: 4, unitCode: 'DAY' },
       },
-    },
-  ]
+    }
+  }
+  return [details('NL', 'NL'), details(abroad, abroad[0])]
 }
 
 /** Return policy matching the refund page: report a problem within 7 days, buyer pays return postage. */

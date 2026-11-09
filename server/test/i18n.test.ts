@@ -252,3 +252,11 @@ test('links use the served form of each page', () => {
   assert.equal(pageHref('/nl/checkout/confirmation?order=1'), '/nl/checkout/confirmation?order=1')
   assert.equal(pageHref('/admin/orders'), '/admin/orders')
 })
+
+test('product shipping data follows the checkout rates and free shipping thresholds', async () => {
+  const { offerShippingDetails } = await import('../../src/lib/seo.ts')
+  const rates = (cents: number) => offerShippingDetails(cents).map((detail) => (detail.shippingRate as { value: string }).value)
+  assert.deepEqual(rates(895), ['6.99', '12.95'])
+  assert.deepEqual(rates(2500), ['0.00', '12.95'])
+  assert.deepEqual(rates(5000), ['0.00', '0.00'])
+})
