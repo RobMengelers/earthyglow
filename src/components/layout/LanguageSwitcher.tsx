@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { Link as RouterLink, useLocation } from 'react-router'
-import { LOCALE_INFO, LOCALES, localizePath, rememberLocale, useLocale, type Locale } from '../../i18n'
+import { LOCALE_INFO, LOCALES, localizePath, pageHref, rememberLocale, useLocale, type Locale } from '../../i18n'
 
 const LABEL: Record<Locale, string> = {
   nl: 'Taal kiezen',
@@ -95,7 +95,7 @@ export function LanguageSwitcher({ className }: { className?: string }) {
         {LOCALES.map((locale) => (
           <li key={locale}>
             <RouterLink
-              to={`${localizePath(locale, pathname)}${search}${hash}`}
+              to={pageHref(`${localizePath(locale, pathname)}${search}${hash}`)}
               className={locale === current ? 'is-active' : undefined}
               aria-current={locale === current ? 'true' : undefined}
               hrefLang={locale}

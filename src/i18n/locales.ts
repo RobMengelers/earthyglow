@@ -29,6 +29,24 @@ export function localizePath(locale: Locale, path: string): string {
   return bare === '/' ? `/${locale}` : `/${locale}${bare.startsWith('/') ? '' : '/'}${bare}`
 }
 
+/**
+ * Whether a path is a prerendered public page. Those are served at /nl/shop/,
+ * so links must use that form to avoid a redirect. The cart and checkout are
+ * rendered on request and have no trailing slash; neither does anything
+ * outside a language prefix.
+ */
+export function hasTrailingSlash(pathname: string): boolean {
+  const match = /^\/([a-z]{2})(?:\/|$)/.exec(pathname)
+  if (!match || !isLocale(match[1])) return false
+  return !/^\/[a-z]{2}\/(cart|checkout)(\/|$)/.test(pathname)
+}
+
+/** Puts a localized link in its served form: '/nl/shop?x=1' → '/nl/shop/?x=1'. */
+export function pageHref(href: string): string {
+  const [, path, rest] = /^([^?#]*)(.*)$/s.exec(href) as RegExpExecArray
+  return hasTrailingSlash(path) && !path.endsWith('/') ? `${path}/${rest}` : href
+}
+
 /** Drops a leading language segment: '/nl/shop?x=1' → '/shop?x=1', '/nl' → '/'. */
 export function stripLocale(path: string): string {
   const match = /^\/([a-z]{2})(?=\/|\?|#|$)/.exec(path)

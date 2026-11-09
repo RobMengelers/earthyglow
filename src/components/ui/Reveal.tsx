@@ -4,14 +4,16 @@ type RevealProps = {
   children: ReactNode
   delay?: number
   className?: string
+  /** For content at the top of a page: show it straight away instead of waiting for JavaScript. */
+  immediate?: boolean
 }
 
-export function Reveal({ children, delay = 0, className }: RevealProps) {
+export function Reveal({ children, delay = 0, className, immediate = false }: RevealProps) {
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const el = ref.current
-    if (!el) return
+    if (!el || immediate) return
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -23,7 +25,9 @@ export function Reveal({ children, delay = 0, className }: RevealProps) {
     )
     observer.observe(el)
     return () => observer.disconnect()
-  }, [])
+  }, [immediate])
+
+  if (immediate) return <div className={className}>{children}</div>
 
   return (
     <div

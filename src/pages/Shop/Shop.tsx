@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { collectionSeo, seoTitle } from '../../data/seo-copy'
 import { useParams, useSearchParams } from 'react-router'
 import { collections, getCollection } from '../../data/products'
 import { filterProducts, getSeason, seasons, holidays } from '../../data/seasons'
@@ -19,6 +20,7 @@ const shopCopy = defineCopy({
     breadcrumb: 'Breadcrumb',
     favourites: (_id: string, label: string) => `${label} favourites`,
     heading: 'Find your next little glow',
+    productsHeading: 'Products',
     lede: 'Browse by season, or take a look at everything I’ve been making.',
     eyebrow: 'Made by hand, chosen by you',
     caption: 'A glow for every season',
@@ -46,6 +48,7 @@ const shopCopy = defineCopy({
         christmas: 'Kerstfavorieten',
       } as Record<string, string>)[id] ?? `Favorieten: ${label}`,
     heading: 'Vind jouw volgende kleine gloed',
+    productsHeading: 'Producten',
     lede: 'Kies per seizoen, of bekijk alles wat ik heb gemaakt.',
     eyebrow: 'Met de hand gemaakt, door jou gekozen',
     caption: 'Een gloed voor elk seizoen',
@@ -73,6 +76,7 @@ const shopCopy = defineCopy({
         christmas: 'Weihnachtslieblinge',
       } as Record<string, string>)[id] ?? `Lieblinge: ${label}`,
     heading: 'Finde deinen nächsten kleinen Glanz',
+    productsHeading: 'Produkte',
     lede: 'Stöbere nach Jahreszeit oder schau dir alles an, was ich gemacht habe.',
     eyebrow: 'Von Hand gemacht, von dir ausgewählt',
     caption: 'Ein Glanz für jede Jahreszeit',
@@ -91,10 +95,11 @@ export function meta({ params }: Route.MetaArgs) {
   const copy = shopCopy[locale]
   const base = getCollection(params.collectionId)
   const collection = base && localizedCollection(base, locale)
+  const seo = collection && collectionSeo[locale][collection.id]
   return siteMeta({
     locale,
-    title: collection ? `${collection.title} · Shop · EarthyGlow` : copy.metaTitle,
-    description: collection?.blurb ?? copy.description,
+    title: seo ? seoTitle(seo.title) : collection ? `${collection.title} · Shop · EarthyGlow` : copy.metaTitle,
+    description: seo?.description ?? collection?.blurb ?? copy.description,
     path: collection ? `/shop/${collection.id}` : '/shop',
   })
 }
@@ -285,7 +290,7 @@ export function Shop() {
       )}
       <section className="page-hero shop-hero">
         <div className="container">
-          <Reveal>
+          <Reveal immediate>
             <nav className="breadcrumb" aria-label={copy.breadcrumb}>
               <Link to="/" prefetch="intent">{copy.home}</Link>
               <span aria-hidden="true">/</span>
@@ -422,13 +427,13 @@ export function Shop() {
                 ))}
               </div>
             ) : (
-              <div
-                key={`${activeSeason?.id ?? 'all'}:${activeCollection?.id ?? 'all'}`}
-                className="product-grid"
-              >
-                {shown.map((product, i) => (
-                  <ProductCard key={product.id} product={product} index={i} />
-                ))}
+              <div key={`${activeSeason?.id ?? 'all'}:${activeCollection?.id ?? 'all'}`}>
+                <h2 className="visually-hidden">{copy.productsHeading}</h2>
+                <div className="product-grid">
+                  {shown.map((product, i) => (
+                    <ProductCard key={product.id} product={product} index={i} />
+                  ))}
+                </div>
               </div>
             )
           ) : (

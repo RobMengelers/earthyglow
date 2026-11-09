@@ -6,7 +6,7 @@ import { productDescriptions, collectionCopy, seasonCopy } from '../../src/data/
 import { collections } from '../../src/data/products.ts'
 import { holidays, seasons } from '../../src/data/seasons.ts'
 import { OPTION_LABEL_KEYS as STOREFRONT_OPTION_KEYS, optionLabel as storefrontOptionLabel } from '../../src/i18n/options.ts'
-import { detectLocale, formatPriceFor, localizePath, stripLocale } from '../../src/i18n/locales.ts'
+import { detectLocale, formatPriceFor, localizePath, pageHref, stripLocale } from '../../src/i18n/locales.ts'
 import { formatEuroFor } from '../src/i18n.ts'
 import { describeLine } from '../src/order-line.ts'
 import { OPTION_LABEL_KEYS, optionLabel } from '../src/i18n.ts'
@@ -228,4 +228,27 @@ test('the order email table keeps its four columns', async () => {
   assert.equal(html.match(/<td\b/g)?.length, 4)
   assert.match(html, /€8,95/)
   assert.match(html, /€17,90/)
+})
+
+test('every product and collection has search text that fits in all languages', async () => {
+  const { productSeo, collectionSeo, seoTitle } = await import('../../src/data/seo-copy.ts')
+  const check = (copy: { title: string; description: string } | undefined, label: string) => {
+    assert.ok(copy, `${label} is missing`)
+    assert.ok(seoTitle(copy.title).length <= 60, `${label} title is too long`)
+    assert.ok(copy.description.length >= 120 && copy.description.length <= 155, `${label} description length`)
+  }
+  for (const locale of ['nl', 'en', 'de'] as const) {
+    for (const product of products) check(productSeo[locale][product.id], `${locale} ${product.id}`)
+    for (const collection of collections) check(collectionSeo[locale][collection.id], `${locale} ${collection.id}`)
+  }
+})
+
+test('links use the served form of each page', () => {
+  assert.equal(pageHref('/nl'), '/nl/')
+  assert.equal(pageHref('/nl/shop'), '/nl/shop/')
+  assert.equal(pageHref('/de/shop?season=winter'), '/de/shop/?season=winter')
+  assert.equal(pageHref('/en/product/column/'), '/en/product/column/')
+  assert.equal(pageHref('/nl/cart'), '/nl/cart')
+  assert.equal(pageHref('/nl/checkout/confirmation?order=1'), '/nl/checkout/confirmation?order=1')
+  assert.equal(pageHref('/admin/orders'), '/admin/orders')
 })

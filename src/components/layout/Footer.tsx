@@ -1,6 +1,7 @@
 import { SocialLinks } from '../ui/SocialLinks'
 import { seasons } from '../../data/seasons'
-import { localizedSeason } from '../../data/catalog-i18n'
+import { collections } from '../../data/products'
+import { localizedCollection, localizedSeason } from '../../data/catalog-i18n'
 import { defineCopy, Link, useCopy, useLocale } from '../../i18n'
 import { policyLinks } from '../../pages/policies/policy-links'
 import { analyticsEnabled, resetConsent } from '../../lib/analytics'
@@ -60,9 +61,9 @@ export function Footer() {
         <div className="footer-brand">
           <Link to="/" className="brand brand-light" prefetch="intent">
             <img
-              src="/logo-mark.png"
-              width={280}
-              height={280}
+              src="/logo-mark-96.webp"
+              width={96}
+              height={96}
               className="brand-logo"
               alt=""
             />
@@ -75,7 +76,7 @@ export function Footer() {
         </div>
 
         <div className="footer-col">
-          <h3>{copy.shop}</h3>
+          <h2>{copy.shop}</h2>
           <ul>
             <li><Link to="/shop" prefetch="intent">{copy.allProducts}</Link></li>
             {seasons.map((season) => (
@@ -85,11 +86,18 @@ export function Footer() {
                 </Link>
               </li>
             ))}
+            {collections.map((collection) => (
+              <li key={collection.id}>
+                <Link to={`/shop/${collection.id}`} prefetch="intent">
+                  {localizedCollection(collection, locale).eyebrow}
+                </Link>
+              </li>
+            ))}
           </ul>
         </div>
 
         <div className="footer-col">
-          <h3>{copy.explore}</h3>
+          <h2>{copy.explore}</h2>
           <ul>
             <li><Link to="/about" prefetch="intent">{copy.story}</Link></li>
             <li><Link to="/care" prefetch="intent">{copy.care}</Link></li>
@@ -98,7 +106,7 @@ export function Footer() {
         </div>
 
         <div className="footer-col">
-          <h3>{copy.information}</h3>
+          <h2>{copy.information}</h2>
           <ul>
             {policyLinks[locale].map((policy) => (
               <li key={policy.to}>

@@ -47,7 +47,7 @@
   color: var(--surface);
 }
 
-.footer-col h3 {
+.footer-col h2 {
   color: var(--surface);
   font-size: 1.05rem;
   margin-bottom: 1.1rem;
@@ -152,7 +152,7 @@
     margin-top: 1.2rem;
   }
 
-  .footer-col h3 {
+  .footer-col h2 {
     margin-bottom: 0.8rem;
   }
 

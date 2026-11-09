@@ -7,6 +7,7 @@ import { useCart } from '../../cart/useCart'
 import { NotFound } from '../NotFound/NotFound'
 import { seasonForProduct } from '../../data/seasons'
 import { JsonLd } from '../../components/seo/JsonLd'
+import { productSeo, seoTitle } from '../../data/seo-copy'
 import { imageAttrs, SIZES } from '../../lib/images'
 import { absoluteUrl, breadcrumbLd, localizedUrl, merchantReturnPolicy, offerShippingDetails, siteMeta } from '../../lib/seo'
 import { localizedCollection, localizedDescription, localizedSeason } from '../../data/catalog-i18n'
@@ -137,10 +138,11 @@ export function meta({ params }: Route.MetaArgs) {
   if (!product) {
     return siteMeta({ locale, title: copy.notFound, robots: 'noindex' })
   }
+  const seo = productSeo[locale][product.id]
   return siteMeta({
     locale,
-    title: `${product.name} · EarthyGlow`,
-    description: localizedDescription(product, locale),
+    title: seoTitle(seo?.title ?? product.name),
+    description: seo?.description ?? localizedDescription(product, locale),
     path: `/product/${product.id}`,
     image: product.image,
     imageAlt: copy.imageAlt(product.name),
@@ -335,12 +337,12 @@ export function ProductPage() {
           </nav>
 
           <div className="product-detail-grid">
-            <Reveal className="product-detail-media">
+            <Reveal immediate className="product-detail-media">
               <div className="product-gallery">
                 <div className="product-gallery-main">
                   <div className="product-gallery-track" style={{ transform: `translateX(-${galleryIndex * 100}%)` }}>
-                    {galleryImages.map((image) => (
-                      <img key={image} {...imageAttrs(image, SIZES.gallery)} alt={copy.imageAlt(product.name)} />
+                    {galleryImages.map((image, idx) => (
+                      <img key={image} {...imageAttrs(image, SIZES.gallery)} loading={idx <= galleryIndex + 1 ? 'eager' : 'lazy'} fetchPriority={idx === 0 ? 'high' : 'low'} alt={copy.imageAlt(product.name)} />
                     ))}
                   </div>
                   {fadeImage && (
@@ -390,7 +392,7 @@ export function ProductPage() {
               </div>
             </Reveal>
 
-            <Reveal delay={100} className="product-detail-info">
+            <Reveal immediate className="product-detail-info">
               {collection && (
                 <Link
                   to={season ? `/shop?season=${season.id}` : '/shop'}

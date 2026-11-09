@@ -4,7 +4,7 @@ import {
   type NavigateOptions,
   type To,
 } from 'react-router'
-import { DEFAULT_LOCALE, formatPriceFor, isLocale, LOCALE_COOKIE, localizePath, type Locale } from './locales'
+import { DEFAULT_LOCALE, formatPriceFor, isLocale, LOCALE_COOKIE, localizePath, pageHref, type Locale } from './locales'
 
 /**
  * The language of the current page, read from the URL's first segment. It reads
@@ -38,10 +38,10 @@ export function useFormatPrice(): (cents: number) => string {
 /** Keeps an absolute path in the given language; relative links are left alone. */
 export function localizeTo(locale: Locale, to: To): To {
   if (typeof to === 'string') {
-    return to.startsWith('/') ? localizePath(locale, to) : to
+    return to.startsWith('/') ? pageHref(localizePath(locale, to)) : to
   }
   return to.pathname?.startsWith('/')
-    ? { ...to, pathname: localizePath(locale, to.pathname) }
+    ? { ...to, pathname: pageHref(localizePath(locale, to.pathname)) }
     : to
 }
 
