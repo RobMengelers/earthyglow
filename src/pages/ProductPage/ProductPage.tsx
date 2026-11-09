@@ -7,6 +7,7 @@ import { useCart } from '../../cart/useCart'
 import { NotFound } from '../NotFound/NotFound'
 import { seasonForProduct } from '../../data/seasons'
 import { JsonLd } from '../../components/seo/JsonLd'
+import { productSeo, seoTitle } from '../../data/seo-copy'
 import { imageAttrs, SIZES } from '../../lib/images'
 import { absoluteUrl, breadcrumbLd, localizedUrl, merchantReturnPolicy, offerShippingDetails, siteMeta } from '../../lib/seo'
 import { localizedCollection, localizedDescription, localizedSeason } from '../../data/catalog-i18n'
@@ -137,10 +138,11 @@ export function meta({ params }: Route.MetaArgs) {
   if (!product) {
     return siteMeta({ locale, title: copy.notFound, robots: 'noindex' })
   }
+  const seo = productSeo[locale][product.id]
   return siteMeta({
     locale,
-    title: `${product.name} · EarthyGlow`,
-    description: localizedDescription(product, locale),
+    title: seoTitle(seo?.title ?? product.name),
+    description: seo?.description ?? localizedDescription(product, locale),
     path: `/product/${product.id}`,
     image: product.image,
     imageAlt: copy.imageAlt(product.name),

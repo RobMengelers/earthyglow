@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { collectionSeo, seoTitle } from '../../data/seo-copy'
 import { useParams, useSearchParams } from 'react-router'
 import { collections, getCollection } from '../../data/products'
 import { filterProducts, getSeason, seasons, holidays } from '../../data/seasons'
@@ -91,10 +92,11 @@ export function meta({ params }: Route.MetaArgs) {
   const copy = shopCopy[locale]
   const base = getCollection(params.collectionId)
   const collection = base && localizedCollection(base, locale)
+  const seo = collection && collectionSeo[locale][collection.id]
   return siteMeta({
     locale,
-    title: collection ? `${collection.title} · Shop · EarthyGlow` : copy.metaTitle,
-    description: collection?.blurb ?? copy.description,
+    title: seo ? seoTitle(seo.title) : collection ? `${collection.title} · Shop · EarthyGlow` : copy.metaTitle,
+    description: seo?.description ?? collection?.blurb ?? copy.description,
     path: collection ? `/shop/${collection.id}` : '/shop',
   })
 }

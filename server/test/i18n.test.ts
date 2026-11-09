@@ -229,3 +229,16 @@ test('the order email table keeps its four columns', async () => {
   assert.match(html, /€8,95/)
   assert.match(html, /€17,90/)
 })
+
+test('every product and collection has search text that fits in all languages', async () => {
+  const { productSeo, collectionSeo, seoTitle } = await import('../../src/data/seo-copy.ts')
+  const check = (copy: { title: string; description: string } | undefined, label: string) => {
+    assert.ok(copy, `${label} is missing`)
+    assert.ok(seoTitle(copy.title).length <= 60, `${label} title is too long`)
+    assert.ok(copy.description.length >= 120 && copy.description.length <= 155, `${label} description length`)
+  }
+  for (const locale of ['nl', 'en', 'de'] as const) {
+    for (const product of products) check(productSeo[locale][product.id], `${locale} ${product.id}`)
+    for (const collection of collections) check(collectionSeo[locale][collection.id], `${locale} ${collection.id}`)
+  }
+})

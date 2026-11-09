@@ -13,7 +13,7 @@ Already done by the language work: `hreflang` links and alternates in the sitema
 |---|------|-----|--------|
 | 1 | Search Console | You | Verified, baseline pending |
 | 2 | Mobile speed | Claude | Done, confirm after deploy |
-| 3 | Titles and descriptions | Claude drafts, you approve | Dutch draft waiting for approval (`docs/seo-copy-nl.md`) |
+| 3 | Titles and descriptions | Claude drafts, you approve | Products and collections done, not deployed yet |
 | 4 | Internal links | Claude | To do |
 | 5 | Heading order | Claude | To do |
 | 6 | llms.txt | Claude | To do |
@@ -53,14 +53,12 @@ New baseline on the Dutch pages, simulated slow phone connection. Target: under 
 
 This is now the most valuable item. Dutch pages exist, but product titles have no Dutch search words: `/nl/product/boo-boo/` is just "Boo Boo · EarthyGlow".
 
-- [ ] Use real search terms from Search Console where there is data, per language
-- [ ] Titles say what the product is, in each language: "Boo Boo sojakaars · EarthyGlow", "Boo Boo Soy Candle · EarthyGlow", "Boo Boo Sojakerze · EarthyGlow". Also for wax melts and gift boxes. Built from a product type plus a translated word, so 26 titles are not written by hand three times
-- [ ] Same for the 4 collection pages in each language (check wording against what each collection really is; "Wax Melts · Shop" is not a Dutch search term)
-- [ ] Add optional `seoDescription` per product and language (next to `src/data/catalog-i18n.ts`), so the page text stays as it is
-- [ ] Write product descriptions of about 150 characters. Dutch first, then English and German (78 in total). The automatic shortening stops the very long ones, but leaves 13 cut off with "…" and many too short
-- [ ] Fix the remaining pages under 120 characters (59 pages across the three languages, including products until the step above is done)
-- [ ] Add a short, genuinely useful intro (2–4 sentences) to the 4 collection pages, in all three languages
-- [ ] **You approve the Dutch list first, then the others, before they go live**
+- [x] Titles say what the product is, in each language
+- [x] Collection titles in each language
+- [x] Product and collection descriptions of 120 to 155 characters, in all three languages (`src/data/seo-copy.ts`)
+- [ ] Collection page intros: left out for now, by choice
+- [ ] Short descriptions on the remaining pages (home, about, policies and similar)
+- [ ] Later: refine wording with real search terms once Search Console has data
 
 ## 4. Internal links
 
