@@ -6,7 +6,7 @@ import { productDescriptions, collectionCopy, seasonCopy } from '../../src/data/
 import { collections } from '../../src/data/products.ts'
 import { holidays, seasons } from '../../src/data/seasons.ts'
 import { OPTION_LABEL_KEYS as STOREFRONT_OPTION_KEYS, optionLabel as storefrontOptionLabel } from '../../src/i18n/options.ts'
-import { detectLocale, formatPriceFor, localizePath, stripLocale } from '../../src/i18n/locales.ts'
+import { detectLocale, formatPriceFor, localizePath, pageHref, stripLocale } from '../../src/i18n/locales.ts'
 import { formatEuroFor } from '../src/i18n.ts'
 import { describeLine } from '../src/order-line.ts'
 import { OPTION_LABEL_KEYS, optionLabel } from '../src/i18n.ts'
@@ -241,4 +241,14 @@ test('every product and collection has search text that fits in all languages', 
     for (const product of products) check(productSeo[locale][product.id], `${locale} ${product.id}`)
     for (const collection of collections) check(collectionSeo[locale][collection.id], `${locale} ${collection.id}`)
   }
+})
+
+test('links use the served form of each page', () => {
+  assert.equal(pageHref('/nl'), '/nl/')
+  assert.equal(pageHref('/nl/shop'), '/nl/shop/')
+  assert.equal(pageHref('/de/shop?season=winter'), '/de/shop/?season=winter')
+  assert.equal(pageHref('/en/product/column/'), '/en/product/column/')
+  assert.equal(pageHref('/nl/cart'), '/nl/cart')
+  assert.equal(pageHref('/nl/checkout/confirmation?order=1'), '/nl/checkout/confirmation?order=1')
+  assert.equal(pageHref('/admin/orders'), '/admin/orders')
 })

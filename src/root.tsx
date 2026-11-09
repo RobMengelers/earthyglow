@@ -13,7 +13,7 @@ import {
 } from 'react-router'
 import { CartProvider } from './cart/CartProvider'
 import { siteMeta } from './lib/seo'
-import { defineCopy, Link, useCopy, useLocale } from './i18n'
+import { defineCopy, hasTrailingSlash, Link, useCopy, useLocale } from './i18n'
 import './index.css'
 
 // Fallback for routes without their own meta; it claims no canonical URL.
@@ -69,29 +69,27 @@ export function Layout({ children }: { children: ReactNode }) {
   )
 }
 
-export function loader({ request }: LoaderFunctionArgs) {
-  // Canonical URLs have no trailing slash (Netlify cannot express this as a
-  // redirect rule without looping), so enforce it at the application layer.
+// Prerendered pages are served and canonicalised with a trailing slash (Netlify
+// redirects the slashless form). Everything else, such as the cart, has none.
+function withoutStraySlash(request: Request): Response | null {
   const url = new URL(request.url)
-  if (url.pathname.length > 1 && url.pathname.endsWith('/')) {
+  if (url.pathname.length > 1 && url.pathname.endsWith('/') && !hasTrailingSlash(url.pathname)) {
     url.pathname = url.pathname.replace(/\/+$/, '')
     return redirect(`${url.pathname}${url.search}`, 301)
   }
   return null
 }
 
-// Client navigation never needs the server: the root only canonicalises the
-// trailing slash, and mirroring it here keeps navigations off the serverless
-// function (e.g. shop season filters change the query and would otherwise
-// revalidate this loader on the server). The server loader still runs for real
-// document requests.
+export function loader({ request }: LoaderFunctionArgs) {
+  return withoutStraySlash(request)
+}
+
+// Client navigation never needs the server: mirroring the loader here keeps
+// navigations off the serverless function (e.g. shop season filters change the
+// query and would otherwise revalidate this loader on the server). The server
+// loader still runs for real document requests.
 export function clientLoader({ request }: ClientLoaderFunctionArgs) {
-  const url = new URL(request.url)
-  if (url.pathname.length > 1 && url.pathname.endsWith('/')) {
-    url.pathname = url.pathname.replace(/\/+$/, '')
-    return redirect(`${url.pathname}${url.search}`, 301)
-  }
-  return null
+  return withoutStraySlash(request)
 }
 
 export default function Root() {
