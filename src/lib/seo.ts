@@ -198,16 +198,16 @@ export function offerShippingDetails(priceCents: number): Record<string, unknown
   return [details('NL', 'NL'), details(abroad, abroad[0])]
 }
 
-/** Return policy matching the refund page: report a problem within 7 days, buyer pays return postage. */
+/** Return policy matching the refund page: 14 days to cancel, buyer pays return postage. */
 export function merchantReturnPolicy(): Record<string, unknown> {
   return {
     '@type': 'MerchantReturnPolicy',
-    applicableCountry: BUSINESS.country,
+    applicableCountry: countries.map((country) => country.code),
     returnPolicyCategory:
       'https://schema.org/MerchantReturnFiniteReturnWindow',
-    merchantReturnDays: 7,
+    merchantReturnDays: 14,
     returnMethod: 'https://schema.org/ReturnByMail',
-    returnFees: 'https://schema.org/ReturnShippingFees',
+    returnFees: 'https://schema.org/ReturnFeesCustomerResponsibility',
   }
 }
 

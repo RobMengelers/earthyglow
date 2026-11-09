@@ -15,8 +15,8 @@ export const policyLinks: Record<Locale, PolicyLink[]> = {
     {
       label: 'Refund Policy',
       to: '/policies/refund-policy',
-      summary: 'how problems with handmade, made-to-order candles are resolved.',
-      description: 'Refunds and returns for EarthyGlow candles: why handmade items are not automatically accepted, how to report a problem, and return costs.',
+      summary: 'how to cancel within 14 days and return your order.',
+      description: 'Returns at EarthyGlow: cancel within 14 days, how to send candles back, your refund, return costs and what to do if an order arrives damaged.',
     },
     {
       label: 'Terms of Service',
@@ -41,8 +41,8 @@ export const policyLinks: Record<Locale, PolicyLink[]> = {
     {
       label: 'Retourbeleid',
       to: '/policies/refund-policy',
-      summary: 'hoe problemen met handgemaakte, op bestelling gemaakte kaarsen worden opgelost.',
-      description: 'Terugbetalingen en retouren van EarthyGlow-kaarsen: waarom handgemaakte artikelen niet automatisch retour kunnen, hoe je een probleem meldt en de retourkosten.',
+      summary: 'hoe je binnen 14 dagen annuleert en je bestelling terugstuurt.',
+      description: 'Retouren bij EarthyGlow: binnen 14 dagen annuleren, kaarsen terugsturen, je terugbetaling, retourkosten en wat je doet bij een beschadigde bestelling.',
     },
     {
       label: 'Algemene voorwaarden',
@@ -67,8 +67,8 @@ export const policyLinks: Record<Locale, PolicyLink[]> = {
     {
       label: 'Rückgaberichtlinie',
       to: '/policies/refund-policy',
-      summary: 'wie Probleme mit handgemachten, auf Bestellung gefertigten Kerzen gelöst werden.',
-      description: 'Erstattungen und Rücksendungen bei EarthyGlow: warum Handgemachtes nicht automatisch zurückgenommen wird, wie du ein Problem meldest und die Rücksendekosten.',
+      summary: 'wie du innerhalb von 14 Tagen widerrufst und deine Bestellung zurücksendest.',
+      description: 'Rücksendungen bei EarthyGlow: Widerruf innerhalb von 14 Tagen, Kerzen zurücksenden, deine Erstattung, Rücksendekosten und Hilfe bei beschädigter Ware.',
     },
     {
       label: 'AGB',

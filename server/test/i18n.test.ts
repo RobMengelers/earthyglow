@@ -260,3 +260,11 @@ test('product shipping data follows the checkout rates and free shipping thresho
   assert.deepEqual(rates(2500), ['0.00', '12.95'])
   assert.deepEqual(rates(5000), ['0.00', '0.00'])
 })
+
+test('the product return data matches the 14 day refund policy', async () => {
+  const { merchantReturnPolicy } = await import('../../src/lib/seo.ts')
+  const policy = merchantReturnPolicy()
+  assert.equal(policy.merchantReturnDays, 14)
+  assert.equal(policy.returnFees, 'https://schema.org/ReturnFeesCustomerResponsibility')
+  assert.ok((policy.applicableCountry as string[]).includes('NL'))
+})
