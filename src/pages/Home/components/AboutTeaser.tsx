@@ -17,7 +17,7 @@ const teaserCopy = defineCopy({
     imageAlt: 'EarthyGlow-kaarsen en natuurlijke materialen',
     eyebrow: 'Ons verhaal',
     title: 'Een beetje warmte, met de hand gemaakt',
-    p1: 'Ik ben Naomi en ik maak EarthyGlow-kaarsen hier in Nederland. Mijn werk in de zorg herinnert me eraan hoe belangrijk kleine momenten van troost zijn, vooral op koude, donkere dagen. Kaarsen maken is mijn manier om een beetje warmte en licht te brengen in winteravonden thuis.',
+    p1: 'Ik ben Naomi en ik maak EarthyGlow-kaarsen hier in Nederland. Mijn werk in de zorg herinnert me eraan hoe belangrijk kleine momenten van comfort zijn, vooral op koude, donkere dagen. Kaarsen maken is mijn manier om een beetje warmte en licht te brengen in winteravonden thuis.',
     p2: 'Dit seizoen word ik geïnspireerd door ijzige boswandelingen, warme wintergeuren en de stille gloed van kaarslicht. Ik hoop dat je iets vindt voor je knusste hoekje, of een attent cadeau voor iemand die je dierbaar is.',
     list: ['100% sojawas', 'Met de hand gegoten in kleine batches', 'Vormen en kleuren geïnspireerd op de natuur'],
     cta: 'Lees het hele verhaal',
