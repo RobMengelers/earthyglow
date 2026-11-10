@@ -6,6 +6,10 @@ import {
 
 export default [
   route('sitemap.xml', './routes/sitemap.ts'),
+  // Merchant Center product feeds, one per language.
+  route('feeds/google-nl.xml', './routes/product-feed.ts', { id: 'feed-nl' }),
+  route('feeds/google-en.xml', './routes/product-feed.ts', { id: 'feed-en' }),
+  route('feeds/google-de.xml', './routes/product-feed.ts', { id: 'feed-de' }),
   route('admin', './pages/Admin/AdminLayout.tsx', [
     index('./pages/Admin/admin-index.tsx'),
     route('overview', './pages/Admin/OverviewPage.tsx'),

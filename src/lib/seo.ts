@@ -174,28 +174,38 @@ export function organizationLd(locale: Locale = DEFAULT_LOCALE): Record<string, 
   }
 }
 
+/** Every country the checkout ships to, as ISO codes. */
+export const SHIPPING_COUNTRIES: string[] = countries.map((country) => country.code)
+
+// Handling plus transit adds up to the 3 to 7 business days in the terms.
+export const HANDLING_DAYS = { min: 1, max: 3 }
+export const TRANSIT_DAYS = { min: 2, max: 4 }
+
+/** What shipping one item at this price costs to a country, as "6.99": the checkout's rates and free thresholds. */
+export function shippingRateFor(countryCode: string, priceCents: number): string {
+  const zone = shippingZoneForCountry(countryCode)
+  return priceCents >= zone.freeThresholdCents ? '0.00' : (zone.rateCents / 100).toFixed(2)
+}
+
 /** Shipping for one item at this price, from the same rates and countries the checkout uses. */
 export function offerShippingDetails(priceCents: number): Record<string, unknown>[] {
-  const abroad = countries.map((country) => country.code).filter((code) => code !== 'NL')
-  const details = (destination: string | string[], zoneCountry: string) => {
-    const zone = shippingZoneForCountry(zoneCountry)
-    return {
-      '@type': 'OfferShippingDetails',
-      shippingRate: {
-        '@type': 'MonetaryAmount',
-        value: priceCents >= zone.freeThresholdCents ? '0.00' : (zone.rateCents / 100).toFixed(2),
-        currency: 'EUR',
-      },
-      shippingDestination: { '@type': 'DefinedRegion', addressCountry: destination },
-      // Handling plus transit adds up to the 3 to 7 business days in the terms.
-      deliveryTime: {
-        '@type': 'ShippingDeliveryTime',
-        handlingTime: { '@type': 'QuantitativeValue', minValue: 1, maxValue: 3, unitCode: 'DAY' },
-        transitTime: { '@type': 'QuantitativeValue', minValue: 2, maxValue: 4, unitCode: 'DAY' },
-      },
-    }
-  }
-  return [details('NL', 'NL'), details(abroad, abroad[0])]
+  const abroad = SHIPPING_COUNTRIES.filter((code) => code !== 'NL')
+  const details = (destinations: string[]) => ({
+    '@type': 'OfferShippingDetails',
+    shippingRate: {
+      '@type': 'MonetaryAmount',
+      value: shippingRateFor(destinations[0], priceCents),
+      currency: 'EUR',
+    },
+    // One region per country: Google reads a single country code per DefinedRegion.
+    shippingDestination: destinations.map((code) => ({ '@type': 'DefinedRegion', addressCountry: code })),
+    deliveryTime: {
+      '@type': 'ShippingDeliveryTime',
+      handlingTime: { '@type': 'QuantitativeValue', minValue: HANDLING_DAYS.min, maxValue: HANDLING_DAYS.max, unitCode: 'DAY' },
+      transitTime: { '@type': 'QuantitativeValue', minValue: TRANSIT_DAYS.min, maxValue: TRANSIT_DAYS.max, unitCode: 'DAY' },
+    },
+  })
+  return [details(['NL']), details(abroad)]
 }
 
 /** Return policy matching the refund page: 14 days to cancel, buyer pays return postage. */
