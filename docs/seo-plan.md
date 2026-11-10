@@ -19,7 +19,7 @@ Already done by the language work: `hreflang` links and alternates in the sitema
 | 6 | llms.txt | Claude | Done |
 | – | Deploy and re-measure | Claude | Done |
 | 7 | Bing Webmaster Tools | You | Done |
-| 8 | Request indexing | You | Ready to start |
+| 8 | Request indexing | You | In progress, continue after quota resets |
 | 9 | Google Merchant Center | You and Claude | Ready to start |
 
 ## 1. Search Console (you)
@@ -94,7 +94,8 @@ This is now the most valuable item. Dutch pages exist, but product titles have n
 
 The fixes are live, so this can start now. The daily quota is limited.
 
-- [ ] In Search Console, use URL Inspection → Request indexing, Dutch pages first: `/nl/`, `/nl/shop/`, the 4 Dutch collection pages, best-selling products
+- [x] Request indexing for `/nl/`, `/nl/shop/` and the 4 Dutch collection pages (done 2026-11-09)
+- [ ] Next, in this order, after the daily quota resets (some may already be done): the Dutch Christmas products (festive-glow-box, gluhwein, christmas-tree-dinner-candle, winter-wonderland-candle, sweet-christmas-wax-melts, white-christmas-wax-melts, twisted-tree-candle, christmas-bubble-candle), then floral-box, `/nl/about/`, `/nl/care/`
 - [ ] Then the same key pages in English and German, spread over a few days if the daily limit is reached
 
 ## 9. Google Merchant Center (after deploy)
