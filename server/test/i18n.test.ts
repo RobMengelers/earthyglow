@@ -268,3 +268,23 @@ test('the product return data matches the 14 day refund policy', async () => {
   assert.equal(policy.returnFees, 'https://schema.org/ReturnFeesCustomerResponsibility')
   assert.ok((policy.applicableCountry as string[]).includes('NL'))
 })
+
+test('the product feed lists every product with shipping to every checkout country', async () => {
+  const { productFeedXml } = await import('../../src/routes/product-feed.ts')
+  const { SHIPPING_COUNTRIES } = await import('../../src/lib/seo.ts')
+  for (const locale of ['nl', 'en', 'de'] as const) {
+    const xml = productFeedXml(locale)
+    const items = xml.split('<item>').slice(1)
+    assert.equal(items.length, products.length)
+    for (const item of items) {
+      const countries = [...item.matchAll(/<g:country>([A-Z]{2})<\/g:country>/g)].map((m) => m[1])
+      assert.deepEqual(countries, SHIPPING_COUNTRIES)
+      assert.match(item, new RegExp(`<g:link>https://www\\.earthyglow\\.nl/${locale}/product/`))
+    }
+    for (const outside of ['AU', 'GB', 'US']) assert.ok(!xml.includes(`<g:country>${outside}</g:country>`))
+  }
+  // A €8.95 item ships for the flat rate; a €14.95 one ships free in the Netherlands only.
+  const boo = productFeedXml('en').split('<item>').find((item) => item.includes('<g:id>boo-boo</g:id>'))!
+  assert.match(boo, /<g:country>NL<\/g:country><g:price>6\.99 EUR<\/g:price>/)
+  assert.match(boo, /<g:country>IE<\/g:country><g:price>12\.95 EUR<\/g:price>/)
+})

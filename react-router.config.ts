@@ -30,5 +30,6 @@ export default {
       ].map((path) => localizePath(locale, path)),
     ),
     '/sitemap.xml',
+    ...LOCALES.map((locale) => `/feeds/google-${locale}.xml`),
   ],
 } satisfies Config
