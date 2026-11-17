@@ -164,13 +164,19 @@ export function websiteLd(locale: Locale = DEFAULT_LOCALE): Record<string, unkno
   }
 }
 
-/** schema.org Organization describing the business, for knowledge-panel and entity data. */
+/**
+ * schema.org OnlineStore (Google's advice for a web shop) describing the
+ * business, for the brand panel Google can show beside results for the shop's
+ * name: logo, profiles, contact, and the shop-wide shipping and return terms.
+ * Only the country is given as an address: the shop is run from home.
+ */
 export function organizationLd(locale: Locale = DEFAULT_LOCALE): Record<string, unknown> {
   return {
     '@context': 'https://schema.org',
-    '@type': 'Organization',
+    '@type': 'OnlineStore',
     name: BUSINESS.name,
     alternateName: BUSINESS.alternateNames,
+    description: DEFAULT_DESCRIPTION[locale],
     url: localizedUrl(locale, '/'),
     logo: {
       '@type': 'ImageObject',
@@ -190,6 +196,54 @@ export function organizationLd(locale: Locale = DEFAULT_LOCALE): Record<string, 
       email: BUSINESS.email,
       availableLanguage: ['nl', 'en', 'de'],
     },
+    hasMerchantReturnPolicy: {
+      ...merchantReturnPolicy(),
+      merchantReturnLink: localizedUrl(locale, '/policies/refund-policy'),
+    },
+    hasShippingService: shippingServiceLd(),
+  }
+}
+
+/**
+ * The shop's shipping terms as a schema.org ShippingService: per destination a
+ * flat rate below the free-shipping threshold and free from it, with the same
+ * rates, thresholds and delivery times as the checkout and the product feeds.
+ */
+function shippingServiceLd(): Record<string, unknown> {
+  const euros = (cents: number) => Number((cents / 100).toFixed(2))
+  const zones = [
+    SHIPPING_COUNTRIES.filter((code) => code === 'NL'),
+    SHIPPING_COUNTRIES.filter((code) => code !== 'NL'),
+  ]
+  const days = (range: { min: number; max: number }) => ({
+    '@type': 'ServicePeriod',
+    duration: { '@type': 'QuantitativeValue', minValue: range.min, maxValue: range.max, unitCode: 'DAY' },
+  })
+  return {
+    '@type': 'ShippingService',
+    name: 'Standard shipping',
+    fulfillmentType: 'https://schema.org/FulfillmentTypeDelivery',
+    handlingTime: days(HANDLING_DAYS),
+    shippingConditions: zones.flatMap((codes) => {
+      const zone = shippingZoneForCountry(codes[0])
+      const destination = codes.map((code) => ({ '@type': 'DefinedRegion', addressCountry: code }))
+      return [
+        {
+          '@type': 'ShippingConditions',
+          shippingDestination: destination,
+          orderValue: { '@type': 'MonetaryAmount', minValue: 0, maxValue: euros(zone.freeThresholdCents - 1), currency: 'EUR' },
+          shippingRate: { '@type': 'MonetaryAmount', value: euros(zone.rateCents), currency: 'EUR' },
+          transitTime: days(TRANSIT_DAYS),
+        },
+        {
+          '@type': 'ShippingConditions',
+          shippingDestination: destination,
+          orderValue: { '@type': 'MonetaryAmount', minValue: euros(zone.freeThresholdCents), currency: 'EUR' },
+          shippingRate: { '@type': 'MonetaryAmount', value: 0, currency: 'EUR' },
+          transitTime: days(TRANSIT_DAYS),
+        },
+      ]
+    }),
   }
 }
 
