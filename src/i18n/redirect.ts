@@ -1,4 +1,5 @@
 import { redirect } from 'react-router'
+import { legacyPath } from './legacy-paths'
 import { detectLocale, localizePath, pageHref, type Locale } from './locales'
 
 /**
@@ -7,7 +8,10 @@ import { detectLocale, localizePath, pageHref, type Locale } from './locales'
  * on who asks — crawlers send no language and land on English.
  */
 function redirectTo(locale: Locale, url: URL): Response {
-  return redirect(`${pageHref(localizePath(locale, url.pathname))}${url.search}${url.hash}`, {
+  // Old shop addresses carry their own query (?season=…); keep the visitor's too.
+  const [path, legacyQuery = ''] = legacyPath(url.pathname).split('?')
+  const query = [legacyQuery, url.search.slice(1)].filter(Boolean).join('&')
+  return redirect(`${pageHref(localizePath(locale, path))}${query ? `?${query}` : ''}${url.hash}`, {
     status: 302,
     headers: { 'Cache-Control': 'private, no-store', Vary: 'Accept-Language, Cookie' },
   })

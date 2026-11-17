@@ -27,3 +27,6 @@ build
 *.njsproj
 *.sln
 *.sw?
+
+# SEO data pulled by scripts/seo-report.mjs
+seo-data
