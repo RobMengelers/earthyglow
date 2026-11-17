@@ -253,3 +253,17 @@ export function breadcrumbLd(
     })),
   }
 }
+
+/** schema.org FAQPage for the questions shown on a page. */
+export function faqLd(faqs: { question: string; answer: string }[], locale: Locale): Record<string, unknown> {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    inLanguage: locale,
+    mainEntity: faqs.map((faq) => ({
+      '@type': 'Question',
+      name: faq.question,
+      acceptedAnswer: { '@type': 'Answer', text: faq.answer },
+    })),
+  }
+}

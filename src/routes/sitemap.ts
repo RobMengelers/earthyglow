@@ -16,6 +16,11 @@ const staticPages: Page[] = [
   { path: '/shop', sources: ['src/pages/Shop/Shop.tsx', 'src/data/products.ts'] },
   { path: '/about', sources: ['src/pages/About/About.tsx'] },
   { path: '/care', sources: ['src/pages/Care/Care.tsx'] },
+  {
+    path: '/christmas-gifts',
+    sources: ['src/pages/Christmas/Christmas.tsx', 'src/data/products.ts'],
+    images: ['/images/festive-glow-box.webp'],
+  },
   { path: '/contact', sources: ['src/pages/Contact/Contact.tsx'] },
   {
     path: '/policies',

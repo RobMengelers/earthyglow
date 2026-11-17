@@ -38,6 +38,7 @@ export default [
     route('product/:productId', './pages/ProductPage/ProductPage.tsx'),
     route('about', './pages/About/About.tsx'),
     route('care', './pages/Care/Care.tsx'),
+    route('christmas-gifts', './pages/Christmas/Christmas.tsx'),
     route('contact', './pages/Contact/Contact.tsx'),
     route('cart', './pages/Cart/Cart.tsx'),
     route('checkout', './pages/Checkout/Checkout.tsx'),

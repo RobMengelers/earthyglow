@@ -1,11 +1,11 @@
 import { useParams } from 'react-router'
 import { useEffect, useState, type ReactNode } from 'react'
-import { getCollection, getProduct, getRelated, productLowestCents, productPriceLabel, type ProductColor, type ProductVariant } from '../../data/products'
+import { getCollection, getProduct, productLowestCents, productPriceLabel, type ProductColor, type ProductVariant } from '../../data/products'
 import { ProductCard } from '../../components/catalog/ProductCard'
 import { Reveal } from '../../components/ui/Reveal'
 import { useCart } from '../../cart/useCart'
 import { NotFound } from '../NotFound/NotFound'
-import { seasonForProduct } from '../../data/seasons'
+import { holidays, relatedProducts, seasonForProduct } from '../../data/seasons'
 import { JsonLd } from '../../components/seo/JsonLd'
 import { productSeo, seoTitle } from '../../data/seo-copy'
 import { imageAttrs, SIZES } from '../../lib/images'
@@ -48,6 +48,7 @@ const productCopy = defineCopy({
     moreFrom: 'More from this collection',
     alsoLike: 'You may also like',
     all: 'Shop everything',
+    christmasGifts: 'All Christmas gifts',
   },
   nl: {
     notFound: 'Product niet gevonden · EarthyGlow',
@@ -77,6 +78,7 @@ const productCopy = defineCopy({
     moreFrom: 'Meer uit deze collectie',
     alsoLike: 'Misschien vind je dit ook mooi',
     all: 'Bekijk alles',
+    christmasGifts: 'Alle kerstcadeaus',
   },
   de: {
     notFound: 'Produkt nicht gefunden · EarthyGlow',
@@ -106,6 +108,7 @@ const productCopy = defineCopy({
     moreFrom: 'Mehr aus dieser Kollektion',
     alsoLike: 'Das könnte dir auch gefallen',
     all: 'Alles ansehen',
+    christmasGifts: 'Alle Weihnachtsgeschenke',
   },
 })
 
@@ -192,7 +195,10 @@ export function ProductPage() {
 
   const baseCollection = getCollection(product.collectionId)
   const collection = baseCollection && localizedCollection(baseCollection, locale)
-  const related = getRelated(product)
+  const related = relatedProducts(product)
+  const relatedFromCollection = related.every((item) => item.collectionId === product.collectionId)
+  // Christmas products point to the gift guide, which ranks on the same searches.
+  const isChristmasProduct = holidays.some((holiday) => holiday.id === 'christmas' && holiday.productIds.includes(product.id))
   const description = localizedDescription(product, locale)
 
   const collectionTitle = collection?.title ?? 'EarthyGlow'
@@ -529,7 +535,7 @@ export function ProductPage() {
           <div className="container">
             <Reveal className="section-head">
               <p className="eyebrow">{copy.explore}</p>
-              <h2>{collection ? copy.moreFrom : copy.alsoLike}</h2>
+              <h2>{collection && relatedFromCollection ? copy.moreFrom : copy.alsoLike}</h2>
             </Reveal>
             <div className="product-grid">
               {related.map((item, i) => (
@@ -540,6 +546,11 @@ export function ProductPage() {
               <Link to="/shop" className="btn btn-ghost">
                 {copy.all}
               </Link>
+              {isChristmasProduct && (
+                <Link to="/christmas-gifts" className="btn btn-ghost" prefetch="intent">
+                  {copy.christmasGifts}
+                </Link>
+              )}
             </Reveal>
           </div>
         </section>

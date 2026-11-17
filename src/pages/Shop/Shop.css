@@ -338,3 +338,11 @@
   color: var(--clay);
   font-weight: 600;
 }
+
+/* Seasonal pointer to a gift guide, under the lede of a filtered shop page. */
+.shop-guide-link {
+  margin-top: 1.4rem;
+  padding: 0.6rem 1.2rem;
+  font-size: 0.88rem;
+  background: rgba(255, 253, 248, 0.7);
+}

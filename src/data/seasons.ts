@@ -1,4 +1,4 @@
-import { products } from './products'
+import { products, type Product } from './products'
 
 // Membership matches earthyglow.nl's seasonal collections (21 September 2026).
 // Sculptural candles remain available through All seasons and The Natural Glow.
@@ -66,4 +66,23 @@ export function filterProducts(seasonId?: string, collectionId?: string) {
     (!season || season.productIds.includes(product.id)) &&
     (!collectionId || product.collectionId === collectionId),
   )
+}
+
+/**
+ * Suggestions for a product page: the same season and kind first (Christmas
+ * wax melts suggest the other Christmas wax melts), then the rest of the season,
+ * then the same collection, then everything else. Sold-out products only fill
+ * up what is left.
+ */
+export function relatedProducts(product: Product, count = 3): Product[] {
+  const season = seasonForProduct(product.id)
+  const inSeason = products.filter((p) => season?.productIds.includes(p.id))
+  const ordered = [
+    ...inSeason.filter((p) => p.collectionId === product.collectionId),
+    ...inSeason,
+    ...products.filter((p) => p.collectionId === product.collectionId),
+    ...products,
+  ]
+  const unique = [...new Set(ordered)].filter((p) => p.id !== product.id)
+  return [...unique.filter((p) => !p.soldOut), ...unique.filter((p) => p.soldOut)].slice(0, count)
 }

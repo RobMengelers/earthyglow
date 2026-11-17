@@ -1,9 +1,9 @@
 import { imageAttrs, SIZES } from '../../lib/images'
-import { useState } from 'react'
 import { Reveal } from '../../components/ui/Reveal'
 import { Divider } from '../../components/ui/Divider'
+import { FaqItem, type Faq } from '../../components/ui/FaqItem'
 import { JsonLd } from '../../components/seo/JsonLd'
-import { breadcrumbLd, siteMeta } from '../../lib/seo'
+import { breadcrumbLd, faqLd, siteMeta } from '../../lib/seo'
 import { defineCopy, Link, localeFromParams, useCopy, useLocale } from '../../i18n'
 import type { Route } from './+types/Care'
 
@@ -14,7 +14,6 @@ const IMAGES = [
 ]
 
 type Tip = { title: string; alt: string; items: { title: string; text: string }[] }
-type Faq = { question: string; answer: string }
 
 const careCopy = defineCopy({
   en: {
@@ -175,29 +174,6 @@ export function meta({ params }: Route.MetaArgs) {
   return siteMeta({ locale, title: copy.metaTitle, description: copy.description, path: '/care' })
 }
 
-function FaqItem({ question, answer, index }: Faq & { index: number }) {
-  const [open, setOpen] = useState(false)
-  return (
-    <div className={`faq-item${open ? ' is-open' : ''}`}>
-      <button
-        className="faq-question"
-        type="button"
-        aria-expanded={open}
-        onClick={() => setOpen((current) => !current)}
-      >
-        <span className="faq-index" aria-hidden="true">
-          {String(index + 1).padStart(2, '0')}
-        </span>
-        <span className="faq-question-text">{question}</span>
-        <span className="faq-toggle" aria-hidden="true">+</span>
-      </button>
-      <div className="faq-answer" aria-hidden={!open}>
-        <p>{answer}</p>
-      </div>
-    </div>
-  )
-}
-
 export function Care() {
   const locale = useLocale()
   const copy = useCopy(careCopy)
@@ -210,18 +186,7 @@ export function Care() {
           { name: copy.crumb },
         ], locale)}
       />
-      <JsonLd
-        data={{
-          '@context': 'https://schema.org',
-          '@type': 'FAQPage',
-          inLanguage: locale,
-          mainEntity: faqs.map((faq) => ({
-            '@type': 'Question',
-            name: faq.question,
-            acceptedAnswer: { '@type': 'Answer', text: faq.answer },
-          })),
-        }}
-      />
+      <JsonLd data={faqLd(faqs, locale)} />
       <section className="page-hero">
         <div className="container">
           <Reveal immediate>
