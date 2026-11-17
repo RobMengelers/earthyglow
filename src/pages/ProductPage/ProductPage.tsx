@@ -1,4 +1,4 @@
-import { useParams } from 'react-router'
+import { useParams, useSearchParams } from 'react-router'
 import { useEffect, useState, type ReactNode } from 'react'
 import { getCollection, getProduct, productLowestCents, productPriceLabel, type ProductColor, type ProductVariant } from '../../data/products'
 import { ProductCard } from '../../components/catalog/ProductCard'
@@ -6,6 +6,7 @@ import { Reveal } from '../../components/ui/Reveal'
 import { useCart } from '../../cart/useCart'
 import { NotFound } from '../NotFound/NotFound'
 import { holidays, relatedProducts, seasonForProduct } from '../../data/seasons'
+import { offerLabels, presetFromSearch, productGallery, productOffers } from '../../data/product-offers'
 import { JsonLd } from '../../components/seo/JsonLd'
 import { productSeo, seoTitle } from '../../data/seo-copy'
 import { imageAttrs, SIZES } from '../../lib/images'
@@ -159,6 +160,7 @@ export function meta({ params }: Route.MetaArgs) {
 
 export function ProductPage() {
   const { productId } = useParams()
+  const [searchParams] = useSearchParams()
   const { addItem } = useCart()
   const locale = useLocale()
   const copy = useCopy(productCopy)
@@ -188,6 +190,21 @@ export function ProductPage() {
       }],
     })
   }, [product?.id]) // eslint-disable-line react-hooks/exhaustive-deps -- once per product shown
+
+  // A link can ask for one version (?variant=pillar-large&color=pink), as the
+  // Google Shopping listings do: open the page with that choice made. Done
+  // after the first render, because the prerendered page is the same for
+  // every link and must match what the browser renders first.
+  const preset = product ? presetFromSearch(product, searchParams) : null
+  useEffect(() => {
+    if (!preset) return
+    /* eslint-disable react-hooks/set-state-in-effect -- applying the link's choice once it is known */
+    setVariantGroupId(preset.groupId ?? '')
+    setVariantId(preset.variantId ?? '')
+    setColorId(preset.colorId ?? '')
+    setGalleryIndex(0)
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [product?.id, preset?.variantId, preset?.colorId]) // eslint-disable-line react-hooks/exhaustive-deps -- re-run only when the asked-for choice changes
 
   if (!product) {
     return <NotFound />
@@ -222,15 +239,7 @@ export function ProductPage() {
       : variant?.images?.[0] ?? variant?.image
 
   const baseGallery = product.images?.length ? product.images : [product.image]
-  const colorGallery = selectedColor?.images ?? []
-  const heroImage = heroFor(selectedVariant, selectedColor) ?? baseGallery[0]
-  const galleryImages = colorGallery.length
-    ? selectedColor?.base
-      ? [heroImage, ...colorGallery.filter((img) => img !== heroImage)]
-      : colorGallery
-    : selectedVariant?.images?.length
-      ? selectedVariant.images
-      : [heroImage, ...baseGallery.filter((img) => img !== heroImage)]
+  const galleryImages = productGallery(product, selectedVariant, selectedColor)
   const displayedImage = galleryImages[galleryIndex]
 
   const imageUrls = (product.images?.length ? product.images : [product.image]).map(absoluteUrl)
@@ -300,24 +309,62 @@ export function ProductPage() {
           ? copy.chooseAny
           : null
 
+  const productFacts = {
+    description,
+    inLanguage: locale,
+    brand: { '@type': 'Brand', name: 'EarthyGlow' },
+    category: collection?.title ?? 'Candles',
+    material: 'Soy wax',
+  }
+  // A product with options is a group of variants, each with its own price,
+  // photos and link that opens the page with that choice made (the same
+  // versions as in the Merchant Center feeds).
+  const variantOffers = productOffers(product)
+  const productLd = variantOffers.length > 1
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'ProductGroup',
+        name: product.name,
+        url: purchaseUrl,
+        productGroupID: product.id,
+        variesBy: [
+          ...(variantOffers.some((offer) => offerLabels(offer, locale).color) ? ['https://schema.org/color'] : []),
+          ...(variantOffers.some((offer) => offerLabels(offer, locale).size) ? ['https://schema.org/size'] : []),
+        ],
+        ...productFacts,
+        hasVariant: variantOffers.map((offer) => {
+          const labels = offerLabels(offer, locale)
+          return {
+            '@type': 'Product',
+            sku: offer.id,
+            name: `${product.name} – ${labels.parts.join(', ')}`,
+            image: offer.images.map(absoluteUrl),
+            ...(labels.color ? { color: labels.color } : {}),
+            ...(labels.size ? { size: labels.size } : {}),
+            offers: {
+              '@type': 'Offer',
+              price: (offer.priceCents / 100).toFixed(2),
+              ...offerDetails,
+              url: `${purchaseUrl}${offer.search}`,
+              shippingDetails: offerShippingDetails(offer.priceCents),
+            },
+          }
+        }),
+      }
+    : {
+        '@context': 'https://schema.org',
+        '@type': 'Product',
+        name: product.name,
+        image: imageUrls,
+        sku: product.id,
+        url: purchaseUrl,
+        ...productFacts,
+        offers,
+      }
+
   return (
     <>
-      <JsonLd
-        data={{
-          '@context': 'https://schema.org',
-          '@type': 'Product',
-          name: product.name,
-          description,
-          inLanguage: locale,
-          image: imageUrls,
-          sku: product.id,
-          url: purchaseUrl,
-          brand: { '@type': 'Brand', name: 'EarthyGlow' },
-          category: collection?.title ?? 'Candles',
-          material: 'Soy wax',
-          offers,
-        }}
-      />
+      <JsonLd data={productLd} />
       <JsonLd
         data={breadcrumbLd([
           { name: copy.home, path: '/' },

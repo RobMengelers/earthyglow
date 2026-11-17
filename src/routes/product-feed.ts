@@ -1,5 +1,6 @@
-import { collections, productLowestCents, products, type Product } from '../data/products'
-import { localizedDescription } from '../data/catalog-i18n'
+import { collections, products, type Product } from '../data/products'
+import { localizedCollection, localizedDescription } from '../data/catalog-i18n'
+import { offerLabels, productOffers, type ProductOffer } from '../data/product-offers'
 import { productSeo } from '../data/seo-copy'
 import {
   absoluteUrl,
@@ -13,9 +14,11 @@ import {
 import { DEFAULT_LOCALE, isLocale, type Locale } from '../i18n/locales'
 
 // Google Merchant Center product feed, one file per language
-// (/feeds/google-nl.xml, -en, -de). Each item carries its own shipping for
-// every country the checkout ships to, so Merchant Center never has to guess
-// where the shop delivers.
+// (/feeds/google-nl.xml, -en, -de). Every version of a product (size, colour,
+// or both) is its own item, grouped by product, with its own price, photos and
+// a link that opens the product page with that choice made. Each item carries
+// its own shipping for every country the checkout ships to, so Merchant
+// Center never has to guess where the shop delivers.
 
 const CHANNEL_TITLE: Record<Locale, string> = {
   nl: 'EarthyGlow – handgegoten sojawaskaarsen',
@@ -32,6 +35,37 @@ function escapeXml(text: string): string {
     .replace(/'/g, '&apos;')
 }
 
+const MATERIAL: Record<Locale, string> = { en: 'Soy wax', nl: 'Sojawas', de: 'Sojawachs' }
+
+const HANDMADE: Record<Locale, string> = {
+  en: 'Poured by hand in the Netherlands',
+  nl: 'Met de hand gegoten in Nederland',
+  de: 'In den Niederlanden von Hand gegossen',
+}
+
+// The Natural Glow collection is unscented, 100% soy wax throughout; its
+// descriptions have no closing line of facts to take this from.
+const NATURAL_GLOW_FACTS: Record<Locale, string[]> = {
+  en: ['Unscented', '100% soy wax'],
+  nl: ['Geurloos', '100% sojawas'],
+  de: ['Duftfrei', '100 % Sojawachs'],
+}
+
+/**
+ * Short facts for Shopping's product highlights: the description's closing
+ * line of facts ("Ca. 150 g was | Ca. 9 cm hoog | Geur: Mulled Wine") where it
+ * has one, and that it is poured by hand.
+ */
+function highlights(product: Product, locale: Locale): string[] {
+  const closing = localizedDescription(product, locale).trim().split(/\n\s*\n/).pop() ?? ''
+  const facts = closing.includes('|')
+    ? closing.split('|').map((fact) => fact.trim()).filter(Boolean)
+    : product.collectionId === 'natural-glow'
+      ? NATURAL_GLOW_FACTS[locale]
+      : []
+  return [...facts, HANDMADE[locale]].slice(0, 10)
+}
+
 const tag = (name: string, value: string | number) => `<g:${name}>${escapeXml(String(value))}</g:${name}>`
 
 const euros = (cents: number) => `${(cents / 100).toFixed(2)} EUR`
@@ -42,10 +76,15 @@ function googleCategory(product: Product): string {
     : 'Home & Garden > Decor > Home Fragrances > Candles'
 }
 
-function feedItem(product: Product, locale: Locale): string {
-  const priceCents = productLowestCents(product)
-  const images = (product.images?.length ? product.images : [product.image]).map(absoluteUrl)
-  const collection = collections.find((c) => c.products.includes(product))
+function feedItem(offer: ProductOffer, locale: Locale, grouped: boolean): string {
+  const { product, priceCents } = offer
+  const images = offer.images.map(absoluteUrl)
+  const baseCollection = collections.find((c) => c.products.includes(product))
+  const collection = baseCollection && localizedCollection(baseCollection, locale)
+  const labels = offerLabels(offer, locale)
+  // The search title says what the product is ("… bloemkaarsjes"), which
+  // Shopping matches queries against; a version adds its choice ("…, Roze").
+  const title = productSeo[locale][product.id]?.title ?? product.name
   const shipping = SHIPPING_COUNTRIES.map(
     (country) =>
       '      <g:shipping>' +
@@ -56,12 +95,11 @@ function feedItem(product: Product, locale: Locale): string {
       '</g:shipping>',
   )
   const lines = [
-    tag('id', product.id),
-    // The search title says what the product is ("… bloemkaarsjes"), which
-    // Shopping matches queries against; the bare name alone does not.
-    tag('title', productSeo[locale][product.id]?.title ?? product.name),
+    tag('id', offer.id),
+    ...(grouped ? [tag('item_group_id', product.id)] : []),
+    tag('title', labels.parts.length ? `${title} – ${labels.parts.join(', ')}` : title),
     tag('description', localizedDescription(product, locale)),
-    tag('link', localizedUrl(locale, `/product/${product.id}`)),
+    tag('link', `${localizedUrl(locale, `/product/${product.id}`)}${offer.search}`),
     tag('image_link', images[0]),
     ...images.slice(1, 11).map((image) => tag('additional_image_link', image)),
     tag('availability', product.soldOut ? 'out_of_stock' : 'in_stock'),
@@ -71,7 +109,11 @@ function feedItem(product: Product, locale: Locale): string {
     // Handmade: no barcodes or manufacturer part numbers.
     tag('identifier_exists', 'no'),
     tag('google_product_category', googleCategory(product)),
-    ...(collection ? [tag('product_type', collection.title)] : []),
+    ...(collection ? [tag('product_type', collection.eyebrow)] : []),
+    tag('material', MATERIAL[locale]),
+    ...(labels.color ? [tag('color', labels.color)] : []),
+    ...(labels.size ? [tag('size', labels.size)] : []),
+    ...highlights(product, locale).map((fact) => tag('product_highlight', fact)),
     tag('min_handling_time', HANDLING_DAYS.min),
     tag('max_handling_time', HANDLING_DAYS.max),
   ].map((line) => `      ${line}`)
@@ -86,7 +128,12 @@ export function productFeedXml(locale: Locale): string {
     `    <title>${escapeXml(CHANNEL_TITLE[locale])}</title>\n` +
     `    <link>${localizedUrl(locale, '/')}</link>\n` +
     `    <description>${escapeXml(CHANNEL_TITLE[locale])}</description>\n` +
-    products.map((product) => feedItem(product, locale)).join('\n') +
+    products
+      .flatMap((product) => {
+        const offers = productOffers(product)
+        return offers.map((offer) => feedItem(offer, locale, offers.length > 1))
+      })
+      .join('\n') +
     '\n  </channel>\n</rss>\n'
   )
 }
