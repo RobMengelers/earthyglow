@@ -7,7 +7,7 @@ import { products } from '../../data/products'
 import { seasons } from '../../data/seasons'
 import { JsonLd } from '../../components/seo/JsonLd'
 import { imageAttrs, SIZES } from '../../lib/images'
-import { localizedUrl, organizationLd, siteMeta } from '../../lib/seo'
+import { organizationLd, siteMeta, websiteLd } from '../../lib/seo'
 import { localizedSeason } from '../../data/catalog-i18n'
 import { defineCopy, Link, localeFromParams, useCopy, useLocale } from '../../i18n'
 import type { Route } from './+types/Home'
@@ -53,15 +53,7 @@ export function Home() {
   const copy = useCopy(homeCopy)
   return (
     <>
-      <JsonLd
-        data={{
-          '@context': 'https://schema.org',
-          '@type': 'WebSite',
-          name: 'EarthyGlow',
-          url: localizedUrl(locale, '/'),
-          inLanguage: locale,
-        }}
-      />
+      <JsonLd data={websiteLd(locale)} />
       <JsonLd data={organizationLd(locale)} />
       <Hero />
       <Divider />

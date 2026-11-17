@@ -23,6 +23,8 @@ const OG_IMAGE_HEIGHT = 630
 /** Business details shared by the Organization markup on every page that emits it. */
 export const BUSINESS = {
   name: SITE_NAME,
+  /** Other ways people write the name, so search engines tie them to this shop. */
+  alternateNames: ['Earthy Glow', 'earthyglow.nl'],
   email: 'earthyglowcandles@gmail.com',
   country: 'NL',
   coc: '42049155',
@@ -146,12 +148,29 @@ export function siteMeta({
   ]
 }
 
+/**
+ * schema.org WebSite for the site name Google shows above results. Google
+ * reads it from the domain's home page ("/" redirects to a language home, so
+ * every language home carries it) and wants the domain root as its url.
+ */
+export function websiteLd(locale: Locale = DEFAULT_LOCALE): Record<string, unknown> {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: BUSINESS.name,
+    alternateName: BUSINESS.alternateNames,
+    url: `${SITE_URL}/`,
+    inLanguage: locale,
+  }
+}
+
 /** schema.org Organization describing the business, for knowledge-panel and entity data. */
 export function organizationLd(locale: Locale = DEFAULT_LOCALE): Record<string, unknown> {
   return {
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name: BUSINESS.name,
+    alternateName: BUSINESS.alternateNames,
     url: localizedUrl(locale, '/'),
     logo: {
       '@type': 'ImageObject',
