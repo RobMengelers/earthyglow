@@ -69,14 +69,17 @@ export function filterProducts(seasonId?: string, collectionId?: string) {
 }
 
 /**
- * Suggestions for a product page: products from the same season first (a
- * Christmas candle suggests other Christmas candles), then the same collection,
- * then the rest. Sold-out products only fill up what is left.
+ * Suggestions for a product page: the same season and kind first (Christmas
+ * wax melts suggest the other Christmas wax melts), then the rest of the season,
+ * then the same collection, then everything else. Sold-out products only fill
+ * up what is left.
  */
 export function relatedProducts(product: Product, count = 3): Product[] {
   const season = seasonForProduct(product.id)
+  const inSeason = products.filter((p) => season?.productIds.includes(p.id))
   const ordered = [
-    ...products.filter((p) => season?.productIds.includes(p.id)),
+    ...inSeason.filter((p) => p.collectionId === product.collectionId),
+    ...inSeason,
     ...products.filter((p) => p.collectionId === product.collectionId),
     ...products,
   ]

@@ -7,7 +7,7 @@ import { Divider } from '../../components/ui/Divider'
 import { FaqItem } from '../../components/ui/FaqItem'
 import { JsonLd } from '../../components/seo/JsonLd'
 import { breadcrumbLd, faqLd, localizedUrl, siteMeta } from '../../lib/seo'
-import { defineCopy, formatPriceFor, Link, localeFromParams, useCopy, useLocale, type Locale } from '../../i18n'
+import { defineCopy, formatPriceFor, Link, LOCALE_INFO, localeFromParams, useCopy, useLocale, type Locale } from '../../i18n'
 import type { Route } from './+types/Christmas'
 
 // Christmas gift guide: the Christmas products grouped by price, with the
@@ -42,6 +42,11 @@ const NL_ZONE = shippingZoneForCountry('NL')
 const EU_ZONE = shippingZoneForCountry('DE')
 const UNSCENTED = ['christmas-tree-dinner-candle', 'christmas-bubble-candle', 'twisted-tree-candle']
 
+// Last order dates for delivery before Christmas Eve: 1 to 3 working days to
+// get an order ready plus 2 to 4 for delivery, counted back from Thursday
+// 24 December 2026, with extra margin abroad. Update these each year.
+const ORDER_BY = { nl: '2026-12-15', eu: '2026-12-11' }
+
 type Prices = {
   from: string
   nlRate: string
@@ -49,11 +54,16 @@ type Prices = {
   euRate: string
   euFree: string
   unscented: string
+  nlOrderBy: string
+  euOrderBy: string
 }
 
 function pricesFor(locale: Locale): Prices {
   // Round amounts read better without cents: "free from €25".
   const price = (cents: number) => formatPriceFor(locale, cents).replace(/[.,]00$/, '')
+  // UTC on both server and browser, so the prerendered date never shifts a day.
+  const date = (iso: string) =>
+    new Intl.DateTimeFormat(LOCALE_INFO[locale].intl, { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }).format(new Date(`${iso}T12:00:00Z`))
   return {
     from: price(productLowestCents(christmasProducts[0])),
     nlRate: price(NL_ZONE.rateCents),
@@ -61,6 +71,8 @@ function pricesFor(locale: Locale): Prices {
     euRate: price(EU_ZONE.rateCents),
     euFree: price(EU_ZONE.freeThresholdCents),
     unscented: UNSCENTED.map((id) => getProduct(id)?.name).filter(Boolean).join(', '),
+    nlOrderBy: date(ORDER_BY.nl),
+    euOrderBy: date(ORDER_BY.eu),
   }
 }
 
@@ -85,7 +97,7 @@ const christmasCopy = defineCopy({
     perks: (p: Prices) => [
       { title: 'Hand-poured soy wax', text: 'Every candle is made by hand in the Netherlands, so each one is a little unique.' },
       { title: `Free shipping from ${p.nlFree}`, text: `Within the Netherlands. To other EU countries, shipping is free from ${p.euFree}.` },
-      { title: 'At your door in 3 to 7 working days', text: 'Order in good time in December: delivery services are busy around the holidays.' },
+      { title: `Order by ${p.nlOrderBy}`, text: `For delivery before Christmas in the Netherlands. To other EU countries, order by ${p.euOrderBy}.` },
     ],
     bands: {
       'under-5': { eyebrow: 'Stocking fillers', title: 'Christmas gifts under €5', lede: 'Little extras for a stocking, a Secret Santa or tucked in with a Christmas card.' },
@@ -98,7 +110,7 @@ const christmasCopy = defineCopy({
     faqEyebrow: 'Good to know',
     faqTitle: 'Questions about ordering for Christmas',
     faqs: (p: Prices) => [
-      { question: 'When should I order to have it in time for Christmas?', answer: 'I get your order ready within 1 to 3 working days, after which delivery usually takes 2 to 4 working days. Count on 3 to 7 working days in total, and order a little earlier in December, as delivery services are busy around the holidays.' },
+      { question: 'When should I order to have it in time for Christmas?', answer: `Order by ${p.nlOrderBy} for delivery in the Netherlands before Christmas, and by ${p.euOrderBy} for other EU countries. I get your order ready within 1 to 3 working days, after which delivery usually takes 2 to 4 working days. You can still order after those dates, but delivery services are very busy around the holidays, so I cannot promise it will arrive before Christmas.` },
       { question: 'What does shipping cost?', answer: `Within the Netherlands shipping costs ${p.nlRate} and is free from ${p.nlFree}. To other EU countries it costs ${p.euRate} and is free from ${p.euFree}.` },
       { question: 'Which Christmas candles are unscented?', answer: `${p.unscented} are unscented, which makes them ideal for the Christmas dinner table, where you want to smell the food.` },
       { question: 'What is the difference between a scented candle and wax melts?', answer: 'Wax melts have no wick: you place them in a wax warmer, where they slowly melt and release their scent. A scented candle you light with a flame. Both are hand-poured from soy wax.' },
@@ -124,7 +136,7 @@ const christmasCopy = defineCopy({
     perks: (p: Prices) => [
       { title: 'Handgegoten sojawas', text: 'Elke kaars is met de hand gemaakt in Nederland, dus elk exemplaar is net een beetje uniek.' },
       { title: `Gratis verzending vanaf ${p.nlFree}`, text: `Binnen Nederland. Naar andere EU-landen is verzending gratis vanaf ${p.euFree}.` },
-      { title: 'In 3 tot 7 werkdagen in huis', text: 'Bestel in december op tijd: rond de feestdagen heeft de bezorgdienst het druk.' },
+      { title: `Bestel uiterlijk ${p.nlOrderBy}`, text: `Voor levering voor kerst in Nederland. Naar andere EU-landen bestel je uiterlijk ${p.euOrderBy}.` },
     ],
     bands: {
       'under-5': { eyebrow: 'Kleine cadeautjes', title: 'Kerstcadeautjes tot €5', lede: 'Voor in de schoen, als lootjescadeau of als extraatje bij een kerstkaart.' },
@@ -137,7 +149,7 @@ const christmasCopy = defineCopy({
     faqEyebrow: 'Goed om te weten',
     faqTitle: 'Vragen over bestellen voor kerst',
     faqs: (p: Prices) => [
-      { question: 'Wanneer moet ik bestellen om het voor kerst in huis te hebben?', answer: 'Ik maak je bestelling binnen 1 tot 3 werkdagen klaar, daarna duurt de bezorging meestal 2 tot 4 werkdagen. Reken dus op 3 tot 7 werkdagen in totaal, en bestel in december liever wat eerder, want rond de feestdagen heeft de bezorgdienst het druk.' },
+      { question: 'Wanneer moet ik bestellen om het voor kerst in huis te hebben?', answer: `Bestel uiterlijk ${p.nlOrderBy} voor levering in Nederland voor kerst, en uiterlijk ${p.euOrderBy} voor andere EU-landen. Ik maak je bestelling binnen 1 tot 3 werkdagen klaar, daarna duurt de bezorging meestal 2 tot 4 werkdagen. Daarna bestellen kan nog steeds, maar rond de feestdagen heeft de bezorgdienst het erg druk, dus dan kan ik niet beloven dat het voor kerst binnen is.` },
       { question: 'Wat kost verzending?', answer: `Binnen Nederland kost verzending ${p.nlRate} en is het gratis vanaf ${p.nlFree}. Naar andere EU-landen kost het ${p.euRate} en is het gratis vanaf ${p.euFree}.` },
       { question: 'Welke kerstkaarsen zijn geurloos?', answer: `${p.unscented} zijn geurloos. Daardoor zijn ze ideaal voor op de kersttafel, waar je het eten wilt ruiken.` },
       { question: 'Wat is het verschil tussen een geurkaars en wax melts?', answer: 'Wax melts hebben geen lont: je legt ze in een waxbrander, waar ze langzaam smelten en hun geur afgeven. Een geurkaars steek je aan met een vlam. Beide zijn met de hand gegoten van sojawas.' },
@@ -163,7 +175,7 @@ const christmasCopy = defineCopy({
     perks: (p: Prices) => [
       { title: 'Handgegossenes Sojawachs', text: 'Jede Kerze wird in den Niederlanden von Hand gemacht, deshalb ist jedes Stück ein kleines Unikat.' },
       { title: `Kostenloser Versand ab ${p.euFree}`, text: `In die EU. Innerhalb der Niederlande ist der Versand ab ${p.nlFree} kostenlos.` },
-      { title: 'In 3 bis 7 Werktagen bei dir', text: 'Bestelle im Dezember rechtzeitig: Rund um die Feiertage haben die Paketdienste viel zu tun.' },
+      { title: `Bestellen bis ${p.euOrderBy}`, text: `Für die Lieferung vor Weihnachten nach Deutschland und in die EU. Innerhalb der Niederlande bis ${p.nlOrderBy}.` },
     ],
     bands: {
       'under-5': { eyebrow: 'Kleine Aufmerksamkeiten', title: 'Weihnachtsgeschenke bis €5', lede: 'Für den Nikolausstiefel, das Wichteln oder als kleine Beigabe zur Weihnachtskarte.' },
@@ -176,7 +188,7 @@ const christmasCopy = defineCopy({
     faqEyebrow: 'Gut zu wissen',
     faqTitle: 'Fragen zur Bestellung für Weihnachten',
     faqs: (p: Prices) => [
-      { question: 'Wann muss ich bestellen, damit es zu Weihnachten ankommt?', answer: 'Ich mache deine Bestellung innerhalb von 1 bis 3 Werktagen fertig, danach dauert die Lieferung meist 2 bis 4 Werktage. Rechne also mit 3 bis 7 Werktagen insgesamt und bestelle im Dezember lieber etwas früher, denn rund um die Feiertage haben die Paketdienste viel zu tun.' },
+      { question: 'Wann muss ich bestellen, damit es zu Weihnachten ankommt?', answer: `Bestelle bis ${p.euOrderBy} für die Lieferung vor Weihnachten nach Deutschland und in die anderen EU-Länder, innerhalb der Niederlande bis ${p.nlOrderBy}. Ich mache deine Bestellung innerhalb von 1 bis 3 Werktagen fertig, danach dauert die Lieferung meist 2 bis 4 Werktage. Danach kannst du weiterhin bestellen, aber rund um die Feiertage haben die Paketdienste sehr viel zu tun, deshalb kann ich nicht versprechen, dass es vor Weihnachten ankommt.` },
       { question: 'Was kostet der Versand?', answer: `In Deutschland und die anderen EU-Länder kostet der Versand ${p.euRate} und ist ab ${p.euFree} kostenlos. Innerhalb der Niederlande kostet er ${p.nlRate} und ist ab ${p.nlFree} kostenlos.` },
       { question: 'Welche Weihnachtskerzen sind duftfrei?', answer: `${p.unscented} sind duftfrei. Damit eignen sie sich ideal für den Weihnachtstisch, an dem du das Essen riechen möchtest.` },
       { question: 'Was ist der Unterschied zwischen einer Duftkerze und Wax Melts?', answer: 'Wax Melts haben keinen Docht: Du legst sie in eine Duftlampe, wo sie langsam schmelzen und ihren Duft abgeben. Eine Duftkerze zündest du mit einer Flamme an. Beide sind von Hand aus Sojawachs gegossen.' },
