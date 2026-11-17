@@ -1,5 +1,6 @@
 import { collections, productLowestCents, products, type Product } from '../data/products'
 import { localizedDescription } from '../data/catalog-i18n'
+import { productSeo } from '../data/seo-copy'
 import {
   absoluteUrl,
   HANDLING_DAYS,
@@ -56,7 +57,9 @@ function feedItem(product: Product, locale: Locale): string {
   )
   const lines = [
     tag('id', product.id),
-    tag('title', product.name),
+    // The search title says what the product is ("… bloemkaarsjes"), which
+    // Shopping matches queries against; the bare name alone does not.
+    tag('title', productSeo[locale][product.id]?.title ?? product.name),
     tag('description', localizedDescription(product, locale)),
     tag('link', localizedUrl(locale, `/product/${product.id}`)),
     tag('image_link', images[0]),
