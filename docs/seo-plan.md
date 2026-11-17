@@ -19,8 +19,9 @@ Already done by the language work: `hreflang` links and alternates in the sitema
 | 6 | llms.txt | Claude | Done |
 | – | Deploy and re-measure | Claude | Done |
 | 7 | Bing Webmaster Tools | You | Done |
-| 8 | Request indexing | You | In progress, continue after quota resets |
-| 9 | Google Merchant Center | You and Claude | Ready to start |
+| 8 | Request indexing | You | Done |
+| 9 | Google Merchant Center | You and Claude | Live; old feeds to remove once new ones are approved |
+| 10 | Christmas gift guide | Claude | Live |
 
 ## 1. Search Console (you)
 
@@ -95,17 +96,31 @@ This is now the most valuable item. Dutch pages exist, but product titles have n
 The fixes are live, so this can start now. The daily quota is limited.
 
 - [x] Request indexing for `/nl/`, `/nl/shop/` and the 4 Dutch collection pages (done 2026-11-09)
-- [ ] Next, in this order, after the daily quota resets (some may already be done): the Dutch Christmas products (festive-glow-box, gluhwein, christmas-tree-dinner-candle, winter-wonderland-candle, sweet-christmas-wax-melts, white-christmas-wax-melts, twisted-tree-candle, christmas-bubble-candle), then floral-box, `/nl/about/`, `/nl/care/`
-- [ ] Then the same key pages in English and German, spread over a few days if the daily limit is reached
+- [x] Next, in this order, after the daily quota resets (some may already be done): the Dutch Christmas products (festive-glow-box, gluhwein, christmas-tree-dinner-candle, winter-wonderland-candle, sweet-christmas-wax-melts, white-christmas-wax-melts, twisted-tree-candle, christmas-bubble-candle), then floral-box, `/nl/about/`, `/nl/care/`
+- [x] Then the same key pages in English and German, spread over a few days if the daily limit is reached
+- [x] The Christmas gift guide (`/nl/`, `/de/`, `/en/christmas-gifts/`) and the Christmas products not yet indexed (done 2026-11-17)
 
-## 9. Google Merchant Center (after deploy)
+## 9. Google Merchant Center
 
-- [ ] Create an account at merchants.google.com and link it to Search Console
-- [ ] Start with the Netherlands: Dutch product data pointing at the `/nl/` pages. Add Germany (`/de/`) once that works
-- [ ] Update the product schema first: it has only a flat €6.99 NL rate. The site charges €6.99 in NL (free from €25) and €12.95 internationally (free from €50)
-- [ ] Check that return details match the site
-- [ ] Add the products and turn on free listings
-- [ ] Check for rejected products after review
+Account 5902617551, free listings on. Claude has API access (see the report script).
+
+- [x] Create an account and link it to Search Console
+- [x] Product feeds per language: NL (Dutch → NL, BE), DE (German → DE, AT, LU), EU (English → other EU countries and IE)
+- [x] Shipping in the feed per country, matching the checkout
+- [x] Return policies: 14 days for every country shipped to
+- [x] Feed titles use the descriptive search titles
+- [x] Autofeed (website crawl) turned off: it created duplicate and rejected products
+- [x] Customer service email set
+- [ ] Verify the phone number (you)
+- [ ] Remove the old feeds "PRODUCTS SOURCE 4" (EU and DE, wrongly marked as Dutch) once the new ones are approved
+- [ ] Product ratings: needs reviews first
+
+## 10. Christmas gift guide
+
+- [x] `/christmas-gifts/` in three languages: products by price, order-by dates (NL 15 Dec, EU 11 Dec), FAQ with schema
+- [x] Linked from the footer, the Christmas product pages and the winter shop filter
+- [ ] After a week or two: check which searches it appears for and refine the wording
+- [ ] After Christmas: update or hide, and move the order-by dates to next year
 
 ## Later, not part of this plan
 
