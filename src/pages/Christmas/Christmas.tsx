@@ -3,7 +3,6 @@ import { holidays } from '../../data/seasons'
 import { shippingZoneForCountry } from '../../cart/CartContext'
 import { ProductCard } from '../../components/catalog/ProductCard'
 import { Reveal } from '../../components/ui/Reveal'
-import { Divider } from '../../components/ui/Divider'
 import { FaqItem } from '../../components/ui/FaqItem'
 import { JsonLd } from '../../components/seo/JsonLd'
 import { breadcrumbLd, faqLd, localizedUrl, siteMeta } from '../../lib/seo'
@@ -296,8 +295,6 @@ export function Christmas() {
           </Reveal>
         </div>
       </section>
-
-      <Divider white />
 
       <section className="faq">
         <div className="container">
