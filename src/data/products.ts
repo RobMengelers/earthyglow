@@ -495,15 +495,5 @@ export function getCollection(id: string | undefined): Collection | undefined {
   return collections.find((c) => c.id === id)
 }
 
-export function getRelated(product: Product, count = 3): Product[] {
-  return collections
-    .find((c) => c.id === product.collectionId)
-    ?.products.filter((p) => p.id !== product.id)
-    .concat(
-      products.filter((p) => p.collectionId !== product.collectionId),
-    )
-    .slice(0, count) ?? products.filter((p) => p.id !== product.id).slice(0, count)
-}
-
 export const heroImage = '/images/hero-winter.webp'
 export const aboutImage = '/images/about-candles.webp'
