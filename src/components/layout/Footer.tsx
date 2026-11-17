@@ -11,6 +11,7 @@ const footerCopy = defineCopy({
     intro: 'Candles made by Naomi in the Netherlands, poured by hand with 100% soy wax. Thank you for supporting my small business.',
     shop: 'Shop',
     allProducts: 'All products',
+    christmasGifts: 'Christmas gifts',
     explore: 'Explore',
     story: 'Our story',
     care: 'Candle care',
@@ -25,6 +26,7 @@ const footerCopy = defineCopy({
     intro: 'Kaarsen gemaakt door Naomi in Nederland, met de hand gegoten van 100% sojawas. Dankjewel dat je mijn kleine bedrijf steunt.',
     shop: 'Shop',
     allProducts: 'Alle producten',
+    christmasGifts: 'Kerstcadeaus',
     explore: 'Ontdek',
     story: 'Ons verhaal',
     care: 'Kaarsverzorging',
@@ -39,6 +41,7 @@ const footerCopy = defineCopy({
     intro: 'Kerzen von Naomi aus den Niederlanden, von Hand gegossen aus 100 % Sojawachs. Danke, dass du mein kleines Unternehmen unterstützt.',
     shop: 'Shop',
     allProducts: 'Alle Produkte',
+    christmasGifts: 'Weihnachtsgeschenke',
     explore: 'Entdecken',
     story: 'Unsere Geschichte',
     care: 'Kerzenpflege',
@@ -79,6 +82,7 @@ export function Footer() {
           <h2>{copy.shop}</h2>
           <ul>
             <li><Link to="/shop" prefetch="intent">{copy.allProducts}</Link></li>
+            <li><Link to="/christmas-gifts" prefetch="intent">{copy.christmasGifts}</Link></li>
             {seasons.map((season) => (
               <li key={season.id}>
                 <Link to={`/shop?season=${season.id}`} prefetch="intent">

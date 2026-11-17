@@ -1,0 +1,71 @@
+/* Christmas gift guide. Product groups, the grid and the FAQ reuse the shop and care styles. */
+
+.christmas-intro {
+  max-width: 68ch;
+  margin-bottom: 2.2rem;
+}
+
+.christmas-intro p {
+  color: var(--body);
+  font-size: 1.02rem;
+  line-height: 1.75;
+}
+
+.christmas-intro p + p {
+  margin-top: 0.9rem;
+}
+
+.christmas-perks {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: clamp(3rem, 6vw, 4.5rem);
+}
+
+.christmas-perk {
+  display: grid;
+  gap: 0.3rem;
+  padding: 1.2rem 1.3rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, #fffdf8, #fdf7ec);
+}
+
+.christmas-perk strong {
+  color: var(--ink);
+  font-size: 0.95rem;
+}
+
+.christmas-perk span {
+  color: var(--body);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.christmas-band-lede {
+  max-width: 60ch;
+  margin: 0.5rem 0 0;
+  color: var(--body);
+}
+
+.christmas-more {
+  margin-top: clamp(3.5rem, 7vw, 5.5rem);
+  text-align: center;
+}
+
+.christmas-more h2 {
+  margin: 0 0 0.6rem;
+  font-size: clamp(1.5rem, 2.8vw, 2rem);
+}
+
+.christmas-more p {
+  max-width: 52ch;
+  margin: 0 auto 1.5rem;
+  color: var(--body);
+}
+
+@media (max-width: 720px) {
+  .christmas-perks {
+    grid-template-columns: 1fr;
+  }
+}

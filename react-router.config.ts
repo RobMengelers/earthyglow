@@ -7,6 +7,7 @@ const staticPages = [
   '/shop',
   '/about',
   '/care',
+  '/christmas-gifts',
   '/contact',
   '/policies',
   '/policies/privacy-policy',
