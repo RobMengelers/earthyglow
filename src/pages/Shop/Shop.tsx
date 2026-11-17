@@ -31,7 +31,7 @@ const shopCopy = defineCopy({
     emptyTitle: 'No candles in this season just yet, check back in after November 1st',
     earlierSeasons: 'Show earlier seasons',
     moreSeasons: 'Show more seasons',
-    giftGuide: 'Looking for a gift? See all Christmas gifts by price',
+    giftGuide: 'Christmas gifts by price',
   },
   nl: {
     metaTitle: 'Shop · Handgegoten sojawaskaarsen · EarthyGlow',
@@ -60,7 +60,7 @@ const shopCopy = defineCopy({
     emptyTitle: 'Nog geen kaarsen voor dit seizoen, kijk na 1 november nog eens',
     earlierSeasons: 'Toon vorige seizoenen',
     moreSeasons: 'Toon meer seizoenen',
-    giftGuide: 'Op zoek naar een cadeau? Bekijk alle kerstcadeaus op prijs',
+    giftGuide: 'Kerstcadeaus op prijs',
   },
   de: {
     metaTitle: 'Shop · Handgegossene Sojawachskerzen · EarthyGlow',
@@ -89,7 +89,7 @@ const shopCopy = defineCopy({
     emptyTitle: 'Noch keine Kerzen für diese Saison, schau nach dem 1. November wieder vorbei',
     earlierSeasons: 'Vorherige Jahreszeiten zeigen',
     moreSeasons: 'Weitere Jahreszeiten zeigen',
-    giftGuide: 'Auf der Suche nach einem Geschenk? Alle Weihnachtsgeschenke nach Preis',
+    giftGuide: 'Weihnachtsgeschenke nach Preis',
   },
 })
 
@@ -309,9 +309,10 @@ export function Shop() {
             <h1>{heading}</h1>
             <p className="section-lede">{lede}</p>
             {(activeSeason?.id === 'winter' || activeSeason?.id === 'christmas') && (
-              <p className="shop-guide-link">
-                <Link to="/christmas-gifts" prefetch="intent">{copy.giftGuide} →</Link>
-              </p>
+              <Link to="/christmas-gifts" className="btn btn-ghost shop-guide-link" prefetch="intent">
+                {copy.giftGuide}
+                <span aria-hidden="true">→</span>
+              </Link>
             )}
           </Reveal>
         </div>
