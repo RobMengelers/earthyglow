@@ -257,6 +257,7 @@ export const collections: Collection[] = [
         image: '/images/winter-wonderland-candle.webp',
         images: Array.from({ length: 2 }, (_, index) => `/images/products/winter-wonderland-candle/image-${index + 1}.webp`),
         collectionId: 'scented-glow',
+        soldOut: true,
         description:
           'Bring the fresh feeling of a winter forest into your home with our Winter Wonderland Candle. The fragrance opens with crisp notes of pine needles, cypress, eucalyptus and peppermint, followed by a warm heart of fir balsam. Cedarwood and resinous base notes give the scent a deep, woody and comforting finish. \n\n The candle is handmade with approximately 245 g of wax and comes in a low glass jar measuring around 7 cm high with a diameter of approximately 12 cm. \n\n Approx. 245 g wax | Approx. 7 cm high | Approx. 12 cm diameter | Nordic Cedar fragrance',
       },
