@@ -70,6 +70,17 @@ const tag = (name: string, value: string | number) => `<g:${name}>${escapeXml(St
 
 const euros = (cents: number) => `${(cents / 100).toFixed(2)} EUR`
 
+/**
+ * The price group of a version, sent as custom_label_0 so Google Ads can bid on
+ * (or leave out) cheap items without listing them one by one. The same values
+ * in every language's feed, so one campaign rule means the same everywhere.
+ */
+export function priceBand(priceCents: number): 'onder-8' | '8-tot-15' | '15-en-meer' {
+  if (priceCents < 800) return 'onder-8'
+  if (priceCents < 1500) return '8-tot-15'
+  return '15-en-meer'
+}
+
 function googleCategory(product: Product): string {
   return product.id.includes('wax-melts')
     ? 'Home & Garden > Decor > Home Fragrances > Wax Tarts'
@@ -114,6 +125,7 @@ function feedItem(offer: ProductOffer, locale: Locale, grouped: boolean): string
     ...(labels.color ? [tag('color', labels.color)] : []),
     ...(labels.size ? [tag('size', labels.size)] : []),
     ...highlights(product, locale).map((fact) => tag('product_highlight', fact)),
+    tag('custom_label_0', priceBand(priceCents)),
     tag('min_handling_time', HANDLING_DAYS.min),
     tag('max_handling_time', HANDLING_DAYS.max),
   ].map((line) => `      ${line}`)
