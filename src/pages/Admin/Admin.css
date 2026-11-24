@@ -1224,6 +1224,45 @@
   display: block;
 }
 
+.admin-detail-items td.admin-item-check {
+  width: 1.6rem;
+  padding-right: 0.4rem;
+}
+
+.admin-item-check input {
+  width: 1.05rem;
+  height: 1.05rem;
+  margin: 0.15rem 0 0;
+  accent-color: var(--clay);
+  cursor: pointer;
+}
+
+.admin-item-label {
+  display: block;
+  cursor: pointer;
+}
+
+.admin-detail-items tr.is-checked .admin-item-name {
+  text-decoration: line-through;
+  color: var(--body);
+}
+
+.admin-detail-items tr.is-checked td {
+  opacity: 0.6;
+}
+
+.admin-items-progress {
+  margin-left: 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: var(--body);
+}
+
+.admin-items-progress.is-done {
+  color: var(--clay);
+  font-weight: 600;
+}
+
 .admin-order-variant {
   color: var(--clay);
   font-size: 0.8rem;
