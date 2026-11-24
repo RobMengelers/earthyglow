@@ -4,6 +4,7 @@ import Fastify from 'fastify'
 import { products } from '../../src/data/products.ts'
 import { productDescriptions, collectionCopy, seasonCopy } from '../../src/data/catalog-i18n.ts'
 import { collections } from '../../src/data/products.ts'
+import { productOffers } from '../../src/data/product-offers.ts'
 import { holidays, seasons } from '../../src/data/seasons.ts'
 import { OPTION_LABEL_KEYS as STOREFRONT_OPTION_KEYS, optionLabel as storefrontOptionLabel } from '../../src/i18n/options.ts'
 import { detectLocale, formatPriceFor, localizePath, pageHref, stripLocale } from '../../src/i18n/locales.ts'
@@ -275,7 +276,7 @@ test('the product feed lists every product with shipping to every checkout count
   for (const locale of ['nl', 'en', 'de'] as const) {
     const xml = productFeedXml(locale)
     const items = xml.split('<item>').slice(1)
-    assert.equal(items.length, products.length)
+    assert.equal(items.length, products.flatMap(productOffers).length)
     for (const item of items) {
       const countries = [...item.matchAll(/<g:country>([A-Z]{2})<\/g:country>/g)].map((m) => m[1])
       assert.deepEqual(countries, SHIPPING_COUNTRIES)
