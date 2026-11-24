@@ -278,6 +278,10 @@ test('the product feed lists every product with shipping to every checkout count
     const items = xml.split('<item>').slice(1)
     assert.equal(items.length, products.flatMap(productOffers).length)
     for (const item of items) {
+      // Each version carries its price group, so ads can leave out cheap items.
+      const price = Number(item.match(/<g:price>([\d.]+) EUR<\/g:price>/)![1])
+      const band = item.match(/<g:custom_label_0>([^<]+)<\/g:custom_label_0>/)?.[1]
+      assert.equal(band, price < 8 ? 'onder-8' : price < 15 ? '8-tot-15' : '15-en-meer')
       const countries = [...item.matchAll(/<g:country>([A-Z]{2})<\/g:country>/g)].map((m) => m[1])
       assert.deepEqual(countries, SHIPPING_COUNTRIES)
       assert.match(item, new RegExp(`<g:link>https://www\\.earthyglow\\.nl/${locale}/product/`))
