@@ -18,7 +18,7 @@ import { centsToEuros, trackEvent } from '../../lib/analytics'
 import type { Route } from './+types/ProductPage'
 
 // What the option pickers ask for, keyed by the product's English picker word.
-type Picker = 'size or bundle' | 'colour' | 'shape'
+type Picker = 'size or bundle' | 'size' | 'colour' | 'shape'
 
 const productCopy = defineCopy({
   en: {
@@ -32,7 +32,7 @@ const productCopy = defineCopy({
     next: 'Next product image',
     showImage: (n: number) => `Show image ${n}`,
     soldOut: 'Sold out',
-    choose: { 'size or bundle': 'Choose your size or bundle', colour: 'Choose your colour', shape: 'Choose your shape' } as Record<Picker, string>,
+    choose: { 'size or bundle': 'Choose your size or bundle', size: 'Choose your size', colour: 'Choose your colour', shape: 'Choose your shape' } as Record<Picker, string>,
     chooseOption: 'Choose your option',
     chooseGroup: 'Choose single or bundle',
     chooseColour: 'Choose a colour',
@@ -62,7 +62,7 @@ const productCopy = defineCopy({
     next: 'Volgende productfoto',
     showImage: (n: number) => `Toon foto ${n}`,
     soldOut: 'Uitverkocht',
-    choose: { 'size or bundle': 'Kies je maat of bundel', colour: 'Kies je kleur', shape: 'Kies je vorm' },
+    choose: { 'size or bundle': 'Kies je maat of bundel', size: 'Kies je maat', colour: 'Kies je kleur', shape: 'Kies je vorm' },
     chooseOption: 'Kies je optie',
     chooseGroup: 'Kies los of bundel',
     chooseColour: 'Kies een kleur',
@@ -92,7 +92,7 @@ const productCopy = defineCopy({
     next: 'Nächstes Produktbild',
     showImage: (n: number) => `Bild ${n} anzeigen`,
     soldOut: 'Ausverkauft',
-    choose: { 'size or bundle': 'Wähle Größe oder Set', colour: 'Wähle deine Farbe', shape: 'Wähle deine Form' },
+    choose: { 'size or bundle': 'Wähle Größe oder Set', size: 'Wähle deine Größe', colour: 'Wähle deine Farbe', shape: 'Wähle deine Form' },
     chooseOption: 'Wähle deine Option',
     chooseGroup: 'Einzeln oder Set wählen',
     chooseColour: 'Farbe wählen',
