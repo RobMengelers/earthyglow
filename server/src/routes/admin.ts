@@ -759,6 +759,16 @@ export async function adminRoutes(app: FastifyInstance) {
         include: { customer: true as const, items: { orderBy: { position: 'asc' as const } } },
       }
       const order = await prisma.$transaction(async tx => {
+        // Editing rewrites every line, so carry over the ticks of the lines
+        // that are still on the order rather than resetting the admin's progress.
+        if (id) {
+          const lineKey = (line: { productId: string; name: string; variantId?: string | null; colorId?: string | null }) =>
+            [line.productId, line.productId === 'custom' ? line.name : '', line.variantId ?? '', line.colorId ?? ''].join('|')
+          const ticked = new Set(
+            (await tx.orderItem.findMany({ where: { orderId: id, checked: true }, select: { productId: true, name: true, variantId: true, colorId: true } })).map(lineKey),
+          )
+          for (const line of lines) line.checked = ticked.has(lineKey(line))
+        }
         const saved = id
           ? await tx.order.update({ where: { id }, data: { ...data, items: { deleteMany: {}, create: lines }, invoicePdf: null, invoiceSentAt: null }, ...selection })
           : await tx.order.create({
@@ -1502,6 +1512,19 @@ export async function adminRoutes(app: FastifyInstance) {
       }
     }
     return updated
+  })
+
+  // Ticks an order line off (or back on) while the order is being prepared.
+  app.patch('/api/admin/orders/:id/items/:itemId', { preHandler: requireAdmin }, async (request, reply) => {
+    const body = (request.body ?? {}) as { checked?: unknown }
+    if (typeof body.checked !== 'boolean') return reply.code(400).send({ error: 'Invalid checked flag' })
+    const params = request.params as { id: string; itemId: string }
+    const { count } = await prisma.orderItem.updateMany({
+      where: { id: params.itemId, orderId: params.id },
+      data: { checked: body.checked },
+    })
+    if (count === 0) return reply.code(404).send({ error: 'Order line not found' })
+    return { id: params.itemId, checked: body.checked }
   })
 
   // Serves the PDF bytes that were archived when the invoice was emailed, so

@@ -47,7 +47,8 @@ type AdminCustomer = {
   phone: string | null
 }
 
-type AdminOrderItem = {
+export type AdminOrderItem = {
+  id: string
   productId: string
   name: string
   variantId?: string | null
@@ -57,6 +58,8 @@ type AdminOrderItem = {
   quantity: number
   unitPriceCents: number
   lineTotalCents: number
+  /** Ticked off in the order detail once the line is prepared. */
+  checked: boolean
 }
 
 export type AdminOrder = {
@@ -373,6 +376,11 @@ export async function updateFulfillment(token: string, orderId: string, input: {
   const response = await fetch(`${API_URL}/api/admin/orders/${orderId}/fulfillment`, { method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(input) })
   if (!response.ok) throw new Error((await response.json().catch(() => null) as { error?: string } | null)?.error ?? 'Could not update fulfillment')
   return (await response.json()) as AdminOrder
+}
+
+export async function setOrderItemChecked(token: string, orderId: string, itemId: string, checked: boolean): Promise<void> {
+  const response = await fetch(`${API_URL}/api/admin/orders/${orderId}/items/${itemId}`, { method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ checked }) })
+  if (!response.ok) throw new Error((await response.json().catch(() => null) as { error?: string } | null)?.error ?? 'Could not update the order line')
 }
 
 export async function refundAdminOrder(token: string, orderId: string): Promise<AdminOrder> {

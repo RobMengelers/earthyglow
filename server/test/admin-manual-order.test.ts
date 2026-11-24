@@ -91,6 +91,11 @@ function stubFlow(
   stub(prisma.order, 'updateMany', async () => ({ count: 1 }))
   stub(prisma.order, 'findUniqueOrThrow', async () => ({ items: [], materialDeductions: {} }))
   stub(prisma.recipe, 'findMany', async () => [])
+  // The lines already ticked off on the order being edited.
+  stub(prisma.orderItem, 'findMany', async () => [
+    { productId: 'custom', name: 'Replacement candle', variantId: null, colorId: null },
+    { productId: 'custom', name: 'Removed candle', variantId: null, colorId: null },
+  ])
 
   const created: Record<string, unknown>[] = []
   const customerUpserts: Record<string, unknown>[] = []
@@ -595,12 +600,17 @@ test('editing replaces items and invalidates the old invoice without changing th
   t.after(() => app.close())
   const response = await app.inject({ method: 'PUT', url: '/api/admin/orders/order-new',
     headers: { authorization: `Bearer ${token}` },
-    payload: { date: '2026-10-20', items: [{ name: 'Replacement candle', unitPriceCents: 1500, quantity: 3 }] },
+    payload: { date: '2026-10-20', items: [
+      { name: 'Replacement candle', unitPriceCents: 1500, quantity: 3 },
+      { name: 'New candle', unitPriceCents: 0, quantity: 1 },
+    ] },
   })
   assert.equal(response.statusCode, 200)
   const data = flow.lastOrderData!
   assert.equal(data.totalCents, 4500)
   assert.deepEqual((data.items as { deleteMany: unknown }).deleteMany, {})
+  // A line still on the order keeps its tick; a new line starts unticked.
+  assert.deepEqual((data.items as { create: { checked?: boolean }[] }).create.map((line) => line.checked), [true, false])
   assert.equal(data.invoicePdf, null)
   assert.equal(data.invoiceSentAt, null)
   assert.equal(data.orderNumber, undefined)

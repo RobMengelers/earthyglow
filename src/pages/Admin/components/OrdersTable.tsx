@@ -7,9 +7,12 @@ import {
   formatDateTimeOrDash,
   formatEuros,
   type AdminOrder,
+  type AdminOrderItem,
 } from '../../../admin/api'
 
 export type OrderRowAction = 'process' | 'refund'
+
+export type OnItemChecked = (order: AdminOrder, item: AdminOrderItem, checked: boolean) => void
 
 export function OrdersTable({
   orders,
@@ -17,12 +20,14 @@ export function OrdersTable({
   expanded,
   onToggleExpand,
   onAction,
+  onItemChecked,
 }: {
   orders: AdminOrder[]
   token: string
   expanded: string | null
   onToggleExpand: (id: string) => void
   onAction: (action: OrderRowAction, order: AdminOrder) => void
+  onItemChecked: OnItemChecked
 }) {
   return (
     <div className="admin-table-wrap">
@@ -48,6 +53,7 @@ export function OrdersTable({
               open={expanded === order.id}
               onToggleExpand={() => onToggleExpand(order.id)}
               onAction={onAction}
+              onItemChecked={onItemChecked}
             />
           ))}
         </tbody>
@@ -62,12 +68,14 @@ function OrderRow({
   open,
   onToggleExpand,
   onAction,
+  onItemChecked,
 }: {
   order: AdminOrder
   token: string
   open: boolean
   onToggleExpand: () => void
   onAction: (action: OrderRowAction, order: AdminOrder) => void
+  onItemChecked: OnItemChecked
 }) {
   const detailId = `order-detail-${order.id}`
   const customer = order.customer
@@ -142,7 +150,7 @@ function OrderRow({
       {open && (
         <tr className="admin-order-detail-row" id={detailId}>
           <td colSpan={8}>
-            <OrderDetail order={order} />
+            <OrderDetail order={order} onItemChecked={onItemChecked} />
           </td>
         </tr>
       )}
@@ -219,31 +227,49 @@ function InvoiceCell({ order, token }: { order: AdminOrder; token: string }) {
   )
 }
 
-function OrderDetail({ order }: { order: AdminOrder }) {
+function OrderDetail({ order, onItemChecked }: { order: AdminOrder; onItemChecked: OnItemChecked }) {
   const customer = order.customer
+  const checkedCount = order.items.filter((item) => item.checked).length
 
   return (
     <div className="admin-order-detail">
       <section className="admin-detail-col">
         <div className="admin-detail-heading">
-          <h3>Items</h3>
+          <h3>
+            Items
+            {order.items.length > 0 && (
+              <span className={`admin-items-progress${checkedCount === order.items.length ? ' is-done' : ''}`}>
+                {checkedCount}/{order.items.length} done
+              </span>
+            )}
+          </h3>
           {order.isManual && order.status === 'paid' && <Link className="admin-order-edit" to={`/admin/orders/${order.id}/edit`}>Edit order</Link>}
         </div>
         <table className="admin-detail-items">
           <tbody>
-            {order.items.map((item, index) => (
-              <tr key={index}>
+            {order.items.map((item) => (
+              <tr key={item.id} className={item.checked ? 'is-checked' : undefined}>
+                <td className="admin-item-check">
+                  <input
+                    type="checkbox"
+                    id={`order-item-${item.id}`}
+                    checked={item.checked}
+                    onChange={(event) => onItemChecked(order, item, event.target.checked)}
+                  />
+                </td>
                 <td>
-                  {item.name}
-                  {item.variantLabel && (
-                    <small className="admin-order-variant">{item.variantLabel}</small>
-                  )}
-                  {item.colorLabel && (
-                    <small className="admin-order-variant">{item.colorLabel}</small>
-                  )}
-                  <small className="admin-muted">
-                    {formatEuros(item.unitPriceCents)} × {item.quantity}
-                  </small>
+                  <label htmlFor={`order-item-${item.id}`} className="admin-item-label">
+                    <span className="admin-item-name">{item.name}</span>
+                    {item.variantLabel && (
+                      <small className="admin-order-variant">{item.variantLabel}</small>
+                    )}
+                    {item.colorLabel && (
+                      <small className="admin-order-variant">{item.colorLabel}</small>
+                    )}
+                    <small className="admin-muted">
+                      {formatEuros(item.unitPriceCents)} × {item.quantity}
+                    </small>
+                  </label>
                 </td>
                 <td>{formatEuros(item.lineTotalCents)}</td>
               </tr>
@@ -251,17 +277,17 @@ function OrderDetail({ order }: { order: AdminOrder }) {
           </tbody>
           <tfoot>
             <tr>
-              <td>Subtotal{order.pricesIncludeVat === false ? ' excl. VAT' : ''}</td>
+              <td colSpan={2}>Subtotal{order.pricesIncludeVat === false ? ' excl. VAT' : ''}</td>
               <td>{formatEuros(order.subtotalCents)}</td>
             </tr>
             {order.shippingCents > 0 && (
               <tr>
-                <td>Shipping</td>
+                <td colSpan={2}>Shipping</td>
                 <td>{formatEuros(order.shippingCents)}</td>
               </tr>
             )}
             <tr className="is-total">
-              <td>Total</td>
+              <td colSpan={2}>Total</td>
               <td>{formatEuros(order.totalCents)}</td>
             </tr>
           </tfoot>

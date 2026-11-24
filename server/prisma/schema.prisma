@@ -199,6 +199,9 @@ model OrderItem {
   // The line's place in the cart. Invoice and admin views sort on this rather
   // than the random uuid id, so lines always read in the order they were added.
   position       Int     @default(0)
+  // Ticked off in the admin order detail once the line is made and packed, so
+  // a partly prepared order shows what is still left to do.
+  checked        Boolean @default(false)
 
   @@index([orderId])
 }

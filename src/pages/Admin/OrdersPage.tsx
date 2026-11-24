@@ -5,8 +5,10 @@ import {
   fetchAdminOrders,
   formatEuros,
   refundAdminOrder,
+  setOrderItemChecked,
   updateFulfillment,
   type AdminOrder,
+  type AdminOrderItem,
 } from '../../admin/api'
 import { useAdmin } from './admin-context'
 import { siteMeta } from '../../lib/seo'
@@ -185,6 +187,33 @@ export default function OrdersPage() {
     )
   }
 
+  // Ticks show straight away and roll back if the save fails, so working
+  // through an order never waits on the network.
+  function setItemChecked(order: AdminOrder, item: AdminOrderItem, checked: boolean) {
+    const patch = (value: boolean) =>
+      setView((current) =>
+        current
+          ? {
+              ...current,
+              orders: current.orders.map((row) =>
+                row.id === order.id
+                  ? { ...row, items: row.items.map((line) => (line.id === item.id ? { ...line, checked: value } : line)) }
+                  : row,
+              ),
+            }
+          : current,
+      )
+    if (!token) return
+    patch(checked)
+    setOrderItemChecked(token, order.id, item.id, checked).catch((error: unknown) => {
+      patch(!checked)
+      setFlash({
+        tone: 'error',
+        text: error instanceof Error ? error.message : 'Could not update the order line.',
+      })
+    })
+  }
+
   async function sendOrder(order: AdminOrder, carrier: string, trackingCode: string, skipEmail: boolean) {
     if (!token) return
     setBusy(true)
@@ -353,6 +382,7 @@ export default function OrdersPage() {
             token={token ?? ''}
             expanded={expanded}
             onToggleExpand={(id) => setExpanded((current) => (current === id ? null : id))}
+            onItemChecked={setItemChecked}
             onAction={(action: OrderRowAction, order: AdminOrder) =>
               setDialog(
                 action === 'process'
