@@ -470,7 +470,12 @@ export const collections: Collection[] = [
         images: Array.from({ length: 2 }, (_, index) => `/images/products/sweet-christmas-wax-melts/image-${index + 1}.webp`),
         collectionId: 'wax-melts',
         description:
-          'Fill your home with the warm and comforting scent of our Sweet Christmas Wax Melts. Scented with Pain au Chocolat, this cozy fragrance has a rich chocolate aroma with the sweet, bakery-like character of freshly baked pastries. \n\n Each 7 x 7 cm box contains 8 handmade Christmas-shaped wax melts, with approximately 45 g of wax in total. \n\n 8 wax melts | Approx. 45 g wax | Box size 7 x 7 cm | Pain au Chocolat fragrance',
+          'Fill your home with the warm and comforting scent of our Sweet Christmas Wax Melts. Scented with Pain au Chocolat, this cozy fragrance has a rich chocolate aroma with the sweet, bakery-like character of freshly baked pastries. \n\n Choose a small or a large box. The small 7 x 7 cm box contains 8 handmade Christmas-shaped wax melts, with approximately 45 g of wax in total. The large 10 x 10 cm box contains 16 wax melts, with approximately 83 g of wax in total. \n\n Small: 8 wax melts | Approx. 45 g wax | Box size 7 x 7 cm \n Large: 16 wax melts | Approx. 83 g wax | Box size 10 x 10 cm \n Pain au Chocolat fragrance',
+        variantLabel: 'size',
+        variants: [
+          { id: 'sweet-christmas-wax-melts-small', label: 'Small', priceCents: 295 },
+          { id: 'sweet-christmas-wax-melts-large', label: 'Large', priceCents: 495 },
+        ],
       },
       {
         id: 'white-christmas-wax-melts',
@@ -480,7 +485,12 @@ export const collections: Collection[] = [
         images: ['/images/products/white-christmas-wax-melts/image-1.webp'],
         collectionId: 'wax-melts',
         description:
-          'Fill your home with the fresh and festive scent of our White Christmas Wax Melts. This Christmas fragrance opens with notes of raspberry, green leaf and orange, followed by warm clove, pine and herbal notes, with a soft base of caramel and woody accords. \n\n Each 7 x 7 cm box contains 1 large snowflake and 6 small Christmas tree wax melts, with approximately 35 g of wax in total. \n\n 7 wax melts | Approx. 35 g wax | Box size 7 x 7 cm | White Christmas fragrance',
+          'Fill your home with the fresh and festive scent of our White Christmas Wax Melts. This Christmas fragrance opens with notes of raspberry, green leaf and orange, followed by warm clove, pine and herbal notes, with a soft base of caramel and woody accords. \n\n Choose a small or a large box. The small 7 x 7 cm box contains 1 large snowflake and 6 small Christmas tree wax melts, with approximately 35 g of wax in total. The large 10 x 10 cm box contains 2 large snowflakes and 12 small Christmas trees, with approximately 83 g of wax in total. \n\n Small: 7 wax melts | Approx. 35 g wax | Box size 7 x 7 cm \n Large: 14 wax melts | Approx. 83 g wax | Box size 10 x 10 cm \n White Christmas fragrance',
+        variantLabel: 'size',
+        variants: [
+          { id: 'white-christmas-wax-melts-small', label: 'Small', priceCents: 295 },
+          { id: 'white-christmas-wax-melts-large', label: 'Large', priceCents: 495 },
+        ],
       },
     ],
   },

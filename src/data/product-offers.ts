@@ -96,7 +96,7 @@ export function offerLabels(offer: ProductOffer, locale: Locale): { color?: stri
   const colorName = color && optionLabel(color.label, locale)
   return {
     color: colorName ?? (variant?.swatch ? variantName : undefined),
-    size: product.variantLabel === 'size or bundle' ? variantName : undefined,
+    size: product.variantLabel === 'size or bundle' || product.variantLabel === 'size' ? variantName : undefined,
     parts: [variantName, colorName].filter((part): part is string => Boolean(part)),
   }
 }
