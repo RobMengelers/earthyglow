@@ -56,10 +56,21 @@ export function stripLocale(path: string): string {
 }
 
 /**
- * Picks the language for a visitor: an explicit choice (the cookie) first, then
- * the first of the browser's preferred languages that we have, then English.
+ * Countries whose visitors get our language for them even when their browser
+ * asks for English: plenty of Dutch and German phones are set to English.
  */
-export function detectLocale(cookieHeader: string | null, acceptLanguage: string | null): Locale {
+const COUNTRY_LOCALE: Record<string, Locale> = { NL: 'nl', BE: 'nl', DE: 'de', AT: 'de' }
+
+/**
+ * Picks the language for a visitor: an explicit choice (the cookie) first, then
+ * Dutch or German if the browser asks for it, then the visitor's country (NL/BE
+ * → Dutch, DE/AT → German), then English.
+ */
+export function detectLocale(
+  cookieHeader: string | null,
+  acceptLanguage: string | null,
+  country?: string | null,
+): Locale {
   const cookie = readCookie(cookieHeader, LOCALE_COOKIE)
   if (isLocale(cookie)) return cookie
 
@@ -72,12 +83,11 @@ export function detectLocale(cookieHeader: string | null, acceptLanguage: string
     })
     .filter((entry) => entry.tag && !Number.isNaN(entry.q) && entry.q > 0)
     .sort((a, b) => b.q - a.q)
+    .map(({ tag }) => tag.split('-')[0])
 
-  for (const { tag } of preferred) {
-    const base = tag.split('-')[0]
-    if (isLocale(base)) return base
-  }
-  return DEFAULT_LOCALE
+  const fromBrowser = preferred.find(isLocale)
+  if (fromBrowser && fromBrowser !== 'en') return fromBrowser
+  return COUNTRY_LOCALE[country?.toUpperCase() ?? ''] ?? fromBrowser ?? DEFAULT_LOCALE
 }
 
 function readCookie(header: string | null, name: string): string | undefined {
