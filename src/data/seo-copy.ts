@@ -89,7 +89,7 @@ export const productSeo: Record<Locale, Record<string, SeoCopy>> = {
     },
     'christmas-bubble-candle': {
       title: 'Christmas Bubble kerstkaars',
-      description: 'Handgemaakte bubbelkaars in feestelijke kleuren, geurloos en van 100% natuurlijke sojawas. Een kleine kerstdecoratie of een lief cadeautje.',
+      description: 'Bubbelkaars in kerstrood of -groen, handgegoten van 100% sojawas. Geurloos, 6 cm hoog: een leuk kerstcadeautje. Gratis verzending in NL vanaf €25.',
     },
     'christmas-tree-dinner-candle': {
       title: 'Christmas Tree dinerkaars',
@@ -195,7 +195,7 @@ export const productSeo: Record<Locale, Record<string, SeoCopy>> = {
     },
     'christmas-bubble-candle': {
       title: 'Christmas Bubble Candle',
-      description: 'Handmade bubble candle in festive colours, unscented and made of 100% natural soy wax. A small Christmas decoration or a sweet little gift.',
+      description: 'Bubble candle in Christmas red or green, hand-poured from 100% soy wax. Unscented and 6 cm tall: a sweet stocking filler or festive table decoration.',
     },
     'christmas-tree-dinner-candle': {
       title: 'Christmas Tree Dinner Candle',
@@ -229,7 +229,7 @@ export const productSeo: Record<Locale, Record<string, SeoCopy>> = {
     },
     'festive-glow-box': {
       title: 'The Festive Glow Box Weihnachtskerzen',
-      description: 'Festliche Box mit 9 handgemachten Blumenkerzen mit dem Duft Mulled Wine: warme Glühweingewürze und süße Früchte. Ein Geschenk zu Weihnachten.',
+      description: 'Geschenkbox mit 9 handgegossenen Blumenkerzen aus Sojawachs, Duft Glühwein: warme Gewürze und süße Früchte. Ein fertig verpacktes Weihnachtsgeschenk.',
     },
     'coconut-beach': {
       title: 'Coconut Beach Sommer-Duftkerze',
@@ -301,11 +301,11 @@ export const productSeo: Record<Locale, Record<string, SeoCopy>> = {
     },
     'christmas-bubble-candle': {
       title: 'Christmas Bubble Weihnachtskerze',
-      description: 'Handgemachte Bubble-Kerze in festlichen Farben, duftfrei und aus 100 % natürlichem Sojawachs. Kleine Weihnachtsdeko oder ein süßes Geschenk.',
+      description: 'Bubble-Kerze in Weihnachtsrot oder -grün, von Hand aus 100 % Sojawachs gegossen. Duftfrei, 6 cm hoch: ein süßes Wichtelgeschenk oder Weihnachtsdeko.',
     },
     'christmas-tree-dinner-candle': {
       title: 'Christmas Tree Tafelkerze',
-      description: 'Handgemachte Tafelkerze in Form eines Weihnachtsbaums, perfekt für die festliche Tafel oder als Deko. Duftfrei, aus 100 % natürlichem Sojawachs.',
+      description: 'Tafelkerze in Form eines Weihnachtsbaums, von Hand aus 100 % Sojawachs gegossen. Duftfrei, schön auf dem Weihnachtstisch, als Deko oder kleines Geschenk.',
     },
     'twisted-tree-candle': {
       title: 'Twisted Tree Weihnachtskerze',
@@ -317,7 +317,7 @@ export const productSeo: Record<Locale, Record<string, SeoCopy>> = {
     },
     'sweet-christmas-wax-melts': {
       title: 'Sweet Christmas Duftwachs Wax Melts',
-      description: 'Schachtel mit 8 handgemachten Wax Melts in Weihnachtsformen mit dem Duft Pain au Chocolat: Schokolade und süßes Gebäck. Etwa 45 g Wachs.',
+      description: 'Weihnachts-Wax-Melts aus Sojawachs in Weihnachtsformen, Duft Pain au Chocolat: Schokolade und frisches Gebäck. Kleine Box (8 Stück) oder große Box (16).',
     },
     'white-christmas-wax-melts': {
       title: 'White Christmas Duftwachs Wax Melts',
@@ -329,8 +329,8 @@ export const productSeo: Record<Locale, Record<string, SeoCopy>> = {
 export const collectionSeo: Record<Locale, Record<string, SeoCopy>> = {
   nl: {
     'little-glow': {
-      title: 'Bloemkaarsjes en geurende theelichtjes',
-      description: 'Handgegoten bloemkaarsjes van sojawas in doosjes en mandjes, met een subtiele geur. Een mooi cadeau of een klein boeket voor jezelf.',
+      title: 'Geurende theelichtjes als cadeau: bloemkaarsjes',
+      description: 'Geurende theelichtjes in bloemvorm, handgegoten van sojawas. In een cadeaudoosje of mandje, klaar om te geven. Gratis verzending in NL vanaf €25.',
     },
     'scented-glow': {
       title: 'Geurkaarsen van sojawas, handgemaakt',

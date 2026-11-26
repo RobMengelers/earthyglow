@@ -258,7 +258,7 @@ export function Shop() {
     : []
   const heading = activeSeason
     ? copy.favourites(activeSeason.id, activeSeason.label)
-    : activeCollection?.title ?? copy.heading
+    : activeCollection?.heading ?? copy.heading
   const lede = activeSeason?.description ?? activeCollection?.blurb ?? copy.lede
 
   function filterUrl(seasonId?: string, glowId?: string) {
@@ -424,7 +424,7 @@ export function Shop() {
                     <Reveal className="product-group-head">
                       <div>
                         <p className="eyebrow">{collection.eyebrow}</p>
-                        <h2 id={`collection-${collection.id}`}>{collection.title}</h2>
+                        <h2 id={`collection-${collection.id}`}>{collection.heading}</h2>
                       </div>
                     </Reveal>
                     <div className="product-grid">
