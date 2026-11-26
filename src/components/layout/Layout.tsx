@@ -10,8 +10,8 @@ import { useLocaleSwitchAnimation } from '../../i18n/useLocaleSwitchAnimation'
 
 // The first segment must be a language. Anything else is a URL from before the
 // site had languages (/shop, /product/…) and moves to the visitor's language.
-export function loader({ params, request }: LoaderFunctionArgs) {
-  if (!isLocale(params.lang)) throw languageRedirect(request)
+export function loader({ params, request, context }: LoaderFunctionArgs) {
+  if (!isLocale(params.lang)) throw languageRedirect(request, context)
   return null
 }
 
