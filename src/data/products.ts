@@ -43,7 +43,10 @@ export type ProductColor = {
 export type Collection = {
   id: string
   eyebrow: string
+  /** The collection's name, for product cards, breadcrumbs and the feeds. */
   title: string
+  /** The collection page's heading: the name plus what it is, as people search for it. */
+  heading: string
   blurb: string
   products: Product[]
 }
@@ -102,6 +105,7 @@ export const collections: Collection[] = [
     id: 'little-glow',
     eyebrow: 'Scented Tealights',
     title: 'Little Glow Tealights',
+    heading: 'Little Glow scented tealights',
     blurb:
       'Hand-poured flower candles, arranged in boxes and baskets. A bouquet with a little something different.',
     products: [
@@ -150,6 +154,7 @@ export const collections: Collection[] = [
     id: 'scented-glow',
     eyebrow: 'Scented Candles',
     title: 'The Scented Glow',
+    heading: 'Scented Glow soy candles',
     blurb:
       'From Coconut Island to Pumpkin Spice, find a fragrance for your favourite time of year.',
     products: [
@@ -267,6 +272,7 @@ export const collections: Collection[] = [
     id: 'natural-glow',
     eyebrow: 'Fragrance-free',
     title: 'The Natural Glow',
+    heading: 'Natural Glow unscented candles',
     blurb:
       'Fragrance-free soy wax candles in simple, sculptural shapes. Choose one for your favourite spot at home.',
     products: [
@@ -450,6 +456,7 @@ export const collections: Collection[] = [
     id: 'wax-melts',
     eyebrow: 'Scented soy melts',
     title: 'Wax Melts',
+    heading: 'Soy Wax Melts',
     blurb: 'Little seasonal shapes for your warmer, poured by hand in soy wax and made to fill the room with a warm, comforting fragrance.',
     products: [
       {

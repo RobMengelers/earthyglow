@@ -2,7 +2,8 @@ import type { Locale } from '../i18n/locales'
 
 // Dutch and German catalog copy. English lives on the products, collections and
 // seasons themselves; product names, collection titles and fragrance names are
-// names and stay as they are in every language. Paragraphs are separated with
+// names and stay as they are in every language. A collection's page heading
+// does get translated, since it also says what the collection is. Paragraphs are separated with
 // ' \n\n ' just like the English descriptions.
 
 type Translated = Exclude<Locale, 'en'>
@@ -118,40 +119,48 @@ export const productDescriptions: Record<Translated, Record<string, string>> = {
   },
 }
 
-export const collectionCopy: Record<Translated, Record<string, { eyebrow: string; blurb: string }>> = {
+export const collectionCopy: Record<Translated, Record<string, { eyebrow: string; heading: string; blurb: string }>> = {
   nl: {
     'little-glow': {
       eyebrow: 'Geurende theelichtjes',
-      blurb: 'Met de hand gegoten bloemkaarsjes, geschikt in doosjes en mandjes. Een boeket met net iets anders.',
+      heading: 'Little Glow geurende theelichtjes',
+      blurb: 'Geurende theelichtjes in de vorm van bloemetjes, met de hand gegoten van sojawas en geschikt in doosjes en mandjes. Een cadeau met net iets meer dan een boeket.',
     },
     'scented-glow': {
       eyebrow: 'Geurkaarsen',
+      heading: 'Scented Glow geurkaarsen',
       blurb: 'Van Coconut Island tot Pumpkin Spice: vind een geur voor jouw favoriete tijd van het jaar.',
     },
     'natural-glow': {
       eyebrow: 'Geurloos',
+      heading: 'Natural Glow geurloze kaarsen',
       blurb: 'Geurloze sojawaskaarsen in eenvoudige, sculpturale vormen. Kies er een voor jouw favoriete plekje in huis.',
     },
     'wax-melts': {
       eyebrow: 'Geurende sojawax melts',
+      heading: 'Wax melts van sojawas',
       blurb: 'Kleine seizoensvormpjes voor je waxbrander, met de hand gegoten van sojawas en gemaakt om je huis te vullen met een warme, troostende geur.',
     },
   },
   de: {
     'little-glow': {
       eyebrow: 'Duftende Teelichter',
+      heading: 'Little Glow duftende Teelichter',
       blurb: 'Von Hand gegossene Blumenkerzen, arrangiert in Boxen und Körben. Ein Blumenstrauß mit dem gewissen Etwas.',
     },
     'scented-glow': {
       eyebrow: 'Duftkerzen',
+      heading: 'Scented Glow Duftkerzen',
       blurb: 'Von Coconut Island bis Pumpkin Spice: Finde einen Duft für deine liebste Jahreszeit.',
     },
     'natural-glow': {
       eyebrow: 'Duftfrei',
+      heading: 'Natural Glow duftfreie Kerzen',
       blurb: 'Duftfreie Sojawachskerzen in schlichten, skulpturalen Formen. Such dir eine für deinen Lieblingsplatz zu Hause aus.',
     },
     'wax-melts': {
       eyebrow: 'Duftende Soja-Wax-Melts',
+      heading: 'Wax Melts aus Sojawachs',
       blurb: 'Kleine saisonale Formen für deine Duftlampe, von Hand aus Sojawachs gegossen, damit sich der Raum mit einem warmen, wohltuenden Duft füllt.',
     },
   },
@@ -181,7 +190,7 @@ export function localizedDescription(product: { id: string; description: string 
   return locale === 'en' ? product.description : productDescriptions[locale][product.id] ?? product.description
 }
 
-export function localizedCollection<C extends { id: string; eyebrow: string; blurb: string }>(
+export function localizedCollection<C extends { id: string; eyebrow: string; heading: string; blurb: string }>(
   collection: C,
   locale: Locale,
 ): C {
